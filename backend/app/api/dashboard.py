@@ -1,0 +1,96 @@
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+from datetime import datetime, timedelta, timezone
+from app.database import get_db
+from app.models.user import User
+from app.models.article import Article
+from app.models.search import SearchRun
+from app.models.logs import JobLog
+from app.models.calendar import EditorialSlot
+from app.api.deps import get_current_user
+
+router = APIRouter(prefix="/dashboard", tags=["dashboard"])
+
+
+@router.get("/kpis")
+def get_kpis(
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
+):
+    total_articles = db.query(Article).count()
+    imported = db.query(Article).filter(Article.status == "imported").count()
+    in_review = db.query(Article).filter(Article.status == "in_review").count()
+    approved = db.query(Article).filter(Article.status == "approved").count()
+    published = db.query(Article).filter(Article.status == "published").count()
+    scheduled = db.query(Article).filter(Article.status == "scheduled").count()
+    rejected = db.query(Article).filter(Article.status == "rejected").count()
+
+    week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    new_this_week = db.query(Article).filter(Article.created_at >= week_ago).count()
+
+    avg_score = db.query(func.avg(Article.ai_score)).filter(Article.ai_score.isnot(None)).scalar()
+
+    pending_slots = db.query(EditorialSlot).filter(
+        EditorialSlot.status == "scheduled"
+    ).count()
+
+    return {
+        "total_articles": total_articles,
+        "by_status": {
+            "imported": imported,
+            "in_review": in_review,
+            "approved": approved,
+            "published": published,
+            "scheduled": scheduled,
+            "rejected": rejected,
+        },
+        "new_this_week": new_this_week,
+        "avg_ai_score": round(avg_score, 1) if avg_score else None,
+        "pending_slots": pending_slots,
+    }
+
+
+@router.get("/recent-jobs")
+def get_recent_jobs(
+    limit: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
+):
+    jobs = db.query(JobLog).order_by(JobLog.started_at.desc()).limit(limit).all()
+    return [
+        {
+            "id": j.id, "job_type": j.job_type, "entity_ref": j.entity_ref,
+            "status": j.status, "started_at": str(j.started_at) if j.started_at else None,
+            "ended_at": str(j.ended_at) if j.ended_at else None,
+            "error": j.error, "progress": j.progress,
+        }
+        for j in jobs
+    ]
+
+
+@router.get("/alerts")
+def get_alerts(
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
+):
+    alerts = []
+    failed_jobs = db.query(JobLog).filter(JobLog.status == "failed").order_by(JobLog.started_at.desc()).limit(5).all()
+    for j in failed_jobs:
+        alerts.append({
+            "type": "job_failed",
+            "message": f"{j.job_type} job failed: {j.error or 'Unknown error'}",
+            "entity_ref": j.entity_ref,
+            "timestamp": str(j.started_at) if j.started_at else None,
+        })
+
+    failed_publish = db.query(Article).filter(Article.status == "publish_failed").count()
+    if failed_publish > 0:
+        alerts.append({
+            "type": "publish_failed",
+            "message": f"{failed_publish} article(s) failed to publish",
+            "entity_ref": None,
+            "timestamp": None,
+        })
+
+    return alerts
