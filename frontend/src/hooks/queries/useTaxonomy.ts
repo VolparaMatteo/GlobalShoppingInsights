@@ -25,7 +25,7 @@ import type {
 export function useTags() {
   return useQuery({
     queryKey: queryKeys.taxonomy.tags(),
-    queryFn: getTags,
+    queryFn: () => getTags(),
     staleTime: 60_000, // tags change infrequently
   });
 }
@@ -75,7 +75,7 @@ export function useDeleteTag() {
 export function useCategories() {
   return useQuery({
     queryKey: queryKeys.taxonomy.categories(),
-    queryFn: getCategories,
+    queryFn: () => getCategories(),
     staleTime: 60_000,
   });
 }

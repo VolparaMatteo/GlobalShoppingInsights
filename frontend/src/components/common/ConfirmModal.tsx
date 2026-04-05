@@ -14,8 +14,8 @@ interface ConfirmModalOptions {
 export function showConfirmModal({
   title,
   content,
-  okText = 'Confirm',
-  cancelText = 'Cancel',
+  okText = 'Conferma',
+  cancelText = 'Annulla',
   onOk,
   onCancel,
   danger = false,

@@ -31,6 +31,7 @@ export function useCreateSlot() {
     mutationFn: (data: SlotCreate) => createSlot(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.articles.lists() });
     },
   });
 }

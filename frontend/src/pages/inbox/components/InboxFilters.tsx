@@ -45,30 +45,30 @@ const statusOptions = ARTICLE_STATUSES.map((s) => ({
 }));
 
 const languageOptions = [
-  { label: 'English', value: 'en' },
-  { label: 'French', value: 'fr' },
-  { label: 'German', value: 'de' },
-  { label: 'Spanish', value: 'es' },
-  { label: 'Italian', value: 'it' },
-  { label: 'Portuguese', value: 'pt' },
-  { label: 'Dutch', value: 'nl' },
-  { label: 'Japanese', value: 'ja' },
-  { label: 'Chinese', value: 'zh' },
-  { label: 'Korean', value: 'ko' },
+  { label: 'Inglese', value: 'en' },
+  { label: 'Francese', value: 'fr' },
+  { label: 'Tedesco', value: 'de' },
+  { label: 'Spagnolo', value: 'es' },
+  { label: 'Italiano', value: 'it' },
+  { label: 'Portoghese', value: 'pt' },
+  { label: 'Olandese', value: 'nl' },
+  { label: 'Giapponese', value: 'ja' },
+  { label: 'Cinese', value: 'zh' },
+  { label: 'Coreano', value: 'ko' },
 ];
 
 const countryOptions = [
-  { label: 'United States', value: 'US' },
-  { label: 'United Kingdom', value: 'GB' },
+  { label: 'Stati Uniti', value: 'US' },
+  { label: 'Regno Unito', value: 'GB' },
   { label: 'Canada', value: 'CA' },
-  { label: 'Germany', value: 'DE' },
-  { label: 'France', value: 'FR' },
-  { label: 'Spain', value: 'ES' },
-  { label: 'Italy', value: 'IT' },
-  { label: 'Japan', value: 'JP' },
-  { label: 'China', value: 'CN' },
+  { label: 'Germania', value: 'DE' },
+  { label: 'Francia', value: 'FR' },
+  { label: 'Spagna', value: 'ES' },
+  { label: 'Italia', value: 'IT' },
+  { label: 'Giappone', value: 'JP' },
+  { label: 'Cina', value: 'CN' },
   { label: 'Australia', value: 'AU' },
-  { label: 'Brazil', value: 'BR' },
+  { label: 'Brasile', value: 'BR' },
   { label: 'India', value: 'IN' },
 ];
 
@@ -110,7 +110,7 @@ export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersP
         {/* ---- Search ---- */}
         <Col xs={24} sm={12} md={6}>
           <Input
-            placeholder="Search articles..."
+            placeholder="Cerca articoli..."
             prefix={<SearchOutlined />}
             allowClear
             value={filters.search}
@@ -122,7 +122,7 @@ export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersP
         <Col xs={24} sm={12} md={5}>
           <Select
             mode="multiple"
-            placeholder="Status"
+            placeholder="Stato"
             allowClear
             maxTagCount="responsive"
             style={{ width: '100%' }}
@@ -135,7 +135,7 @@ export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersP
         {/* ---- Language ---- */}
         <Col xs={24} sm={12} md={3}>
           <Select
-            placeholder="Language"
+            placeholder="Lingua"
             allowClear
             style={{ width: '100%' }}
             options={languageOptions}
@@ -154,14 +154,14 @@ export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersP
             onChange={([min, max]: number[]) =>
               patch({ minScore: min, maxScore: max })
             }
-            tooltip={{ formatter: (v) => `Score: ${v}` }}
+            tooltip={{ formatter: (v) => `Punteggio: ${v}` }}
           />
         </Col>
 
         {/* ---- Domain ---- */}
         <Col xs={24} sm={12} md={3}>
           <Input
-            placeholder="Domain"
+            placeholder="Dominio"
             allowClear
             value={filters.domain}
             onChange={(e) => patch({ domain: e.target.value })}
@@ -171,7 +171,7 @@ export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersP
         {/* ---- Country ---- */}
         <Col xs={24} sm={12} md={2}>
           <Select
-            placeholder="Country"
+            placeholder="Paese"
             allowClear
             style={{ width: '100%' }}
             options={countryOptions}
@@ -187,7 +187,7 @@ export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersP
             disabled={!isDirty}
             onClick={handleClear}
           >
-            Clear Filters
+            Pulisci Filtri
           </Button>
         </Col>
       </Row>

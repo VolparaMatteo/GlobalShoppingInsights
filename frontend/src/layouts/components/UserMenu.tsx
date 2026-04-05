@@ -15,7 +15,7 @@ export default function UserMenu() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 
-  const displayName = user?.name ?? 'User';
+  const displayName = user?.name ?? 'Utente';
   const role = user?.role ?? 'viewer';
 
   const menuItems: MenuProps['items'] = [
@@ -34,7 +34,7 @@ export default function UserMenu() {
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: 'Logout',
+      label: 'Esci',
       danger: true,
       onClick: logout,
     },

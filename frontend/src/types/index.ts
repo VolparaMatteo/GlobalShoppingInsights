@@ -30,6 +30,13 @@ export type {
   PromptUpdate,
 } from "./prompt.types";
 
+// Prompt Folders
+export type {
+  PromptFolder,
+  PromptFolderCreate,
+  PromptFolderUpdate,
+} from "./promptFolder.types";
+
 // Search
 export type {
   SearchRun,
@@ -40,6 +47,7 @@ export type {
 export type {
   Article,
   ArticleUpdate,
+  PromptSummary,
   StatusChangeRequest,
   BatchActionRequest,
 } from "./article.types";

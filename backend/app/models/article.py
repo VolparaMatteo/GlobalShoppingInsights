@@ -46,6 +46,7 @@ class Article(Base):
     ai_suggested_tags = Column(JSON, nullable=True)
     ai_suggested_category = Column(String(100), nullable=True)
     ai_model_version = Column(String(50), nullable=True)
+    ai_relevance_comment = Column(Text, nullable=True)
     duplicate_of_id = Column(Integer, ForeignKey("articles.id"), nullable=True)
     raw_html = Column(Text, nullable=True)
     created_at = Column(DateTime, nullable=False, server_default=func.now(), index=True)

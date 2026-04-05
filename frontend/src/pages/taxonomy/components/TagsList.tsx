@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Table, Button, Modal, Form, Input, Space, message } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Table, Button, Modal, Form, Input, Space, message, Tag as AntTag } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, CheckCircleOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/config/queryKeys';
 import { getTags, createTag, updateTag, deleteTag } from '@/services/api/taxonomy.api';
@@ -8,6 +8,14 @@ import { showConfirmModal } from '@/components/common/ConfirmModal';
 import { formatDateTime } from '@/utils/date';
 import type { Tag, TagCreate, TagUpdate } from '@/types';
 import type { ColumnsType } from 'antd/es/table';
+import axios from 'axios';
+
+function extractErrorDetail(err: unknown): string {
+  if (axios.isAxiosError(err) && err.response?.data?.detail) {
+    return err.response.data.detail;
+  }
+  return 'Errore sconosciuto';
+}
 
 export default function TagsList() {
   const queryClient = useQueryClient();
@@ -27,12 +35,12 @@ export default function TagsList() {
   const createMutation = useMutation({
     mutationFn: (payload: TagCreate) => createTag(payload),
     onSuccess: () => {
-      message.success('Tag created successfully');
+      message.success('Tag creato e sincronizzato con WordPress');
       queryClient.invalidateQueries({ queryKey: queryKeys.taxonomy.tags() });
       closeModal();
     },
-    onError: () => {
-      message.error('Failed to create tag');
+    onError: (err) => {
+      message.error(`Errore nella creazione del tag: ${extractErrorDetail(err)}`);
     },
   });
 
@@ -40,23 +48,23 @@ export default function TagsList() {
     mutationFn: ({ id, payload }: { id: number; payload: TagUpdate }) =>
       updateTag(id, payload),
     onSuccess: () => {
-      message.success('Tag updated successfully');
+      message.success('Tag aggiornato e sincronizzato con WordPress');
       queryClient.invalidateQueries({ queryKey: queryKeys.taxonomy.tags() });
       closeModal();
     },
-    onError: () => {
-      message.error('Failed to update tag');
+    onError: (err) => {
+      message.error(`Errore nell'aggiornamento del tag: ${extractErrorDetail(err)}`);
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteTag(id),
     onSuccess: () => {
-      message.success('Tag deleted successfully');
+      message.success('Tag eliminato da WordPress e dal pannello');
       queryClient.invalidateQueries({ queryKey: queryKeys.taxonomy.tags() });
     },
-    onError: () => {
-      message.error('Failed to delete tag');
+    onError: (err) => {
+      message.error(`Errore nell'eliminazione del tag: ${extractErrorDetail(err)}`);
     },
   });
 
@@ -91,10 +99,13 @@ export default function TagsList() {
   }
 
   function handleDelete(tag: Tag) {
+    const wpNote = tag.wp_id
+      ? ' Verrà eliminato anche da WordPress.'
+      : '';
     showConfirmModal({
-      title: 'Delete Tag',
-      content: `Are you sure you want to delete the tag "${tag.name}"? This action cannot be undone.`,
-      okText: 'Delete',
+      title: 'Elimina Tag',
+      content: `Sei sicuro di voler eliminare il tag "${tag.name}"?${wpNote} Questa azione non può essere annullata.`,
+      okText: 'Elimina',
       danger: true,
       onOk: () => deleteMutation.mutateAsync(tag.id),
     });
@@ -104,7 +115,7 @@ export default function TagsList() {
 
   const columns: ColumnsType<Tag> = [
     {
-      title: 'Name',
+      title: 'Nome',
       dataIndex: 'name',
       key: 'name',
       sorter: (a, b) => a.name.localeCompare(b.name),
@@ -115,19 +126,29 @@ export default function TagsList() {
       key: 'slug',
     },
     {
-      title: 'WP ID',
+      title: 'WordPress',
       dataIndex: 'wp_id',
       key: 'wp_id',
-      render: (val: number | null) => val ?? '-',
+      width: 130,
+      render: (val: number | null) =>
+        val ? (
+          <AntTag icon={<CheckCircleOutlined />} color="success">
+            ID {val}
+          </AntTag>
+        ) : (
+          <AntTag icon={<MinusCircleOutlined />} color="default">
+            Non sincr.
+          </AntTag>
+        ),
     },
     {
-      title: 'Created At',
+      title: 'Creato il',
       dataIndex: 'created_at',
       key: 'created_at',
       render: (val: string | null) => formatDateTime(val),
     },
     {
-      title: 'Actions',
+      title: 'Azioni',
       key: 'actions',
       width: 120,
       render: (_: unknown, record: Tag) => (
@@ -156,7 +177,7 @@ export default function TagsList() {
     <div>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
-          Add Tag
+          Aggiungi Tag
         </Button>
       </div>
 
@@ -178,23 +199,25 @@ export default function TagsList() {
       />
 
       <Modal
-        title={editingTag ? 'Edit Tag' : 'Add Tag'}
+        title={editingTag ? 'Modifica Tag' : 'Nuovo Tag'}
         open={modalOpen}
         onOk={handleSubmit}
         onCancel={closeModal}
+        okText={editingTag ? 'Salva' : 'Crea'}
+        cancelText="Annulla"
         confirmLoading={createMutation.isPending || updateMutation.isPending}
         destroyOnClose
       >
         <Form form={form} layout="vertical" autoComplete="off">
           <Form.Item
             name="name"
-            label="Name"
-            rules={[{ required: true, message: 'Please enter a tag name' }]}
+            label="Nome"
+            rules={[{ required: true, message: 'Inserisci il nome del tag' }]}
           >
-            <Input placeholder="Tag name" />
+            <Input placeholder="Nome del tag" />
           </Form.Item>
           <Form.Item name="slug" label="Slug">
-            <Input placeholder="tag-slug (auto-generated if empty)" />
+            <Input placeholder="tag-slug (generato automaticamente se vuoto)" />
           </Form.Item>
         </Form>
       </Modal>

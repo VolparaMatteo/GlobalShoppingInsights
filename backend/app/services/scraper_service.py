@@ -2,8 +2,22 @@ import logging
 from typing import Optional
 import httpx
 import trafilatura
+from htmldate import find_date
+import py3langid as langid
 
 logger = logging.getLogger(__name__)
+
+
+def detect_language(text: str) -> Optional[str]:
+    """Detect language using py3langid. Returns ISO 639-1 code or None."""
+    if not text or len(text.strip()) < 50:
+        return None
+    try:
+        lang, _confidence = langid.classify(text)
+        return lang
+    except Exception as e:
+        logger.warning(f"Language detection failed: {e}")
+        return None
 
 DEFAULT_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -31,7 +45,7 @@ def scrape_url(url: str, timeout: int = 30) -> Optional[dict]:
             return None
 
         # Extract metadata using bare_extraction (returns Document object in newer versions)
-        extracted = trafilatura.bare_extraction(html)
+        extracted = trafilatura.bare_extraction(html, favor_recall=True)
 
         title = None
         author = None
@@ -53,6 +67,13 @@ def scrape_url(url: str, timeout: int = 30) -> Optional[dict]:
                 date = getattr(extracted, "date", None)
                 image = getattr(extracted, "image", None)
                 language = getattr(extracted, "language", None)
+        # Fallback: use htmldate if trafilatura didn't find a date
+        if not date:
+            date = find_date(html)
+
+        # Fallback: detect language with py3langid if trafilatura didn't find it
+        if not language:
+            language = detect_language(text)
 
         return {
             "text": text,

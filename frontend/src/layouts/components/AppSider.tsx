@@ -37,22 +37,22 @@ export default function AppSider({ collapsed }: AppSiderProps) {
       {
         key: '/prompts',
         icon: <SearchOutlined />,
-        label: 'Prompts',
+        label: 'Prompt',
       },
       {
         key: '/inbox',
         icon: <InboxOutlined />,
-        label: 'Inbox',
+        label: 'Posta in Arrivo',
       },
       {
         key: '/calendar',
         icon: <CalendarOutlined />,
-        label: 'Calendar',
+        label: 'Calendario',
       },
       {
         key: '/taxonomy',
         icon: <TagsOutlined />,
-        label: 'Taxonomy',
+        label: 'Tassonomia',
       },
     ];
 
@@ -60,7 +60,7 @@ export default function AppSider({ collapsed }: AppSiderProps) {
       items.push({
         key: '/settings',
         icon: <SettingOutlined />,
-        label: 'Settings',
+        label: 'Impostazioni',
       });
     }
 

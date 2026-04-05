@@ -1,16 +1,17 @@
 // ---------------------------------------------------------------------------
-// KPICards.tsx  --  Grid of Statistic cards for the dashboard overview
+// KPICards.tsx  --  Modern KPI metric cards for the dashboard
 // ---------------------------------------------------------------------------
-import { Row, Col, Card, Statistic, Alert } from 'antd';
+import { Row, Col, Alert } from 'antd';
 import {
   FileTextOutlined,
-  PlusCircleOutlined,
+  RiseOutlined,
   EyeOutlined,
-  ClockCircleOutlined,
+  CalendarOutlined,
   CheckCircleOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
 import type { DashboardKPIs } from '@/services/api/dashboard.api';
+import type { CSSProperties } from 'react';
 
 interface KPICardsProps {
   kpis: DashboardKPIs | null;
@@ -21,82 +22,129 @@ interface KPIDefinition {
   title: string;
   key: string;
   icon: React.ReactNode;
-  color: string;
+  gradient: string;
+  iconBg: string;
   getValue: (kpis: DashboardKPIs) => number | string;
   suffix?: string;
 }
 
 const kpiDefinitions: KPIDefinition[] = [
   {
-    title: 'Total Articles',
+    title: 'Articoli Totali',
     key: 'total',
     icon: <FileTextOutlined />,
-    color: '#1677ff',
+    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    iconBg: 'rgba(102, 126, 234, 0.12)',
     getValue: (k) => k.total_articles,
   },
   {
-    title: 'New This Week',
+    title: 'Nuovi Settimana',
     key: 'new_week',
-    icon: <PlusCircleOutlined />,
-    color: '#52c41a',
+    icon: <RiseOutlined />,
+    gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+    iconBg: 'rgba(67, 233, 123, 0.12)',
     getValue: (k) => k.new_this_week,
   },
   {
-    title: 'In Review',
+    title: 'In Revisione',
     key: 'in_review',
     icon: <EyeOutlined />,
-    color: '#faad14',
+    gradient: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)',
+    iconBg: 'rgba(246, 211, 101, 0.12)',
     getValue: (k) => k.by_status['in_review'] ?? 0,
   },
   {
-    title: 'Scheduled',
+    title: 'Pianificati',
     key: 'scheduled',
-    icon: <ClockCircleOutlined />,
-    color: '#722ed1',
+    icon: <CalendarOutlined />,
+    gradient: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+    iconBg: 'rgba(161, 140, 209, 0.12)',
     getValue: (k) => k.by_status['scheduled'] ?? 0,
   },
   {
-    title: 'Published',
+    title: 'Pubblicati',
     key: 'published',
     icon: <CheckCircleOutlined />,
-    color: '#13c2c2',
+    gradient: 'linear-gradient(135deg, #0ba360 0%, #3cba92 100%)',
+    iconBg: 'rgba(11, 163, 96, 0.12)',
     getValue: (k) => k.by_status['published'] ?? 0,
   },
   {
-    title: 'Avg AI Score',
+    title: 'Punteggio AI Medio',
     key: 'ai_score',
     icon: <ThunderboltOutlined />,
-    color: '#eb2f96',
-    getValue: (k) => (k.avg_ai_score !== null ? k.avg_ai_score.toFixed(1) : '--'),
+    gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+    iconBg: 'rgba(250, 112, 154, 0.12)',
+    getValue: (k) => k.avg_ai_score !== null ? k.avg_ai_score.toFixed(1) : '--',
   },
 ];
+
+const cardStyle: CSSProperties = {
+  borderRadius: 12,
+  border: '1px solid rgba(0,0,0,0.06)',
+  background: '#fff',
+  padding: '20px 18px',
+  height: '100%',
+  transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+  cursor: 'default',
+};
+
+const iconWrapStyle = (bg: string): CSSProperties => ({
+  width: 44,
+  height: 44,
+  borderRadius: 10,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 20,
+  background: bg,
+  marginBottom: 14,
+});
 
 export default function KPICards({ kpis, isError }: KPICardsProps) {
   if (isError) {
     return (
       <Alert
-        message="Failed to load dashboard metrics"
+        message="Impossibile caricare le metriche della dashboard"
         type="error"
         showIcon
-        style={{ marginBottom: 16 }}
+        style={{ marginBottom: 16, borderRadius: 8 }}
       />
     );
   }
 
   return (
     <Row gutter={[16, 16]}>
-      {kpiDefinitions.map((def) => (
-        <Col xs={12} sm={8} lg={4} key={def.key}>
-          <Card size="small" hoverable>
-            <Statistic
-              title={def.title}
-              value={kpis ? def.getValue(kpis) : '--'}
-              prefix={<span style={{ color: def.color }}>{def.icon}</span>}
-              valueStyle={{ color: def.color }}
-            />
-          </Card>
-        </Col>
-      ))}
+      {kpiDefinitions.map((def) => {
+        const value = kpis ? def.getValue(kpis) : '--';
+        return (
+          <Col xs={12} sm={8} lg={4} key={def.key}>
+            <div
+              style={cardStyle}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.08)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.transform = 'none';
+              }}
+            >
+              <div style={iconWrapStyle(def.iconBg)}>
+                <span style={{ background: def.gradient, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                  {def.icon}
+                </span>
+              </div>
+              <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.1, color: '#141414' }}>
+                {value}
+              </div>
+              <div style={{ fontSize: 13, color: '#8c8c8c', marginTop: 4 }}>
+                {def.title}
+              </div>
+            </div>
+          </Col>
+        );
+      })}
     </Row>
   );
 }

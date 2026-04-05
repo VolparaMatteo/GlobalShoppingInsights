@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // ArticleEditor.tsx  --  Inline article content editor
 // ---------------------------------------------------------------------------
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, Input, Button, Space, message } from 'antd';
 import { SaveOutlined, CloseOutlined } from '@ant-design/icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -23,31 +23,24 @@ export default function ArticleEditor({ article, onSave, onCancel }: ArticleEdit
   const mutation = useMutation({
     mutationFn: (payload: ArticleUpdate) => updateArticle(article.id, payload),
     onSuccess: (updated) => {
-      message.success('Article saved successfully.');
+      message.success('Articolo salvato.');
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.detail(article.id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.revisions(article.id) });
       onSave?.(updated);
     },
-    onError: () => {
-      message.error('Failed to save article. Please try again.');
-    },
+    onError: () => message.error('Impossibile salvare. Riprova.'),
   });
 
   const handleSave = () => {
     const payload: ArticleUpdate = {};
 
-    if (title !== article.title) {
-      payload.title = title;
-    }
+    if (title !== article.title) payload.title = title;
 
     const originalContent = article.content_text ?? article.content_html ?? '';
-    if (content !== originalContent) {
-      payload.content_text = content;
-    }
+    if (content !== originalContent) payload.content_text = content;
 
-    // Only send if there are actual changes
     if (Object.keys(payload).length === 0) {
-      message.info('No changes to save.');
+      message.info('Nessuna modifica da salvare.');
       onCancel();
       return;
     }
@@ -57,7 +50,7 @@ export default function ArticleEditor({ article, onSave, onCancel }: ArticleEdit
 
   return (
     <Card
-      title="Edit Article"
+      title="Modifica Articolo"
       extra={
         <Space>
           <Button
@@ -66,35 +59,39 @@ export default function ArticleEditor({ article, onSave, onCancel }: ArticleEdit
             onClick={handleSave}
             loading={mutation.isPending}
           >
-            Save
+            Salva
           </Button>
           <Button
             icon={<CloseOutlined />}
             onClick={onCancel}
             disabled={mutation.isPending}
           >
-            Cancel
+            Annulla
           </Button>
         </Space>
       }
       style={{ marginBottom: 16 }}
     >
       <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>Title</label>
+        <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>
+          Titolo
+        </label>
         <Input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Article title"
+          placeholder="Titolo articolo"
           size="large"
         />
       </div>
 
       <div>
-        <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>Content</label>
+        <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>
+          Contenuto
+        </label>
         <Input.TextArea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Article content..."
+          placeholder="Contenuto articolo..."
           rows={16}
           showCount
         />

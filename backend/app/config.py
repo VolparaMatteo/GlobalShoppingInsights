@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     ADMIN_EMAIL: str = "admin@gsi.local"
     ADMIN_PASSWORD: str = "admin123"
     WP_ENCRYPTION_KEY: str = "change-me-to-a-random-key"
+    UPLOAD_DIR: str = "uploads"
+    UNSPLASH_ACCESS_KEY: str = ""
 
     @property
     def cors_origins_list(self) -> List[str]:

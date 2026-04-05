@@ -15,6 +15,8 @@ export interface GetPromptsParams {
   page_size?: number;
   is_active?: boolean;
   search?: string;
+  folder_id?: number;
+  unfiled?: boolean;
 }
 
 /** GET /prompts */

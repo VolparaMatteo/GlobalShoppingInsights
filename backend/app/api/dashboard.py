@@ -8,6 +8,7 @@ from app.models.article import Article
 from app.models.search import SearchRun
 from app.models.logs import JobLog
 from app.models.calendar import EditorialSlot
+from app.models.prompt import Prompt
 from app.api.deps import get_current_user
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
@@ -58,9 +59,44 @@ def get_recent_jobs(
     _current_user: User = Depends(get_current_user),
 ):
     jobs = db.query(JobLog).order_by(JobLog.started_at.desc()).limit(limit).all()
+
+    # Resolve entity_ref "prompt:<id>" / "article:<id>" to actual titles
+    prompt_ids = set()
+    article_ids = set()
+    for j in jobs:
+        if j.entity_ref:
+            kind, _, ref_id = j.entity_ref.partition(":")
+            if kind == "prompt" and ref_id.isdigit():
+                prompt_ids.add(int(ref_id))
+            elif kind == "article" and ref_id.isdigit():
+                article_ids.add(int(ref_id))
+
+    prompt_titles = {}
+    if prompt_ids:
+        rows = db.query(Prompt.id, Prompt.title).filter(Prompt.id.in_(prompt_ids)).all()
+        prompt_titles = {r.id: r.title for r in rows}
+
+    article_titles = {}
+    if article_ids:
+        rows = db.query(Article.id, Article.title).filter(Article.id.in_(article_ids)).all()
+        article_titles = {r.id: r.title for r in rows}
+
+    def resolve_ref(entity_ref: str | None) -> str | None:
+        if not entity_ref:
+            return None
+        kind, _, ref_id = entity_ref.partition(":")
+        if ref_id.isdigit():
+            rid = int(ref_id)
+            if kind == "prompt":
+                return prompt_titles.get(rid, entity_ref)
+            if kind == "article":
+                return article_titles.get(rid, entity_ref)
+        return entity_ref
+
     return [
         {
-            "id": j.id, "job_type": j.job_type, "entity_ref": j.entity_ref,
+            "id": j.id, "job_type": j.job_type,
+            "entity_ref": resolve_ref(j.entity_ref),
             "status": j.status, "started_at": str(j.started_at) if j.started_at else None,
             "ended_at": str(j.ended_at) if j.ended_at else None,
             "error": j.error, "progress": j.progress,

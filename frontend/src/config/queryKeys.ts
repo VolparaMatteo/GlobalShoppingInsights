@@ -51,6 +51,12 @@ export const queryKeys = {
       [...queryKeys.prompts.detail(promptId), 'searchRuns'] as const,
   },
 
+  // -- Prompt Folders -------------------------------------------------------
+  promptFolders: {
+    all: ['promptFolders'] as const,
+    list: () => [...queryKeys.promptFolders.all, 'list'] as const,
+  },
+
   // -- Search Runs ----------------------------------------------------------
   searchRuns: {
     all: ['searchRuns'] as const,

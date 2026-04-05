@@ -15,6 +15,9 @@ class SearchRun(Base):
     articles_created = Column(Integer, default=0)
     duplicates_skipped = Column(Integer, default=0)
     errors_count = Column(Integer, default=0)
+    language_filtered = Column(Integer, default=0)
+    date_filtered = Column(Integer, default=0)
+    relevance_filtered = Column(Integer, default=0)
     error_message = Column(Text, nullable=True)
 
 

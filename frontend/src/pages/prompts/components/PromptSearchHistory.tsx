@@ -24,10 +24,10 @@ const { Title, Text, Link } = Typography;
 type RunStatus = 'running' | 'completed' | 'failed' | 'queued';
 
 const STATUS_BADGE: Record<RunStatus, { status: 'processing' | 'success' | 'error' | 'default'; text: string }> = {
-  running:   { status: 'processing', text: 'Running' },
-  completed: { status: 'success',    text: 'Completed' },
-  failed:    { status: 'error',      text: 'Failed' },
-  queued:    { status: 'default',    text: 'Queued' },
+  running:   { status: 'processing', text: 'In Esecuzione' },
+  completed: { status: 'success',    text: 'Completata' },
+  failed:    { status: 'error',      text: 'Fallita' },
+  queued:    { status: 'default',    text: 'In Coda' },
 };
 
 function getStatusBadge(status: string) {
@@ -63,7 +63,7 @@ function ResultsDrawer({ run, open, onClose }: ResultsDrawerProps) {
 
   const resultColumns: ColumnsType<SearchResult> = [
     {
-      title: 'Title',
+      title: 'Titolo',
       dataIndex: 'title',
       key: 'title',
       ellipsis: true,
@@ -85,14 +85,14 @@ function ResultsDrawer({ run, open, onClose }: ResultsDrawerProps) {
       width: 100,
     },
     {
-      title: 'Domain',
+      title: 'Dominio',
       dataIndex: 'domain',
       key: 'domain',
       width: 160,
       ellipsis: true,
     },
     {
-      title: 'Published',
+      title: 'Pubblicato',
       dataIndex: 'published_at_est',
       key: 'published_at_est',
       width: 150,
@@ -100,7 +100,7 @@ function ResultsDrawer({ run, open, onClose }: ResultsDrawerProps) {
         val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '--',
     },
     {
-      title: 'Article',
+      title: 'Articolo',
       dataIndex: 'article_id',
       key: 'article_id',
       width: 80,
@@ -111,7 +111,7 @@ function ResultsDrawer({ run, open, onClose }: ResultsDrawerProps) {
 
   return (
     <Drawer
-      title={`Search Run #${run.id} - Results`}
+      title={`Esecuzione #${run.id} — Risultati`}
       placement="right"
       width={800}
       open={open}
@@ -125,27 +125,48 @@ function ResultsDrawer({ run, open, onClose }: ResultsDrawerProps) {
         size="small"
         style={{ marginBottom: 24 }}
       >
-        <Descriptions.Item label="Status">
+        <Descriptions.Item label="Stato">
           {getStatusBadge(run.status)}
         </Descriptions.Item>
-        <Descriptions.Item label="Started">
+        <Descriptions.Item label="Avvio">
           {dayjs(run.started_at).format('YYYY-MM-DD HH:mm:ss')}
         </Descriptions.Item>
-        <Descriptions.Item label="Ended">
+        <Descriptions.Item label="Fine">
           {run.ended_at
             ? dayjs(run.ended_at).format('YYYY-MM-DD HH:mm:ss')
             : '--'}
         </Descriptions.Item>
-        <Descriptions.Item label="URLs Found">
+        <Descriptions.Item label="URL Trovati">
           {run.urls_found}
         </Descriptions.Item>
-        <Descriptions.Item label="Articles Created">
+        <Descriptions.Item label="Articoli Creati">
           {run.articles_created}
         </Descriptions.Item>
-        <Descriptions.Item label="Duplicates Skipped">
+        <Descriptions.Item label="Duplicati Ignorati">
           {run.duplicates_skipped}
         </Descriptions.Item>
-        <Descriptions.Item label="Errors" span={2}>
+        <Descriptions.Item label="Filtrati per Lingua">
+          {run.language_filtered > 0 ? (
+            <Text type="warning">{run.language_filtered}</Text>
+          ) : (
+            '0'
+          )}
+        </Descriptions.Item>
+        <Descriptions.Item label="Filtrati per Data">
+          {run.date_filtered > 0 ? (
+            <Text type="warning">{run.date_filtered}</Text>
+          ) : (
+            '0'
+          )}
+        </Descriptions.Item>
+        <Descriptions.Item label="Filtrati per Rilevanza">
+          {run.relevance_filtered > 0 ? (
+            <Text type="warning">{run.relevance_filtered}</Text>
+          ) : (
+            '0'
+          )}
+        </Descriptions.Item>
+        <Descriptions.Item label="Errori">
           {run.errors_count > 0 ? (
             <Text type="danger">
               {run.errors_count}
@@ -159,7 +180,7 @@ function ResultsDrawer({ run, open, onClose }: ResultsDrawerProps) {
 
       {/* Results table */}
       <Title level={5} style={{ marginBottom: 12 }}>
-        Results ({run.results?.length ?? 0})
+        Risultati ({run.results?.length ?? 0})
       </Title>
 
       <Table<SearchResult>
@@ -200,7 +221,7 @@ export default function PromptSearchHistory({
   const columns: ColumnsType<SearchRun> = useMemo(
     () => [
       {
-        title: 'Started At',
+        title: 'Avvio',
         dataIndex: 'started_at',
         key: 'started_at',
         width: 180,
@@ -210,35 +231,74 @@ export default function PromptSearchHistory({
           dayjs(a.started_at).unix() - dayjs(b.started_at).unix(),
       },
       {
-        title: 'Status',
+        title: 'Stato',
         dataIndex: 'status',
         key: 'status',
-        width: 120,
+        width: 130,
         render: (status: string) => getStatusBadge(status),
       },
       {
-        title: 'URLs Found',
+        title: 'URL Trovati',
         dataIndex: 'urls_found',
         key: 'urls_found',
         width: 110,
         align: 'right' as const,
       },
       {
-        title: 'Articles Created',
+        title: 'Articoli Creati',
         dataIndex: 'articles_created',
         key: 'articles_created',
         width: 140,
         align: 'right' as const,
       },
       {
-        title: 'Duplicates',
+        title: 'Duplicati',
         dataIndex: 'duplicates_skipped',
         key: 'duplicates_skipped',
         width: 110,
         align: 'right' as const,
       },
       {
-        title: 'Errors',
+        title: 'Filtro Lingua',
+        dataIndex: 'language_filtered',
+        key: 'language_filtered',
+        width: 120,
+        align: 'right' as const,
+        render: (count: number) =>
+          count > 0 ? (
+            <Text type="warning">{count}</Text>
+          ) : (
+            <Text type="secondary">0</Text>
+          ),
+      },
+      {
+        title: 'Filtro Data',
+        dataIndex: 'date_filtered',
+        key: 'date_filtered',
+        width: 110,
+        align: 'right' as const,
+        render: (count: number) =>
+          count > 0 ? (
+            <Text type="warning">{count}</Text>
+          ) : (
+            <Text type="secondary">0</Text>
+          ),
+      },
+      {
+        title: 'Non Rilevanti',
+        dataIndex: 'relevance_filtered',
+        key: 'relevance_filtered',
+        width: 120,
+        align: 'right' as const,
+        render: (count: number) =>
+          count > 0 ? (
+            <Text type="warning">{count}</Text>
+          ) : (
+            <Text type="secondary">0</Text>
+          ),
+      },
+      {
+        title: 'Errori',
         dataIndex: 'errors_count',
         key: 'errors_count',
         width: 90,
@@ -269,7 +329,7 @@ export default function PromptSearchHistory({
           style: { cursor: 'pointer' },
         })}
         scroll={{ x: 750 }}
-        locale={{ emptyText: 'No search runs yet for this prompt' }}
+        locale={{ emptyText: 'Nessuna esecuzione di ricerca per questo prompt' }}
       />
 
       <ResultsDrawer

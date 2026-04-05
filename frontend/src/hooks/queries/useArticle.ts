@@ -4,6 +4,7 @@ import {
   getArticle,
   updateArticle,
   changeStatus,
+  uploadArticleImage,
 } from '@/services/api/articles.api';
 import type { ArticleUpdate, StatusChangeRequest } from '@/types';
 
@@ -28,6 +29,23 @@ export function useUpdateArticle() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: ArticleUpdate }) =>
       updateArticle(id, data),
+    onSuccess: (_result, { id }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.articles.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.articles.lists() });
+    },
+  });
+}
+
+/**
+ * Uploads a cover image for an article.
+ * Invalidates article detail and list queries on success.
+ */
+export function useUploadArticleImage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, file }: { id: number; file: File }) =>
+      uploadArticleImage(id, file),
     onSuccess: (_result, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.detail(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.lists() });

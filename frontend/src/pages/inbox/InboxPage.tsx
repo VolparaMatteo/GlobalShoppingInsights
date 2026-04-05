@@ -2,7 +2,7 @@
 // InboxPage  --  Main editorial inbox: filtered article list with preview
 // ---------------------------------------------------------------------------
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { message } from 'antd';
+import { Card, message } from 'antd';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import type { Article } from '@/types';
@@ -128,10 +128,10 @@ export default function InboxPage() {
       changeStatus(id, { new_status: newStatus }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.all });
-      message.success('Status updated');
+      message.success('Stato aggiornato');
     },
     onError: () => {
-      message.error('Failed to update status');
+      message.error('Impossibile aggiornare lo stato');
     },
   });
 
@@ -140,10 +140,10 @@ export default function InboxPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.all });
       setSelectedRowKeys([]);
-      message.success('Batch action completed');
+      message.success('Azione di massa completata');
     },
     onError: () => {
-      message.error('Batch action failed');
+      message.error('Azione di massa fallita');
     },
   });
 
@@ -200,8 +200,7 @@ export default function InboxPage() {
           action: 'discard',
         });
       } else if (payload.type === 'tag') {
-        // Tag modal would be triggered here; for now show a placeholder.
-        message.info('Tag picker coming soon');
+        message.info('Selettore tag in arrivo');
       }
     },
     [selectedRowKeys, batchMutation],
@@ -213,9 +212,10 @@ export default function InboxPage() {
 
   // ---- Render -------------------------------------------------------------
   return (
-    <>
+    <div style={{ maxWidth: 1400, margin: '0 auto' }}>
       <PageHeader
         title="Inbox"
+        subtitle="Gestisci gli articoli importati: filtra, valuta e smista."
         extra={
           <ExportButton
             endpoint="/api/v1/articles/export"
@@ -229,22 +229,24 @@ export default function InboxPage() {
         onFiltersChange={handleFiltersChange}
       />
 
-      <InboxTable
-        articles={articles}
-        loading={isLoading}
-        pagination={pagination}
-        selectedRowKeys={selectedRowKeys}
-        onSelectChange={setSelectedRowKeys}
-        onSort={handleSort}
-        onRowClick={handleRowClick}
-        onPaginationChange={handlePaginationChange}
-      />
+      <Card>
+        <InboxTable
+          articles={articles}
+          loading={isLoading}
+          pagination={pagination}
+          selectedRowKeys={selectedRowKeys}
+          onSelectChange={setSelectedRowKeys}
+          onSort={handleSort}
+          onRowClick={handleRowClick}
+          onPaginationChange={handlePaginationChange}
+        />
 
-      <BatchActionsBar
-        selectedIds={selectedRowKeys}
-        onAction={handleBatchAction}
-        onClear={handleClearSelection}
-      />
+        <BatchActionsBar
+          selectedIds={selectedRowKeys}
+          onAction={handleBatchAction}
+          onClear={handleClearSelection}
+        />
+      </Card>
 
       <ArticlePreviewDrawer
         article={previewArticle}
@@ -252,6 +254,6 @@ export default function InboxPage() {
         onClose={handleDrawerClose}
         onQuickAction={handleQuickAction}
       />
-    </>
+    </div>
   );
 }

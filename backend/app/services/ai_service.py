@@ -19,6 +19,36 @@ def _get_model():
     return _model
 
 
+def _extract_chunks(text: str, chunk_size: int = 1500, n_chunks: int = 5) -> list[str]:
+    """Extract up to n_chunks evenly-spaced segments from the full article text."""
+    text = text.strip()
+    if len(text) <= chunk_size:
+        return [text]
+
+    if len(text) <= chunk_size * n_chunks:
+        # Text is short enough — split into consecutive non-overlapping chunks
+        chunks = []
+        for i in range(0, len(text), chunk_size):
+            chunk = text[i:i + chunk_size]
+            if chunk.strip():
+                chunks.append(chunk)
+        return chunks[:n_chunks]
+
+    # For long texts, pick evenly-spaced chunks to cover the full article
+    chunks = []
+    step = (len(text) - chunk_size) / (n_chunks - 1) if n_chunks > 1 else 0
+    for i in range(n_chunks):
+        start = int(i * step)
+        chunk = text[start:start + chunk_size]
+        if chunk.strip():
+            chunks.append(chunk)
+
+    return chunks
+
+
+MIN_RELEVANCE_SCORE = 25
+
+
 def score_article(text: str, prompt_text: str, keywords: Optional[List[str]] = None) -> dict:
     keywords = keywords or []
     model = _get_model()
@@ -28,31 +58,71 @@ def score_article(text: str, prompt_text: str, keywords: Optional[List[str]] = N
     try:
         from sklearn.metrics.pairwise import cosine_similarity
 
-        # Compare article text against the full natural-language prompt
-        embeddings = model.encode([text[:2000], prompt_text])
-        similarity = cosine_similarity([embeddings[0]], [embeddings[1]])[0][0]
+        # Multi-chunk scoring: compare each chunk against the prompt
+        # Now reads 5 chunks across the full article for deeper analysis
+        chunks = _extract_chunks(text)
+        chunk_embeddings = model.encode(chunks)
+        prompt_embedding = model.encode([prompt_text])
 
-        score = int(min(100, max(0, similarity * 100 * 1.5)))
+        similarities = []
+        for emb in chunk_embeddings:
+            sim = cosine_similarity([emb], prompt_embedding)[0][0]
+            similarities.append(float(sim))
+
+        max_sim = max(similarities)
+        avg_sim = sum(similarities) / len(similarities)
+
+        # Base score: similarity * 100 (no inflating multiplier)
+        base_score = int(max_sim * 100)
+
+        # Centrality analysis: avg/max ratio — rewards articles where
+        # relevance is spread across the entire text, not just one chunk
+        centrality_ratio = avg_sim / max_sim if max_sim > 0 else 0
+        centrality_bonus = 0
+        if centrality_ratio > 0.85:
+            centrality_bonus = 10
+        elif centrality_ratio > 0.7:
+            centrality_bonus = 5
+
+        # Keyword analysis
+        text_lower = text.lower()
+        keyword_matches = 0
+        keyword_bonus = 0
+        keyword_penalty = 0
+        if keywords:
+            keyword_matches = sum(1 for kw in keywords if kw.lower() in text_lower)
+            keyword_ratio = keyword_matches / len(keywords)
+            keyword_bonus = int(keyword_ratio * 15)
+
+            # Penalty: if ZERO keywords appear in the article, it is very
+            # likely off-topic regardless of semantic similarity
+            if keyword_matches == 0:
+                keyword_penalty = -20
+
+        # Final score clamped to [0, 100]
+        score = min(100, max(0, base_score + centrality_bonus + keyword_bonus + keyword_penalty))
 
         explanation = []
+        explanation.append(f"Semantic similarity: {max_sim:.2f} (avg {avg_sim:.2f} across {len(chunks)} chunks)")
+        if centrality_bonus > 0:
+            explanation.append(f"Centrality bonus: +{centrality_bonus} (ratio {centrality_ratio:.2f})")
         if keywords:
-            keyword_matches = sum(1 for kw in keywords if kw.lower() in text.lower())
-            if keyword_matches > 0:
-                explanation.append(f"Matched {keyword_matches}/{len(keywords)} keywords")
-        explanation.append(f"Semantic similarity: {similarity:.2f}")
+            explanation.append(f"Keywords: {keyword_matches}/{len(keywords)} matched (+{keyword_bonus})")
+        if keyword_penalty < 0:
+            explanation.append(f"No keyword match penalty: {keyword_penalty}")
         if score >= 70:
             explanation.append("High relevance to search prompt")
-        elif score >= 40:
+        elif score >= MIN_RELEVANCE_SCORE:
             explanation.append("Moderate relevance")
         else:
-            explanation.append("Low relevance")
+            explanation.append("Low relevance — below threshold")
 
-        suggested_tags = [kw for kw in keywords if kw.lower() in text.lower()] if keywords else []
+        suggested_tags = [kw for kw in keywords if kw.lower() in text_lower][:5]
 
         return {
             "score": score,
             "explanation": explanation,
-            "tags": suggested_tags[:5],
+            "tags": suggested_tags,
             "category": _suggest_category(text),
             "model_version": MODEL_NAME,
         }

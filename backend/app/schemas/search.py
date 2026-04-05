@@ -28,6 +28,9 @@ class SearchRunResponse(BaseModel):
     articles_created: int
     duplicates_skipped: int
     errors_count: int
+    language_filtered: int = 0
+    date_filtered: int = 0
+    relevance_filtered: int = 0
     error_message: Optional[str] = None
     results: Optional[List[SearchResultResponse]] = None
 

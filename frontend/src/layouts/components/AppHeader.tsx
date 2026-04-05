@@ -9,11 +9,11 @@ const { Title } = Typography;
 
 const PAGE_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
-  '/prompts': 'Prompts',
-  '/inbox': 'Inbox',
-  '/calendar': 'Calendar',
-  '/taxonomy': 'Taxonomy',
-  '/settings': 'Settings',
+  '/prompts': 'Prompt',
+  '/inbox': 'Posta in Arrivo',
+  '/calendar': 'Calendario',
+  '/taxonomy': 'Tassonomia',
+  '/settings': 'Impostazioni',
 };
 
 export default function AppHeader() {
@@ -30,7 +30,7 @@ export default function AppHeader() {
     if (PAGE_TITLES[basePath]) return PAGE_TITLES[basePath];
 
     // Special cases
-    if (path.startsWith('/articles/')) return 'Article Detail';
+    if (path.startsWith('/articles/')) return 'Dettaglio Articolo';
 
     return 'Global Shopping Insights';
   }, [location.pathname]);

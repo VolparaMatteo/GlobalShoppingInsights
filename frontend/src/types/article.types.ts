@@ -6,6 +6,13 @@
 import type { Tag } from "./taxonomy.types";
 import type { Category } from "./taxonomy.types";
 
+/** Lightweight prompt info attached to an article. */
+export interface PromptSummary {
+  id: number;
+  title: string;
+  keywords: string[];
+}
+
 /** Read-only article representation returned by the API. */
 export interface Article {
   id: number;
@@ -26,11 +33,13 @@ export interface Article {
   ai_score_explanation: string[] | null;
   ai_suggested_tags: string[] | null;
   ai_suggested_category: string | null;
+  ai_relevance_comment: string | null;
   duplicate_of_id: number | null;
   created_at: string;                  // ISO-8601 datetime
   updated_at: string;                  // ISO-8601 datetime
   tags: Tag[];
   categories: Category[];
+  prompts: PromptSummary[];
 }
 
 /** PATCH /articles/:id request body. All fields optional. */

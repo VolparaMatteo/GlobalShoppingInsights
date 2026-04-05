@@ -1,9 +1,8 @@
 // ---------------------------------------------------------------------------
-// AIScorePanel.tsx  --  Sidebar card for AI relevance score & suggestions
+// AIScorePanel.tsx  --  Sidebar card for AI relevance score & analysis
 // ---------------------------------------------------------------------------
-import React from 'react';
-import { Card, Progress, Tag, List, Typography, Space, Empty } from 'antd';
-import { RobotOutlined, TagsOutlined, AppstoreOutlined } from '@ant-design/icons';
+import { Card, Empty, Flex, List, Progress, Space, Typography } from 'antd';
+import { RobotOutlined } from '@ant-design/icons';
 import type { Article } from '@/types';
 import { SCORE_THRESHOLDS } from '@/config/constants';
 
@@ -26,7 +25,7 @@ export default function AIScorePanel({ article }: AIScorePanelProps) {
       title={
         <Space>
           <RobotOutlined />
-          AI Analysis
+          Analisi AI
         </Space>
       }
       size="small"
@@ -40,61 +39,56 @@ export default function AIScorePanel({ article }: AIScorePanelProps) {
             percent={score}
             strokeColor={getScoreColor(score)}
             format={(pct) => `${pct}`}
-            size={100}
+            size={90}
           />
         ) : (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description="No AI score available"
+            description="Nessun punteggio disponibile"
           />
         )}
       </div>
 
       {/* Score explanation */}
       {article.ai_score_explanation && article.ai_score_explanation.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
-            Explanation
-          </Typography.Text>
-          <List
-            size="small"
-            dataSource={article.ai_score_explanation}
-            renderItem={(item) => (
-              <List.Item style={{ padding: '4px 0', border: 'none' }}>
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {item}
-                </Typography.Text>
-              </List.Item>
-            )}
-          />
-        </div>
+        <Flex vertical gap={4}>
+          {article.ai_score_explanation.map((reason, idx) => (
+            <Typography.Text
+              key={idx}
+              type="secondary"
+              style={{ fontSize: 12, lineHeight: 1.5 }}
+            >
+              &bull; {reason}
+            </Typography.Text>
+          ))}
+        </Flex>
       )}
 
-      {/* Suggested tags */}
-      {article.ai_suggested_tags && article.ai_suggested_tags.length > 0 && (
-        <div style={{ marginBottom: 12 }}>
-          <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
-            <TagsOutlined style={{ marginRight: 4 }} />
-            Suggested Tags
+      {/* LLM Relevance Comment */}
+      {article.ai_relevance_comment && (
+        <div
+          style={{
+            marginTop: 12,
+            padding: '10px 12px',
+            background: 'linear-gradient(135deg, #f0f5ff 0%, #e6f7ff 100%)',
+            borderRadius: 8,
+            border: '1px solid #d6e4ff',
+          }}
+        >
+          <Flex align="center" gap={6} style={{ marginBottom: 6 }}>
+            <RobotOutlined style={{ fontSize: 13, color: '#1890ff' }} />
+            <Typography.Text
+              strong
+              style={{ fontSize: 12, color: '#1890ff' }}
+            >
+              Analisi di Pertinenza
+            </Typography.Text>
+          </Flex>
+          <Typography.Text
+            style={{ fontSize: 12, lineHeight: 1.6, color: '#262626' }}
+          >
+            {article.ai_relevance_comment}
           </Typography.Text>
-          <Space size={[4, 4]} wrap>
-            {article.ai_suggested_tags.map((tag) => (
-              <Tag key={tag} color="blue">
-                {tag}
-              </Tag>
-            ))}
-          </Space>
-        </div>
-      )}
-
-      {/* Suggested category */}
-      {article.ai_suggested_category && (
-        <div>
-          <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
-            <AppstoreOutlined style={{ marginRight: 4 }} />
-            Suggested Category
-          </Typography.Text>
-          <Tag color="purple">{article.ai_suggested_category}</Tag>
         </div>
       )}
     </Card>

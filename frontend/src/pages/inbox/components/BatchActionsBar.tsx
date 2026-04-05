@@ -50,9 +50,9 @@ export default function BatchActionsBar({
 
   const handleDiscard = () => {
     showConfirmModal({
-      title: 'Discard selected articles?',
-      content: `This will permanently discard ${selectedIds.length} article(s). This action cannot be undone.`,
-      okText: 'Discard',
+      title: 'Scartare gli articoli selezionati?',
+      content: `Verranno scartati permanentemente ${selectedIds.length} articolo/i. Questa azione non può essere annullata.`,
+      okText: 'Scarta',
       danger: true,
       onOk: () => onAction({ type: 'discard' }),
     });
@@ -77,19 +77,19 @@ export default function BatchActionsBar({
       }}
     >
       <Typography.Text strong>
-        {selectedIds.length} selected
+        {selectedIds.length} selezionati
       </Typography.Text>
 
       <Space>
         <Dropdown menu={{ items: statusMenuItems }} trigger={['click']}>
-          <Button icon={<SwapOutlined />}>Change Status</Button>
+          <Button icon={<SwapOutlined />}>Cambia Stato</Button>
         </Dropdown>
 
         <Button
           icon={<TagsOutlined />}
           onClick={() => onAction({ type: 'tag' })}
         >
-          Add Tags
+          Aggiungi Tag
         </Button>
 
         <Button
@@ -97,7 +97,7 @@ export default function BatchActionsBar({
           icon={<DeleteOutlined />}
           onClick={handleDiscard}
         >
-          Discard
+          Scarta
         </Button>
 
         <Button
@@ -105,7 +105,7 @@ export default function BatchActionsBar({
           icon={<CloseOutlined />}
           onClick={onClear}
         >
-          Clear Selection
+          Deseleziona
         </Button>
       </Space>
     </div>

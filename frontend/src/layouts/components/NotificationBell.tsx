@@ -32,10 +32,10 @@ export default function NotificationBell() {
           borderBottom: '1px solid #f0f0f0',
         }}
       >
-        <Text strong>Notifications</Text>
+        <Text strong>Notifiche</Text>
         {unreadCount > 0 && (
           <Button type="link" size="small" onClick={markAllAsRead}>
-            Mark all as read
+            Segna tutte come lette
           </Button>
         )}
       </div>
@@ -43,7 +43,7 @@ export default function NotificationBell() {
       {notifications.length === 0 ? (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="No notifications"
+          description="Nessuna notifica"
           style={{ padding: '24px 0' }}
         />
       ) : (

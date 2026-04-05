@@ -4,6 +4,7 @@
 import { useEffect } from 'react';
 import {
   Button,
+  Card,
   Divider,
   Form,
   Input,
@@ -11,50 +12,52 @@ import {
   Select,
   Space,
   Switch,
+  TreeSelect,
   Typography,
 } from 'antd';
 
 import { TIME_DEPTH_OPTIONS } from '@/config/constants';
-import type { Prompt, PromptCreate, PromptUpdate } from '@/types';
+import { usePromptFolders } from '@/hooks/queries/usePromptFolders';
+import type { Prompt, PromptCreate, PromptUpdate, PromptFolder } from '@/types';
 
 const { TextArea } = Input;
-const { Title } = Typography;
+const { Text } = Typography;
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
 const LANGUAGE_OPTIONS = [
-  { value: 'en', label: 'English' },
-  { value: 'es', label: 'Spanish' },
-  { value: 'fr', label: 'French' },
-  { value: 'de', label: 'German' },
-  { value: 'it', label: 'Italian' },
-  { value: 'pt', label: 'Portuguese' },
-  { value: 'nl', label: 'Dutch' },
-  { value: 'ja', label: 'Japanese' },
-  { value: 'zh', label: 'Chinese' },
-  { value: 'ko', label: 'Korean' },
-  { value: 'ar', label: 'Arabic' },
-  { value: 'ru', label: 'Russian' },
+  { value: 'en', label: 'Inglese' },
+  { value: 'es', label: 'Spagnolo' },
+  { value: 'fr', label: 'Francese' },
+  { value: 'de', label: 'Tedesco' },
+  { value: 'it', label: 'Italiano' },
+  { value: 'pt', label: 'Portoghese' },
+  { value: 'nl', label: 'Olandese' },
+  { value: 'ja', label: 'Giapponese' },
+  { value: 'zh', label: 'Cinese' },
+  { value: 'ko', label: 'Coreano' },
+  { value: 'ar', label: 'Arabo' },
+  { value: 'ru', label: 'Russo' },
 ];
 
 const COUNTRY_OPTIONS = [
-  { value: 'US', label: 'United States' },
-  { value: 'GB', label: 'United Kingdom' },
+  { value: 'US', label: 'Stati Uniti' },
+  { value: 'GB', label: 'Regno Unito' },
   { value: 'CA', label: 'Canada' },
   { value: 'AU', label: 'Australia' },
-  { value: 'DE', label: 'Germany' },
-  { value: 'FR', label: 'France' },
-  { value: 'ES', label: 'Spain' },
-  { value: 'IT', label: 'Italy' },
-  { value: 'JP', label: 'Japan' },
-  { value: 'CN', label: 'China' },
-  { value: 'KR', label: 'South Korea' },
-  { value: 'BR', label: 'Brazil' },
+  { value: 'DE', label: 'Germania' },
+  { value: 'FR', label: 'Francia' },
+  { value: 'ES', label: 'Spagna' },
+  { value: 'IT', label: 'Italia' },
+  { value: 'JP', label: 'Giappone' },
+  { value: 'CN', label: 'Cina' },
+  { value: 'KR', label: 'Corea del Sud' },
+  { value: 'BR', label: 'Brasile' },
   { value: 'IN', label: 'India' },
-  { value: 'MX', label: 'Mexico' },
-  { value: 'NL', label: 'Netherlands' },
+  { value: 'MX', label: 'Messico' },
+  { value: 'NL', label: 'Paesi Bassi' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -74,6 +77,7 @@ interface PromptFormProps {
 /** Internal form values matching the form field structure. */
 interface FormValues {
   title: string;
+  folder_id: number | null;
   description: string | null;
   keywords: string[];
   excluded_keywords: string[];
@@ -84,6 +88,20 @@ interface FormValues {
   schedule_enabled: boolean;
   schedule_frequency_hours: number | null;
   schedule_specific_times: string[] | null;
+}
+
+// ---------------------------------------------------------------------------
+// Helper: build treeData for TreeSelect from nested PromptFolder[]
+// ---------------------------------------------------------------------------
+
+function buildTreeSelectData(
+  folders: PromptFolder[],
+): { value: number; title: string; children?: ReturnType<typeof buildTreeSelectData> }[] {
+  return folders.map((f) => ({
+    value: f.id,
+    title: f.name,
+    children: f.children.length > 0 ? buildTreeSelectData(f.children) : undefined,
+  }));
 }
 
 // ---------------------------------------------------------------------------
@@ -100,12 +118,14 @@ export default function PromptForm({
   const [form] = Form.useForm<FormValues>();
   const isViewMode = mode === 'view';
   const scheduleEnabled = Form.useWatch('schedule_enabled', form);
+  const { data: folders } = usePromptFolders();
 
   // Populate form when initialValues change
   useEffect(() => {
     if (initialValues) {
       form.setFieldsValue({
         title: initialValues.title ?? '',
+        folder_id: initialValues.folder_id ?? null,
         description: initialValues.description ?? null,
         keywords: initialValues.keywords ?? [],
         excluded_keywords: initialValues.excluded_keywords ?? [],
@@ -125,6 +145,7 @@ export default function PromptForm({
   const handleFinish = (values: FormValues) => {
     const payload: PromptCreate | PromptUpdate = {
       title: values.title,
+      folder_id: values.folder_id || null,
       description: values.description || null,
       keywords: values.keywords,
       excluded_keywords: values.excluded_keywords,
@@ -151,8 +172,10 @@ export default function PromptForm({
       layout="vertical"
       onFinish={handleFinish}
       disabled={isViewMode}
+      style={{ maxWidth: 680 }}
       initialValues={{
         title: '',
+        folder_id: null,
         description: null,
         keywords: [],
         excluded_keywords: [],
@@ -169,63 +192,72 @@ export default function PromptForm({
 
       <Form.Item
         name="title"
-        label="Title"
-        rules={[{ required: true, message: 'Please enter a prompt title' }]}
+        label="Titolo"
+        rules={[{ required: true, message: 'Inserisci un titolo per il prompt' }]}
       >
-        <Input placeholder="e.g. AI nel retail, In-store experience" maxLength={200} />
+        <Input placeholder="es. AI nel retail, In-store experience" maxLength={200} />
+      </Form.Item>
+
+      <Form.Item name="folder_id" label="Cartella">
+        <TreeSelect
+          placeholder="Seleziona una cartella (opzionale)"
+          allowClear
+          treeDefaultExpandAll
+          treeData={folders ? buildTreeSelectData(folders) : []}
+        />
       </Form.Item>
 
       <Form.Item
         name="description"
         label="Prompt"
-        tooltip="Describe what you're looking for in natural language. This will be used as the search query and for AI relevance scoring."
-        rules={[{ required: true, message: 'Please enter a search prompt' }]}
+        tooltip="Descrivi ciò che stai cercando in linguaggio naturale. Verrà usato come query di ricerca e per il punteggio di rilevanza AI."
+        rules={[{ required: true, message: 'Inserisci un prompt di ricerca' }]}
       >
         <TextArea
           rows={3}
-          placeholder='e.g. "Intelligenza artificiale nel mondo del retail" or "Best in-store customer experiences"'
+          placeholder='es. "Intelligenza artificiale nel mondo del retail" oppure "Best in-store customer experiences"'
           maxLength={1000}
         />
       </Form.Item>
 
       <Form.Item
         name="keywords"
-        label="Keywords (optional)"
-        tooltip="Optional extra keywords to refine results. Leave empty to rely entirely on the prompt text."
+        label="Parole Chiave (opzionale)"
+        tooltip="Parole chiave aggiuntive per affinare i risultati. Lascia vuoto per basarti solo sul testo del prompt."
       >
         <Select
           mode="tags"
-          placeholder="Optional: type keywords and press Enter"
+          placeholder="Digita le parole chiave e premi Invio"
           tokenSeparators={[',']}
         />
       </Form.Item>
 
-      <Form.Item name="excluded_keywords" label="Excluded Keywords">
+      <Form.Item name="excluded_keywords" label="Parole Chiave Escluse">
         <Select
           mode="tags"
-          placeholder="Keywords to exclude from results"
+          placeholder="Parole chiave da escludere dai risultati"
           tokenSeparators={[',']}
         />
       </Form.Item>
 
-      <Form.Item name="language" label="Language">
+      <Form.Item name="language" label="Lingua">
         <Select
-          placeholder="Select language"
+          placeholder="Seleziona lingua"
           allowClear
           options={LANGUAGE_OPTIONS}
         />
       </Form.Item>
 
-      <Form.Item name="countries" label="Countries">
+      <Form.Item name="countries" label="Paesi">
         <Select
           mode="multiple"
-          placeholder="Select target countries"
+          placeholder="Seleziona i paesi di destinazione"
           allowClear
           options={COUNTRY_OPTIONS}
         />
       </Form.Item>
 
-      <Form.Item name="time_depth" label="Time Depth">
+      <Form.Item name="time_depth" label="Arco Temporale">
         <Select
           options={TIME_DEPTH_OPTIONS.map((opt) => ({
             value: opt.value,
@@ -234,50 +266,56 @@ export default function PromptForm({
         />
       </Form.Item>
 
-      <Form.Item name="max_results" label="Max Results">
+      <Form.Item name="max_results" label="Risultati Massimi">
         <InputNumber min={1} max={200} style={{ width: '100%' }} />
       </Form.Item>
 
       {/* ----- Schedule section -------------------------------------------- */}
 
-      <Divider />
-      <Title level={5} style={{ marginBottom: 16 }}>
-        Schedule
-      </Title>
-
-      <Form.Item
-        name="schedule_enabled"
-        label="Enable Schedule"
-        valuePropName="checked"
+      <Card
+        size="small"
+        style={{ marginTop: 8, background: '#fafafa', border: '1px solid #f0f0f0' }}
       >
-        <Switch />
-      </Form.Item>
+        <Text strong style={{ fontSize: 14, display: 'block', marginBottom: 12 }}>
+          Pianificazione
+        </Text>
 
-      {scheduleEnabled && (
-        <>
-          <Form.Item name="schedule_frequency_hours" label="Frequency (hours)">
-            <InputNumber
-              min={1}
-              max={720}
-              placeholder="e.g. 24"
-              style={{ width: '100%' }}
-            />
-          </Form.Item>
+        <Form.Item
+          name="schedule_enabled"
+          label="Abilita Pianificazione"
+          valuePropName="checked"
+          style={{ marginBottom: scheduleEnabled ? 16 : 0 }}
+        >
+          <Switch />
+        </Form.Item>
 
-          <Form.Item
-            name="schedule_specific_times"
-            label="Specific Run Times"
-            tooltip="Enter times in HH:mm format (e.g. 09:00, 14:30)"
-          >
-            <Select
-              mode="tags"
-              placeholder="e.g. 09:00, 14:30, 18:00"
-              tokenSeparators={[',']}
-              disabled={isViewMode}
-            />
-          </Form.Item>
-        </>
-      )}
+        {scheduleEnabled && (
+          <>
+            <Form.Item name="schedule_frequency_hours" label="Frequenza (ore)">
+              <InputNumber
+                min={1}
+                max={720}
+                placeholder="es. 24"
+                style={{ width: '100%' }}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="schedule_specific_times"
+              label="Orari di Esecuzione"
+              tooltip="Inserisci orari in formato HH:mm (es. 09:00, 14:30)"
+              style={{ marginBottom: 0 }}
+            >
+              <Select
+                mode="tags"
+                placeholder="es. 09:00, 14:30, 18:00"
+                tokenSeparators={[',']}
+                disabled={isViewMode}
+              />
+            </Form.Item>
+          </>
+        )}
+      </Card>
 
       {/* ----- Action buttons ---------------------------------------------- */}
 
@@ -286,11 +324,11 @@ export default function PromptForm({
           <Divider />
           <Space>
             <Button type="primary" htmlType="submit" loading={loading}>
-              {mode === 'create' ? 'Create Prompt' : 'Save Changes'}
+              {mode === 'create' ? 'Crea Prompt' : 'Salva Modifiche'}
             </Button>
             {onCancel && (
               <Button onClick={onCancel} disabled={loading}>
-                Cancel
+                Annulla
               </Button>
             )}
           </Space>

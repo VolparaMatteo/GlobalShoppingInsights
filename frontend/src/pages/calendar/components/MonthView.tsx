@@ -1,13 +1,16 @@
 // ---------------------------------------------------------------------------
-// MonthView.tsx  --  Month grid calendar view
+// MonthView.tsx  --  Griglia mensile del calendario
 // ---------------------------------------------------------------------------
 import React, { useMemo } from 'react';
 import { Typography } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
+import 'dayjs/locale/it';
 
 import type { EditorialSlot } from '@/types';
 import SlotCard from './SlotCard';
 import DroppableSlot from './DroppableSlot';
+
+dayjs.locale('it');
 
 // ---------------------------------------------------------------------------
 // Props
@@ -15,7 +18,7 @@ import DroppableSlot from './DroppableSlot';
 
 interface MonthViewProps {
   slots: EditorialSlot[];
-  currentDate: string; // YYYY-MM-DD
+  currentDate: string;
   onSlotClick: (slot: EditorialSlot) => void;
 }
 
@@ -23,9 +26,8 @@ interface MonthViewProps {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKDAYS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
 
-/** Build a 6-row x 7-col matrix of Dayjs dates covering the month grid. */
 function buildMonthGrid(dateStr: string): Dayjs[][] {
   const d = dayjs(dateStr);
   const start = d.startOf('month').startOf('week');
@@ -41,7 +43,6 @@ function buildMonthGrid(dateStr: string): Dayjs[][] {
   return weeks;
 }
 
-/** Group slots by date string (YYYY-MM-DD). */
 function groupByDate(slots: EditorialSlot[]): Record<string, EditorialSlot[]> {
   const map: Record<string, EditorialSlot[]> = {};
   for (const s of slots) {
@@ -58,27 +59,31 @@ function groupByDate(slots: EditorialSlot[]): Record<string, EditorialSlot[]> {
 const gridStyle: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'repeat(7, 1fr)',
-  border: '1px solid #f0f0f0',
-  borderRadius: 6,
+  border: '1px solid #e8e8e8',
+  borderRadius: 12,
   overflow: 'hidden',
+  background: '#fff',
+  boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
 };
 
 const headerCellStyle: React.CSSProperties = {
-  padding: '8px 4px',
+  padding: '10px 4px',
   textAlign: 'center',
   fontWeight: 600,
+  fontSize: 13,
   background: '#fafafa',
-  borderBottom: '1px solid #f0f0f0',
+  borderBottom: '1px solid #e8e8e8',
+  color: '#595959',
 };
 
 const baseCellStyle: React.CSSProperties = {
-  minHeight: 100,
-  padding: 4,
+  minHeight: 110,
+  padding: 6,
   borderRight: '1px solid #f0f0f0',
   borderBottom: '1px solid #f0f0f0',
   display: 'flex',
   flexDirection: 'column',
-  gap: 2,
+  gap: 3,
 };
 
 // ---------------------------------------------------------------------------
@@ -94,14 +99,14 @@ export default function MonthView({ slots, currentDate, onSlotClick }: MonthView
 
   return (
     <div style={gridStyle}>
-      {/* Weekday header row */}
+      {/* Header giorni della settimana */}
       {WEEKDAYS.map((wd) => (
         <div key={wd} style={headerCellStyle}>
-          <Typography.Text strong>{wd}</Typography.Text>
+          {wd}
         </div>
       ))}
 
-      {/* Day cells */}
+      {/* Celle giorno */}
       {weeks.map((week) =>
         week.map((day) => {
           const dateKey = day.format('YYYY-MM-DD');
@@ -119,19 +124,32 @@ export default function MonthView({ slots, currentDate, onSlotClick }: MonthView
                     : isOutside
                       ? '#fafafa'
                       : '#fff',
-                  opacity: isOutside ? 0.5 : 1,
+                  opacity: isOutside ? 0.45 : 1,
                 }}
               >
-                <Typography.Text
-                  strong={isToday}
-                  style={{
-                    fontSize: 12,
-                    color: isToday ? '#1677ff' : undefined,
-                    marginBottom: 2,
-                  }}
-                >
-                  {day.date()}
-                </Typography.Text>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+                  <Typography.Text
+                    strong={isToday}
+                    style={{
+                      fontSize: 12,
+                      color: isToday ? '#1677ff' : isOutside ? '#bfbfbf' : '#595959',
+                      width: 22,
+                      height: 22,
+                      lineHeight: '22px',
+                      textAlign: 'center',
+                      borderRadius: '50%',
+                      background: isToday ? '#1677ff' : 'transparent',
+                      ...(isToday ? { color: '#fff' } : {}),
+                    }}
+                  >
+                    {day.date()}
+                  </Typography.Text>
+                  {daySlots.length > 0 && !isOutside && (
+                    <Typography.Text type="secondary" style={{ fontSize: 10 }}>
+                      {daySlots.length} slot
+                    </Typography.Text>
+                  )}
+                </div>
 
                 {daySlots.map((slot) => (
                   <SlotCard

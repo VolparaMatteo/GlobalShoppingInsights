@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// SlotCard.tsx  --  Draggable card representing a scheduled editorial slot
+// SlotCard.tsx  --  Card draggable per uno slot editoriale
 // ---------------------------------------------------------------------------
 import React from 'react';
 import { Tag, Typography, Tooltip } from 'antd';
@@ -8,6 +8,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import dayjs from 'dayjs';
 
+import { STATUS_MAP } from '@/config/constants';
 import type { EditorialSlot } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -16,33 +17,36 @@ import type { EditorialSlot } from '@/types';
 
 interface SlotCardProps {
   slot: EditorialSlot;
-  /** When true renders an expanded card (used in DayView). */
   detailed?: boolean;
-  /** When true the card is being rendered inside a DragOverlay. */
   overlay?: boolean;
   onClick?: () => void;
 }
 
 // ---------------------------------------------------------------------------
-// Status colour mapping
+// Status config
 // ---------------------------------------------------------------------------
 
-const STATUS_COLORS: Record<string, string> = {
-  scheduled: '#1677ff',   // blue
-  publishing: '#fa8c16',  // orange
-  published: '#52c41a',   // green
-  failed: '#ff4d4f',      // red
+const SLOT_STATUS_COLORS: Record<string, string> = {
+  scheduled: '#722ed1',
+  publishing: '#13c2c2',
+  published: '#389e0d',
+  failed: '#ff4d4f',
 };
 
-const STATUS_TAG_COLORS: Record<string, string> = {
-  scheduled: 'blue',
-  publishing: 'orange',
+const SLOT_TAG_COLORS: Record<string, string> = {
+  scheduled: 'purple',
+  publishing: 'cyan',
   published: 'green',
   failed: 'red',
 };
 
+function getStatusLabel(status: string): string {
+  const entry = STATUS_MAP[status as keyof typeof STATUS_MAP];
+  return entry?.label ?? status;
+}
+
 function getBorderColor(status: string): string {
-  return STATUS_COLORS[status] || '#d9d9d9';
+  return SLOT_STATUS_COLORS[status] || '#d9d9d9';
 }
 
 // ---------------------------------------------------------------------------
@@ -55,19 +59,20 @@ export default function SlotCard({
   overlay = false,
   onClick,
 }: SlotCardProps) {
+  const isLocked = slot.status === 'published' || slot.status === 'failed';
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: String(slot.id),
     data: { slot },
-    disabled: overlay,
+    disabled: overlay || isLocked,
   });
 
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.4 : 1,
-    cursor: overlay ? 'grabbing' : 'grab',
+    cursor: isLocked ? 'pointer' : overlay ? 'grabbing' : 'grab',
     borderLeft: `3px solid ${getBorderColor(slot.status)}`,
     background: '#fff',
-    borderRadius: 4,
+    borderRadius: 6,
     padding: detailed ? '8px 10px' : '4px 6px',
     boxShadow: overlay
       ? '0 4px 12px rgba(0,0,0,0.15)'
@@ -79,7 +84,7 @@ export default function SlotCard({
   };
 
   const title = slot.article_title || `Slot #${slot.id}`;
-  const time = dayjs(slot.scheduled_for).format('h:mm A');
+  const time = dayjs(slot.scheduled_for).format('HH:mm');
 
   return (
     <div
@@ -88,7 +93,6 @@ export default function SlotCard({
       {...listeners}
       {...attributes}
       onClick={(e) => {
-        // Prevent triggering click when finishing a drag
         if (!isDragging && onClick) {
           e.stopPropagation();
           onClick();
@@ -118,15 +122,15 @@ export default function SlotCard({
           flexWrap: 'wrap',
         }}
       >
-        <ClockCircleOutlined style={{ fontSize: 10, color: '#999' }} />
+        <ClockCircleOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
         <Typography.Text type="secondary" style={{ fontSize: 11 }}>
           {time}
         </Typography.Text>
         <Tag
-          color={STATUS_TAG_COLORS[slot.status] || 'default'}
+          color={SLOT_TAG_COLORS[slot.status] || 'default'}
           style={{ margin: 0, fontSize: 10, lineHeight: '16px', padding: '0 4px' }}
         >
-          {slot.status}
+          {getStatusLabel(slot.status)}
         </Tag>
       </div>
 

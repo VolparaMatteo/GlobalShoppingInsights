@@ -56,10 +56,12 @@ export async function updateArticle(
 export async function changeStatus(
   id: number,
   payload: StatusChangeRequest,
+  force = false,
 ): Promise<Article> {
   const { data } = await client.post<Article>(
     `/articles/${id}/status`,
     payload,
+    { params: force ? { force: true } : undefined },
   );
   return data;
 }
@@ -101,6 +103,42 @@ export async function batchAction(
   const { data } = await client.post<MessageResponse>(
     "/articles/batch",
     payload,
+  );
+  return data;
+}
+
+/** POST /articles/:id/translate */
+export interface TranslateResponse {
+  article_id: number;
+  source_lang: string;
+  target_lang: string;
+  translated_title: string | null;
+  translated_text: string | null;
+}
+
+export async function translateArticle(
+  id: number,
+  targetLang = "it",
+): Promise<TranslateResponse> {
+  const { data } = await client.post<TranslateResponse>(
+    `/articles/${id}/translate`,
+    null,
+    { params: { target_lang: targetLang } },
+  );
+  return data;
+}
+
+/** POST /articles/:id/upload-image */
+export async function uploadArticleImage(
+  id: number,
+  file: File,
+): Promise<Article> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const { data } = await client.post<Article>(
+    `/articles/${id}/upload-image`,
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } },
   );
   return data;
 }

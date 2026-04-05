@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(git -C \"C:\\\\Users\\\\spino\\\\Documents\\\\GitHub\\\\GlobalShoppingInsights\" log --oneline -20)",
-      "WebSearch"
-    ]
-  }
-}

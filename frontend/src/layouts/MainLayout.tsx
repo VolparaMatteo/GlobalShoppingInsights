@@ -18,9 +18,7 @@ export default function MainLayout() {
         <Content
           style={{
             margin: 24,
-            padding: 24,
-            background: '#fff',
-            borderRadius: 8,
+            padding: 0,
             overflow: 'auto',
           }}
         >

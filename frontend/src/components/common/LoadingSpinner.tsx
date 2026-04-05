@@ -6,7 +6,7 @@ interface LoadingSpinnerProps {
   size?: 'small' | 'default' | 'large';
 }
 
-export default function LoadingSpinner({ tip = 'Loading...', size = 'large' }: LoadingSpinnerProps) {
+export default function LoadingSpinner({ tip = 'Caricamento...', size = 'large' }: LoadingSpinnerProps) {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
       <Spin tip={tip} size={size} />

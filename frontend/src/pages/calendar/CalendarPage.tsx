@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// CalendarPage.tsx  --  Editorial calendar main page
+// CalendarPage.tsx  --  Calendario editoriale
 // ---------------------------------------------------------------------------
 import React, { useCallback, useMemo, useState } from 'react';
 import { Button, Segmented, Space, Typography } from 'antd';
@@ -18,12 +18,14 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import dayjs from 'dayjs';
+import 'dayjs/locale/it';
 
 import PageHeader from '@/components/common/PageHeader';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { useCalendarStore, type CalendarViewMode } from '@/stores/calendarStore';
 import { useCalendarSlots, useUpdateSlot } from '@/hooks/queries/useCalendarSlots';
-import type { EditorialSlot } from '@/types';
+import { useArticle } from '@/hooks/queries/useArticle';
+import type { Article, EditorialSlot } from '@/types';
 
 import MonthView from './components/MonthView';
 import WeekView from './components/WeekView';
@@ -31,18 +33,19 @@ import DayView from './components/DayView';
 import CalendarSidebar from './components/CalendarSidebar';
 import SlotCard from './components/SlotCard';
 import CollisionModal from './components/CollisionModal';
+import ScheduleModal from './components/ScheduleModal';
+import ArticlePreviewDrawer from '@/pages/inbox/components/ArticlePreviewDrawer';
+
+dayjs.locale('it');
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Compute the date range to query based on current view and date. */
 function getDateRange(viewMode: CalendarViewMode, dateStr: string) {
   const d = dayjs(dateStr);
   switch (viewMode) {
     case 'month': {
-      // Fetch from the start of the first displayed week to the end of the
-      // last displayed week so the month grid can show leading/trailing days.
       const from = d.startOf('month').startOf('week').format('YYYY-MM-DD');
       const to = d.endOf('month').endOf('week').format('YYYY-MM-DD');
       return { from, to };
@@ -60,7 +63,6 @@ function getDateRange(viewMode: CalendarViewMode, dateStr: string) {
   }
 }
 
-/** Navigate forward / backward depending on view mode. */
 function navigate(dateStr: string, viewMode: CalendarViewMode, direction: 1 | -1) {
   const d = dayjs(dateStr);
   switch (viewMode) {
@@ -73,16 +75,19 @@ function navigate(dateStr: string, viewMode: CalendarViewMode, direction: 1 | -1
   }
 }
 
-/** Format the header label. */
 function formatLabel(dateStr: string, viewMode: CalendarViewMode) {
   const d = dayjs(dateStr);
   switch (viewMode) {
     case 'month':
-      return d.format('MMMM YYYY');
-    case 'week':
-      return `${d.startOf('week').format('MMM D')} - ${d.endOf('week').format('MMM D, YYYY')}`;
+      // "Febbraio 2026" — capitalize first letter
+      return d.format('MMMM YYYY').replace(/^./, (c) => c.toUpperCase());
+    case 'week': {
+      const start = d.startOf('week');
+      const end = d.endOf('week');
+      return `${start.format('D MMM')} – ${end.format('D MMM YYYY')}`;
+    }
     case 'day':
-      return d.format('dddd, MMMM D, YYYY');
+      return d.format('dddd D MMMM YYYY').replace(/^./, (c) => c.toUpperCase());
   }
 }
 
@@ -98,12 +103,22 @@ export default function CalendarPage() {
   const setDragState = useCalendarStore((s) => s.setDragState);
 
   const [activeSlot, setActiveSlot] = useState<EditorialSlot | null>(null);
+  const [draggingArticle, setDraggingArticle] = useState<Article | null>(null);
   const [collisionOpen, setCollisionOpen] = useState(false);
   const [collisionData, setCollisionData] = useState<{
     existingSlots: EditorialSlot[];
     targetDate: string;
     slotId: number;
   } | null>(null);
+  const [scheduleModal, setScheduleModal] = useState<{
+    articleId: number;
+    articleTitle: string;
+    scheduledFor: string;
+  } | null>(null);
+
+  // --- Article preview drawer state ----------------------------------------
+  const [previewArticleId, setPreviewArticleId] = useState<number | null>(null);
+  const { data: previewArticle } = useArticle(previewArticleId ?? 0);
 
   // --- Data fetching -------------------------------------------------------
   const dateRange = useMemo(
@@ -121,16 +136,27 @@ export default function CalendarPage() {
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
-      const slot = (slots as EditorialSlot[]).find(
-        (s) => s.id === Number(event.active.id),
-      );
-      if (slot) {
-        setActiveSlot(slot);
-        setDragState({
-          slotId: slot.id,
-          originDate: slot.scheduled_for,
-          isDragging: true,
-        });
+      const idStr = String(event.active.id);
+      if (idStr.startsWith('article-')) {
+        // Dragging from the sidebar
+        const article = event.active.data.current?.article as Article | undefined;
+        if (article) {
+          setDraggingArticle(article);
+          setDragState({ slotId: null, originDate: null, isDragging: true });
+        }
+      } else {
+        // Dragging an existing slot (block published/failed)
+        const slot = (slots as EditorialSlot[]).find(
+          (s) => s.id === Number(idStr),
+        );
+        if (slot && slot.status !== 'published' && slot.status !== 'failed') {
+          setActiveSlot(slot);
+          setDragState({
+            slotId: slot.id,
+            originDate: slot.scheduled_for,
+            isDragging: true,
+          });
+        }
       }
     },
     [slots, setDragState],
@@ -139,22 +165,37 @@ export default function CalendarPage() {
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       setActiveSlot(null);
+      setDraggingArticle(null);
       setDragState({ slotId: null, originDate: null, targetDate: null, isDragging: false });
 
       const { active, over } = event;
       if (!over) return;
 
-      const slotId = Number(active.id);
-      const targetDate = String(over.id); // droppable id is the date/datetime string
+      const idStr = String(active.id);
+      const targetDate = String(over.id);
 
-      // Optimistic: fire the mutation
-      updateSlot.mutate({ id: slotId, data: { scheduled_for: targetDate } });
+      if (idStr.startsWith('article-')) {
+        // Article dropped from sidebar → open ScheduleModal
+        const article = active.data.current?.article as Article | undefined;
+        if (article) {
+          setScheduleModal({
+            articleId: article.id,
+            articleTitle: article.title,
+            scheduledFor: targetDate,
+          });
+        }
+      } else {
+        // Existing slot moved
+        const slotId = Number(idStr);
+        updateSlot.mutate({ id: slotId, data: { scheduled_for: targetDate } });
+      }
     },
     [setDragState, updateSlot],
   );
 
   const handleDragCancel = useCallback(() => {
     setActiveSlot(null);
+    setDraggingArticle(null);
     setDragState({ slotId: null, originDate: null, targetDate: null, isDragging: false });
   }, [setDragState]);
 
@@ -164,30 +205,32 @@ export default function CalendarPage() {
   const goToday = () => setCurrentDate(dayjs().format('YYYY-MM-DD'));
 
   // --- Slot click handler --------------------------------------------------
-  const handleSlotClick = useCallback((_slot: EditorialSlot) => {
-    // Placeholder: open a detail / edit drawer in the future
+  const handleSlotClick = useCallback((slot: EditorialSlot) => {
+    if (slot.article_id) {
+      setPreviewArticleId(slot.article_id);
+    }
   }, []);
 
   // --- View options --------------------------------------------------------
   const viewOptions: { label: string; value: CalendarViewMode }[] = [
-    { label: 'Month', value: 'month' },
-    { label: 'Week', value: 'week' },
-    { label: 'Day', value: 'day' },
+    { label: 'Mese', value: 'month' },
+    { label: 'Settimana', value: 'week' },
+    { label: 'Giorno', value: 'day' },
   ];
 
   // --- Render --------------------------------------------------------------
   return (
-    <div>
+    <div style={{ maxWidth: 1400, margin: '0 auto' }}>
       <PageHeader
-        title="Editorial Calendar"
+        title="Calendario Editoriale"
         extra={
-          <Space size="middle">
+          <Space size="middle" wrap>
             <Space>
               <Button icon={<LeftOutlined />} onClick={goPrev} />
-              <Button onClick={goToday}>Today</Button>
+              <Button onClick={goToday}>Oggi</Button>
               <Button icon={<RightOutlined />} onClick={goNext} />
             </Space>
-            <Typography.Text strong style={{ minWidth: 180, textAlign: 'center' }}>
+            <Typography.Text strong style={{ minWidth: 200, textAlign: 'center', fontSize: 15 }}>
               <CalendarOutlined style={{ marginRight: 8 }} />
               {formatLabel(currentDate, viewMode)}
             </Typography.Text>
@@ -207,13 +250,11 @@ export default function CalendarPage() {
         onDragCancel={handleDragCancel}
       >
         <div style={{ display: 'flex', gap: 16 }}>
-          {/* Sidebar */}
           <CalendarSidebar />
 
-          {/* Main calendar area */}
           <div style={{ flex: 1, minWidth: 0 }}>
             {isLoading ? (
-              <LoadingSpinner tip="Loading calendar..." />
+              <LoadingSpinner tip="Caricamento calendario..." />
             ) : (
               <>
                 {viewMode === 'month' && (
@@ -242,13 +283,28 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* Drag overlay (ghost while dragging) */}
         <DragOverlay>
-          {activeSlot ? <SlotCard slot={activeSlot} overlay /> : null}
+          {activeSlot ? (
+            <SlotCard slot={activeSlot} overlay />
+          ) : draggingArticle ? (
+            <div
+              style={{
+                padding: '8px 12px',
+                background: '#fff',
+                border: '1px solid #d9d9d9',
+                borderRadius: 8,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                maxWidth: 240,
+                fontSize: 13,
+                fontWeight: 500,
+              }}
+            >
+              {draggingArticle.title}
+            </div>
+          ) : null}
         </DragOverlay>
       </DndContext>
 
-      {/* Collision warning modal */}
       <CollisionModal
         open={collisionOpen}
         onOk={() => {
@@ -266,6 +322,24 @@ export default function CalendarPage() {
           setCollisionData(null);
         }}
         collisionData={collisionData}
+      />
+
+      {scheduleModal && (
+        <ScheduleModal
+          open
+          onClose={() => setScheduleModal(null)}
+          articleId={scheduleModal.articleId}
+          articleTitle={scheduleModal.articleTitle}
+          defaultDate={dayjs(scheduleModal.scheduledFor)}
+          defaultTime={dayjs(scheduleModal.scheduledFor)}
+        />
+      )}
+
+      <ArticlePreviewDrawer
+        article={previewArticle ?? null}
+        open={previewArticleId !== null}
+        onClose={() => setPreviewArticleId(null)}
+        readOnly
       />
     </div>
   );

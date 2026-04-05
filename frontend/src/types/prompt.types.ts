@@ -18,7 +18,10 @@ export interface Prompt {
   schedule_frequency_hours: number | null;
   schedule_specific_times: string[] | null;
   schedule_next_run_at: string | null; // ISO-8601 datetime
+  last_run_at: string | null; // ISO-8601 datetime
   is_active: boolean;
+  folder_id: number | null;
+  folder_name: string | null;
   created_by: number | null;
   created_at: string; // ISO-8601 datetime
   updated_at: string; // ISO-8601 datetime
@@ -37,6 +40,7 @@ export interface PromptCreate {
   schedule_enabled?: boolean; // default false
   schedule_frequency_hours?: number | null;
   schedule_specific_times?: string[] | null;
+  folder_id?: number | null;
 }
 
 /** PATCH /prompts/:id request body. All fields optional. */
@@ -53,4 +57,5 @@ export interface PromptUpdate {
   schedule_frequency_hours?: number | null;
   schedule_specific_times?: string[] | null;
   is_active?: boolean | null;
+  folder_id?: number | null;
 }

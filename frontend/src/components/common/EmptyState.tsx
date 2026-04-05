@@ -8,7 +8,7 @@ interface EmptyStateProps {
 }
 
 export default function EmptyState({
-  description = 'No data available',
+  description = 'Nessun dato disponibile',
   image,
   children,
 }: EmptyStateProps) {

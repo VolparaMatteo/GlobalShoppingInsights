@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Space, message, Tree } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, Space, message, Tree, Tag as AntTag } from 'antd';
 import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   ApartmentOutlined,
   UnorderedListOutlined,
+  CheckCircleOutlined,
+  MinusCircleOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/config/queryKeys';
@@ -20,8 +22,16 @@ import { formatDateTime } from '@/utils/date';
 import type { Category, CategoryCreate, CategoryUpdate } from '@/types';
 import type { ColumnsType } from 'antd/es/table';
 import type { DataNode } from 'antd/es/tree';
+import axios from 'axios';
 
 type ViewMode = 'table' | 'tree';
+
+function extractErrorDetail(err: unknown): string {
+  if (axios.isAxiosError(err) && err.response?.data?.detail) {
+    return err.response.data.detail;
+  }
+  return 'Errore sconosciuto';
+}
 
 export default function CategoriesList() {
   const queryClient = useQueryClient();
@@ -30,7 +40,7 @@ export default function CategoriesList() {
   const [form] = Form.useForm<CategoryCreate>();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [viewMode, setViewMode] = useState<ViewMode>('tree');
 
   // ---- Queries & Mutations ------------------------------------------------
 
@@ -44,12 +54,12 @@ export default function CategoriesList() {
   const createMutation = useMutation({
     mutationFn: (payload: CategoryCreate) => createCategory(payload),
     onSuccess: () => {
-      message.success('Category created successfully');
+      message.success('Categoria creata e sincronizzata con WordPress');
       queryClient.invalidateQueries({ queryKey: queryKeys.taxonomy.categories() });
       closeModal();
     },
-    onError: () => {
-      message.error('Failed to create category');
+    onError: (err) => {
+      message.error(`Errore nella creazione della categoria: ${extractErrorDetail(err)}`);
     },
   });
 
@@ -57,23 +67,23 @@ export default function CategoriesList() {
     mutationFn: ({ id, payload }: { id: number; payload: CategoryUpdate }) =>
       updateCategory(id, payload),
     onSuccess: () => {
-      message.success('Category updated successfully');
+      message.success('Categoria aggiornata e sincronizzata con WordPress');
       queryClient.invalidateQueries({ queryKey: queryKeys.taxonomy.categories() });
       closeModal();
     },
-    onError: () => {
-      message.error('Failed to update category');
+    onError: (err) => {
+      message.error(`Errore nell'aggiornamento della categoria: ${extractErrorDetail(err)}`);
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteCategory(id),
     onSuccess: () => {
-      message.success('Category deleted successfully');
+      message.success('Categoria eliminata da WordPress e dal pannello');
       queryClient.invalidateQueries({ queryKey: queryKeys.taxonomy.categories() });
     },
-    onError: () => {
-      message.error('Failed to delete category');
+    onError: (err) => {
+      message.error(`Errore nell'eliminazione della categoria: ${extractErrorDetail(err)}`);
     },
   });
 
@@ -148,10 +158,13 @@ export default function CategoriesList() {
   }
 
   function handleDelete(category: Category) {
+    const wpNote = category.wp_id
+      ? ' Verrà eliminata anche da WordPress.'
+      : '';
     showConfirmModal({
-      title: 'Delete Category',
-      content: `Are you sure you want to delete the category "${category.name}"? Child categories may become orphaned.`,
-      okText: 'Delete',
+      title: 'Elimina Categoria',
+      content: `Sei sicuro di voler eliminare la categoria "${category.name}"?${wpNote} Le sottocategorie potrebbero restare orfane.`,
+      okText: 'Elimina',
       danger: true,
       onOk: () => deleteMutation.mutateAsync(category.id),
     });
@@ -169,7 +182,7 @@ export default function CategoriesList() {
 
   const columns: ColumnsType<Category> = [
     {
-      title: 'Name',
+      title: 'Nome',
       dataIndex: 'name',
       key: 'name',
       sorter: (a, b) => a.name.localeCompare(b.name),
@@ -180,19 +193,29 @@ export default function CategoriesList() {
       key: 'slug',
     },
     {
-      title: 'Parent',
+      title: 'Genitore',
       dataIndex: 'parent_id',
       key: 'parent_id',
       render: (val: number | null) => getParentName(val),
     },
     {
-      title: 'WP ID',
+      title: 'WordPress',
       dataIndex: 'wp_id',
       key: 'wp_id',
-      render: (val: number | null) => val ?? '-',
+      width: 130,
+      render: (val: number | null) =>
+        val ? (
+          <AntTag icon={<CheckCircleOutlined />} color="success">
+            ID {val}
+          </AntTag>
+        ) : (
+          <AntTag icon={<MinusCircleOutlined />} color="default">
+            Non sincr.
+          </AntTag>
+        ),
     },
     {
-      title: 'Actions',
+      title: 'Azioni',
       key: 'actions',
       width: 120,
       render: (_: unknown, record: Category) => (
@@ -226,18 +249,18 @@ export default function CategoriesList() {
             type={viewMode === 'table' ? 'primary' : 'default'}
             onClick={() => setViewMode('table')}
           >
-            Table
+            Tabella
           </Button>
           <Button
             icon={<ApartmentOutlined />}
             type={viewMode === 'tree' ? 'primary' : 'default'}
             onClick={() => setViewMode('tree')}
           >
-            Tree
+            Albero
           </Button>
         </Space>
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
-          Add Category
+          Aggiungi Categoria
         </Button>
       </div>
 
@@ -268,27 +291,29 @@ export default function CategoriesList() {
       )}
 
       <Modal
-        title={editingCategory ? 'Edit Category' : 'Add Category'}
+        title={editingCategory ? 'Modifica Categoria' : 'Nuova Categoria'}
         open={modalOpen}
         onOk={handleSubmit}
         onCancel={closeModal}
+        okText={editingCategory ? 'Salva' : 'Crea'}
+        cancelText="Annulla"
         confirmLoading={createMutation.isPending || updateMutation.isPending}
         destroyOnClose
       >
         <Form form={form} layout="vertical" autoComplete="off">
           <Form.Item
             name="name"
-            label="Name"
-            rules={[{ required: true, message: 'Please enter a category name' }]}
+            label="Nome"
+            rules={[{ required: true, message: 'Inserisci il nome della categoria' }]}
           >
-            <Input placeholder="Category name" />
+            <Input placeholder="Nome della categoria" />
           </Form.Item>
           <Form.Item name="slug" label="Slug">
-            <Input placeholder="category-slug (auto-generated if empty)" />
+            <Input placeholder="category-slug (generato automaticamente se vuoto)" />
           </Form.Item>
-          <Form.Item name="parent_id" label="Parent Category">
+          <Form.Item name="parent_id" label="Categoria Genitore">
             <Select
-              placeholder="Select parent category (optional)"
+              placeholder="Seleziona categoria genitore (opzionale)"
               allowClear
               options={parentOptions}
               showSearch

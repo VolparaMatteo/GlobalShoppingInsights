@@ -7,6 +7,14 @@ build/
 *.egg
 .env
 *.db
+*.db-shm
+*.db-wal
+
+# Uploads
+backend/uploads/
+
+# Claude Code
+.claude/settings.local.json
 
 # Virtual environment
 venv/

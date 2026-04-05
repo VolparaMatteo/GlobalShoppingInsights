@@ -27,24 +27,24 @@ export default function RunSearchButton({ promptId }: RunSearchButtonProps) {
     mutationFn: () => runPromptSearch(promptId),
     onSuccess: (searchRun) => {
       message.success(
-        `Search started successfully (Run #${searchRun.id})`,
+        `Ricerca avviata con successo (Esecuzione #${searchRun.id})`,
       );
       // Refresh search history data
       queryClient.invalidateQueries({ queryKey: ['searchRuns', promptId] });
     },
     onError: () => {
-      message.error('Failed to start the search. Please try again.');
+      message.error('Impossibile avviare la ricerca. Riprova.');
     },
   });
 
   const handleClick = useCallback(() => {
     Modal.confirm({
-      title: 'Run Search',
+      title: 'Avvia Ricerca',
       content:
-        'This will execute the search prompt now and may take a few minutes. Do you want to proceed?',
-      okText: 'Run Search',
+        'Verrà eseguita la ricerca del prompt adesso e potrebbe richiedere alcuni minuti. Vuoi procedere?',
+      okText: 'Avvia Ricerca',
       okType: 'primary',
-      cancelText: 'Cancel',
+      cancelText: 'Annulla',
       onOk: () => mutation.mutateAsync(),
     });
   }, [mutation]);
@@ -56,7 +56,7 @@ export default function RunSearchButton({ promptId }: RunSearchButtonProps) {
       onClick={handleClick}
       loading={mutation.isPending}
     >
-      {mutation.isPending ? 'Running...' : 'Run Search'}
+      {mutation.isPending ? 'In esecuzione...' : 'Avvia Ricerca'}
     </Button>
   );
 }

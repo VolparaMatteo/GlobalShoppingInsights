@@ -1,13 +1,16 @@
 // ---------------------------------------------------------------------------
-// WeekView.tsx  --  7-column week view with hour axis
+// WeekView.tsx  --  Vista settimanale con griglia oraria
 // ---------------------------------------------------------------------------
 import React, { useMemo } from 'react';
 import { Typography } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
+import 'dayjs/locale/it';
 
 import type { EditorialSlot } from '@/types';
 import SlotCard from './SlotCard';
 import DroppableSlot from './DroppableSlot';
+
+dayjs.locale('it');
 
 // ---------------------------------------------------------------------------
 // Props
@@ -15,7 +18,7 @@ import DroppableSlot from './DroppableSlot';
 
 interface WeekViewProps {
   slots: EditorialSlot[];
-  currentDate: string; // YYYY-MM-DD
+  currentDate: string;
   onSlotClick: (slot: EditorialSlot) => void;
 }
 
@@ -31,13 +34,11 @@ const HOURS = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Build the 7 days of the week containing `dateStr`. */
 function buildWeekDays(dateStr: string): Dayjs[] {
   const start = dayjs(dateStr).startOf('week');
   return Array.from({ length: 7 }, (_, i) => start.add(i, 'day'));
 }
 
-/** Group slots by a "date|hour" key. */
 function groupByDateHour(slots: EditorialSlot[]): Record<string, EditorialSlot[]> {
   const map: Record<string, EditorialSlot[]> = {};
   for (const s of slots) {
@@ -54,12 +55,13 @@ function groupByDateHour(slots: EditorialSlot[]): Record<string, EditorialSlot[]
 
 const containerStyle: React.CSSProperties = {
   display: 'grid',
-  // 1 narrow column for hour labels + 7 day columns
   gridTemplateColumns: '60px repeat(7, 1fr)',
-  border: '1px solid #f0f0f0',
-  borderRadius: 6,
+  border: '1px solid #e8e8e8',
+  borderRadius: 12,
   overflow: 'auto',
   maxHeight: 'calc(100vh - 220px)',
+  background: '#fff',
+  boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
 };
 
 const dayHeaderStyle: React.CSSProperties = {
@@ -67,17 +69,19 @@ const dayHeaderStyle: React.CSSProperties = {
   top: 0,
   zIndex: 2,
   background: '#fafafa',
-  padding: '8px 4px',
+  padding: '10px 4px',
   textAlign: 'center',
   fontWeight: 600,
-  borderBottom: '1px solid #f0f0f0',
+  fontSize: 13,
+  borderBottom: '1px solid #e8e8e8',
   borderRight: '1px solid #f0f0f0',
+  color: '#595959',
 };
 
 const hourLabelStyle: React.CSSProperties = {
   padding: '4px 8px',
   fontSize: 11,
-  color: '#999',
+  color: '#8c8c8c',
   textAlign: 'right',
   borderRight: '1px solid #f0f0f0',
   borderBottom: '1px solid #f0f0f0',
@@ -86,7 +90,7 @@ const hourLabelStyle: React.CSSProperties = {
 
 const cellStyle: React.CSSProperties = {
   minHeight: 60,
-  padding: 2,
+  padding: 3,
   borderRight: '1px solid #f0f0f0',
   borderBottom: '1px solid #f0f0f0',
   display: 'flex',
@@ -105,10 +109,10 @@ export default function WeekView({ slots, currentDate, onSlotClick }: WeekViewPr
 
   return (
     <div style={containerStyle}>
-      {/* Top-left corner (empty) */}
+      {/* Angolo in alto a sinistra (vuoto) */}
       <div style={{ ...dayHeaderStyle, background: '#fafafa' }} />
 
-      {/* Day column headers */}
+      {/* Header colonne giorno */}
       {days.map((day) => {
         const dateKey = day.format('YYYY-MM-DD');
         const isToday = dateKey === today;
@@ -118,24 +122,27 @@ export default function WeekView({ slots, currentDate, onSlotClick }: WeekViewPr
             style={{
               ...dayHeaderStyle,
               background: isToday ? '#e6f4ff' : '#fafafa',
+              color: isToday ? '#1677ff' : '#595959',
             }}
           >
-            <Typography.Text strong={isToday}>
-              {day.format('ddd M/D')}
+            <div>{day.format('ddd').replace(/^./, (c) => c.toUpperCase())}</div>
+            <Typography.Text
+              strong={isToday}
+              style={{ fontSize: 12, color: isToday ? '#1677ff' : '#8c8c8c' }}
+            >
+              {day.format('DD/MM')}
             </Typography.Text>
           </div>
         );
       })}
 
-      {/* Hour rows */}
+      {/* Righe orarie */}
       {HOURS.map((hour) => (
         <React.Fragment key={hour}>
-          {/* Hour label */}
           <div style={hourLabelStyle}>
-            {dayjs().hour(hour).minute(0).format('h:mm A')}
+            {String(hour).padStart(2, '0')}:00
           </div>
 
-          {/* Day cells within this hour */}
           {days.map((day) => {
             const dateKey = day.format('YYYY-MM-DD');
             const groupKey = `${dateKey}|${hour}`;

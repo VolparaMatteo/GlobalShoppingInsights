@@ -1,8 +1,10 @@
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/it';
 import { Tooltip } from 'antd';
 
 dayjs.extend(relativeTime);
+dayjs.locale('it');
 
 interface RelativeTimeProps {
   date: string | Date;

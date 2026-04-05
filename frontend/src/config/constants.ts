@@ -4,15 +4,15 @@
 
 /** Possible article workflow statuses with associated display metadata. */
 export const STATUS_MAP = {
-  imported: { label: 'Imported', color: '#8c8c8c', bgColor: '#f5f5f5' },
-  screened: { label: 'Screened', color: '#1890ff', bgColor: '#e6f7ff' },
-  in_review: { label: 'In Review', color: '#faad14', bgColor: '#fffbe6' },
-  approved: { label: 'Approved', color: '#52c41a', bgColor: '#f6ffed' },
-  scheduled: { label: 'Scheduled', color: '#722ed1', bgColor: '#f9f0ff' },
-  publishing: { label: 'Publishing', color: '#13c2c2', bgColor: '#e6fffb' },
-  published: { label: 'Published', color: '#389e0d', bgColor: '#f6ffed' },
-  publish_failed: { label: 'Publish Failed', color: '#ff4d4f', bgColor: '#fff2f0' },
-  rejected: { label: 'Rejected', color: '#cf1322', bgColor: '#fff1f0' },
+  imported: { label: 'Importato', color: '#8c8c8c', bgColor: '#f5f5f5' },
+  screened: { label: 'Vagliato', color: '#1890ff', bgColor: '#e6f7ff' },
+  in_review: { label: 'In Revisione', color: '#faad14', bgColor: '#fffbe6' },
+  approved: { label: 'Approvato', color: '#52c41a', bgColor: '#f6ffed' },
+  scheduled: { label: 'Pianificato', color: '#722ed1', bgColor: '#f9f0ff' },
+  publishing: { label: 'In Pubblicazione', color: '#13c2c2', bgColor: '#e6fffb' },
+  published: { label: 'Pubblicato', color: '#389e0d', bgColor: '#f6ffed' },
+  publish_failed: { label: 'Pubblicazione Fallita', color: '#ff4d4f', bgColor: '#fff2f0' },
+  rejected: { label: 'Rifiutato', color: '#cf1322', bgColor: '#fff1f0' },
 } as const;
 
 export type ArticleStatus = keyof typeof STATUS_MAP;
@@ -46,11 +46,11 @@ export type Role = (typeof ROLES)[number];
 
 /** Human-readable labels for each role. */
 export const ROLE_LABELS: Record<Role, string> = {
-  admin: 'Admin',
-  editor: 'Editor',
-  reviewer: 'Reviewer',
-  contributor: 'Contributor',
-  read_only: 'Read Only',
+  admin: 'Amministratore',
+  editor: 'Editore',
+  reviewer: 'Revisore',
+  contributor: 'Collaboratore',
+  read_only: 'Sola Lettura',
 };
 
 // ---------------------------------------------------------------------------
@@ -74,11 +74,12 @@ export interface TimeDepthOption {
 
 /** Temporal depth options for prompt-based discovery searches. */
 export const TIME_DEPTH_OPTIONS: TimeDepthOption[] = [
-  { value: '24h', label: 'Last 24 hours' },
-  { value: '7d', label: 'Last 7 days' },
-  { value: '30d', label: 'Last 30 days' },
-  { value: '90d', label: 'Last 90 days' },
-  { value: 'all', label: 'All time' },
+  { value: '24h', label: 'Ultime 24 ore' },
+  { value: '7d', label: 'Ultimi 7 giorni' },
+  { value: '30d', label: 'Ultimi 30 giorni' },
+  { value: '90d', label: 'Ultimi 90 giorni' },
+  { value: '365d', label: 'Ultimo anno' },
+  { value: 'all', label: 'Tutto il periodo' },
 ];
 
 // ---------------------------------------------------------------------------

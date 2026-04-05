@@ -1,8 +1,19 @@
 // ---------------------------------------------------------------------------
 // CommentsThread.tsx  --  Article comments list with add-comment form
 // ---------------------------------------------------------------------------
-import React, { useState } from 'react';
-import { Card, List, Typography, Input, Button, Space, Avatar, Empty, Spin, message } from 'antd';
+import { useState } from 'react';
+import {
+  Card,
+  List,
+  Typography,
+  Input,
+  Button,
+  Space,
+  Avatar,
+  Empty,
+  Spin,
+  message,
+} from 'antd';
 import { CommentOutlined, UserOutlined, SendOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getComments, addComment } from '@/services/api/comments.api';
@@ -25,13 +36,11 @@ export default function CommentsThread({ articleId }: CommentsThreadProps) {
   const addMutation = useMutation({
     mutationFn: (body: string) => addComment(articleId, { body }),
     onSuccess: () => {
-      message.success('Comment added.');
+      message.success('Commento aggiunto.');
       setNewComment('');
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.comments(articleId) });
     },
-    onError: () => {
-      message.error('Failed to add comment.');
-    },
+    onError: () => message.error('Impossibile aggiungere il commento.'),
   });
 
   const handleSubmit = () => {
@@ -45,7 +54,7 @@ export default function CommentsThread({ articleId }: CommentsThreadProps) {
       title={
         <Space>
           <CommentOutlined />
-          Comments
+          Commenti
           {comments && comments.length > 0 && (
             <Typography.Text type="secondary">({comments.length})</Typography.Text>
           )}
@@ -60,7 +69,7 @@ export default function CommentsThread({ articleId }: CommentsThreadProps) {
       ) : !comments || comments.length === 0 ? (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="No comments yet"
+          description="Nessun commento"
           style={{ marginBottom: 24 }}
         />
       ) : (
@@ -75,7 +84,7 @@ export default function CommentsThread({ articleId }: CommentsThreadProps) {
                 title={
                   <Space>
                     <Typography.Text strong>
-                      {comment.user_name ?? `User #${comment.user_id}`}
+                      {comment.user_name ?? `Utente #${comment.user_id}`}
                     </Typography.Text>
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                       <RelativeTime date={comment.created_at} />
@@ -98,12 +107,10 @@ export default function CommentsThread({ articleId }: CommentsThreadProps) {
         <Input.TextArea
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
-          placeholder="Add a comment..."
+          placeholder="Scrivi un commento..."
           rows={3}
           onPressEnter={(e) => {
-            if (e.ctrlKey || e.metaKey) {
-              handleSubmit();
-            }
+            if (e.ctrlKey || e.metaKey) handleSubmit();
           }}
         />
         <div style={{ marginTop: 8, textAlign: 'right' }}>
@@ -114,7 +121,7 @@ export default function CommentsThread({ articleId }: CommentsThreadProps) {
             loading={addMutation.isPending}
             disabled={!newComment.trim()}
           >
-            Submit
+            Invia
           </Button>
         </div>
       </div>

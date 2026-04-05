@@ -26,6 +26,14 @@ class BatchActionRequest(BaseModel):
     new_status: Optional[str] = None
 
 
+class PromptSummary(BaseModel):
+    id: int
+    title: str
+    keywords: List[str] = []
+
+    model_config = {"from_attributes": True}
+
+
 class ArticleResponse(BaseModel):
     id: int
     canonical_url: str
@@ -45,11 +53,13 @@ class ArticleResponse(BaseModel):
     ai_score_explanation: Optional[List[str]] = None
     ai_suggested_tags: Optional[List[str]] = None
     ai_suggested_category: Optional[str] = None
+    ai_relevance_comment: Optional[str] = None
     duplicate_of_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
     tags: List[Any] = []
     categories: List[Any] = []
+    prompts: List[PromptSummary] = []
 
     model_config = {"from_attributes": True}
 

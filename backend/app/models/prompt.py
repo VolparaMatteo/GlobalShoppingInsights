@@ -7,6 +7,7 @@ class Prompt(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(255), nullable=False)
+    folder_id = Column(Integer, ForeignKey("prompt_folders.id", ondelete="SET NULL"), nullable=True)
     description = Column(Text, nullable=True)
     keywords = Column(JSON, nullable=False)
     excluded_keywords = Column(JSON, default=list)

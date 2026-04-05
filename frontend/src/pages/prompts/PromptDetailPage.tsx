@@ -6,17 +6,19 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Button,
+  Card,
   message,
   Modal,
   Space,
-  Spin,
   Tabs,
+  Tag,
   Typography,
 } from 'antd';
 import {
   ArrowLeftOutlined,
   DeleteOutlined,
   EditOutlined,
+  FolderOutlined,
 } from '@ant-design/icons';
 
 import {
@@ -28,6 +30,7 @@ import {
 import { getSearchRuns } from '@/services/api/search.api';
 import type { Prompt, PromptCreate, PromptUpdate } from '@/types';
 
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import PromptForm from '@/pages/prompts/components/PromptForm';
 import PromptSearchHistory from '@/pages/prompts/components/PromptSearchHistory';
 import RunSearchButton from '@/pages/prompts/components/RunSearchButton';
@@ -75,37 +78,37 @@ export default function PromptDetailPage() {
   const createMutation = useMutation({
     mutationFn: (payload: PromptCreate) => createPrompt(payload),
     onSuccess: (created) => {
-      message.success('Prompt created successfully');
+      message.success('Prompt creato con successo');
       queryClient.invalidateQueries({ queryKey: ['prompts'] });
       navigate(`/prompts/${created.id}`);
     },
     onError: () => {
-      message.error('Failed to create prompt');
+      message.error('Impossibile creare il prompt');
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: (payload: PromptUpdate) => updatePrompt(promptId, payload),
     onSuccess: () => {
-      message.success('Prompt updated successfully');
+      message.success('Prompt aggiornato con successo');
       queryClient.invalidateQueries({ queryKey: ['prompt', promptId] });
       queryClient.invalidateQueries({ queryKey: ['prompts'] });
       setMode('view');
     },
     onError: () => {
-      message.error('Failed to update prompt');
+      message.error('Impossibile aggiornare il prompt');
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: () => deletePrompt(promptId),
     onSuccess: () => {
-      message.success('Prompt deleted');
+      message.success('Prompt eliminato con successo');
       queryClient.invalidateQueries({ queryKey: ['prompts'] });
       navigate('/prompts');
     },
     onError: () => {
-      message.error('Failed to delete prompt');
+      message.error('Impossibile eliminare il prompt');
     },
   });
 
@@ -127,10 +130,11 @@ export default function PromptDetailPage() {
 
   const handleDelete = useCallback(() => {
     Modal.confirm({
-      title: 'Delete Prompt',
-      content: `Are you sure you want to delete "${prompt?.title}"? This action cannot be undone.`,
-      okText: 'Delete',
+      title: 'Elimina Prompt',
+      content: `Sei sicuro di voler eliminare "${prompt?.title}"? Questa azione non può essere annullata.`,
+      okText: 'Elimina',
       okType: 'danger',
+      cancelText: 'Annulla',
       onOk: () => deleteMutation.mutateAsync(),
     });
   }, [prompt?.title, deleteMutation]);
@@ -138,17 +142,15 @@ export default function PromptDetailPage() {
   // ---- Loading state ------------------------------------------------------
 
   if (!isNew && promptLoading) {
-    return (
-      <Spin size="large" style={{ display: 'block', margin: '20% auto' }} />
-    );
+    return <LoadingSpinner />;
   }
 
   if (!isNew && !prompt) {
     return (
       <div style={{ textAlign: 'center', marginTop: 64 }}>
-        <Title level={4}>Prompt not found</Title>
+        <Title level={4}>Prompt non trovato</Title>
         <Button type="link" onClick={() => navigate('/prompts')}>
-          Back to prompts list
+          Torna alla lista dei prompt
         </Button>
       </div>
     );
@@ -159,7 +161,7 @@ export default function PromptDetailPage() {
   const tabItems = [
     {
       key: 'details',
-      label: 'Details',
+      label: 'Dettagli',
       children: (
         <PromptForm
           initialValues={isNew ? undefined : prompt}
@@ -174,7 +176,7 @@ export default function PromptDetailPage() {
       ? [
           {
             key: 'history',
-            label: 'Search History',
+            label: 'Cronologia Ricerche',
             children: (
               <PromptSearchHistory
                 promptId={promptId}
@@ -190,7 +192,7 @@ export default function PromptDetailPage() {
   // ---- Render -------------------------------------------------------------
 
   return (
-    <div>
+    <div style={{ maxWidth: 1400, margin: '0 auto' }}>
       {/* Page header */}
       <div
         style={{
@@ -209,15 +211,18 @@ export default function PromptDetailPage() {
             onClick={() => navigate('/prompts')}
           />
           <Title level={4} style={{ margin: 0 }}>
-            {isNew ? 'New Prompt' : prompt!.title}
+            {isNew ? 'Nuovo Prompt' : prompt!.title}
           </Title>
+          {!isNew && prompt?.folder_name && (
+            <Tag icon={<FolderOutlined />}>{prompt.folder_name}</Tag>
+          )}
         </Space>
 
         {!isNew && (
           <Space>
             {mode === 'view' && (
               <Button icon={<EditOutlined />} onClick={handleEdit}>
-                Edit
+                Modifica
               </Button>
             )}
             <RunSearchButton promptId={promptId} />
@@ -227,18 +232,20 @@ export default function PromptDetailPage() {
               onClick={handleDelete}
               loading={deleteMutation.isPending}
             >
-              Delete
+              Elimina
             </Button>
           </Space>
         )}
       </div>
 
       {/* Tabs */}
-      <Tabs
-        defaultActiveKey="details"
-        items={tabItems}
-        destroyInactiveTabPane={false}
-      />
+      <Card>
+        <Tabs
+          defaultActiveKey="details"
+          items={tabItems}
+          destroyInactiveTabPane={false}
+        />
+      </Card>
     </div>
   );
 }

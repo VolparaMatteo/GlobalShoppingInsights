@@ -18,66 +18,76 @@ export interface GetSlotsParams {
   status?: string;
 }
 
-/** GET /calendar/slots */
+/** GET /slots */
 export async function getSlots(
   params?: GetSlotsParams,
 ): Promise<EditorialSlot[]> {
-  const { data } = await client.get<EditorialSlot[]>("/calendar/slots", {
-    params,
+  // Backend expects 'start'/'end', frontend uses 'from'/'to'
+  const apiParams: Record<string, unknown> = { ...params };
+  if (apiParams.from) {
+    apiParams.start = apiParams.from;
+    delete apiParams.from;
+  }
+  if (apiParams.to) {
+    apiParams.end = apiParams.to;
+    delete apiParams.to;
+  }
+  const { data } = await client.get<EditorialSlot[]>("/slots", {
+    params: apiParams,
   });
   return data;
 }
 
-/** POST /calendar/slots */
+/** POST /slots */
 export async function createSlot(payload: SlotCreate): Promise<EditorialSlot> {
   const { data } = await client.post<EditorialSlot>(
-    "/calendar/slots",
+    "/slots",
     payload,
   );
   return data;
 }
 
-/** PATCH /calendar/slots/:id */
+/** PATCH /slots/:id */
 export async function updateSlot(
   id: number,
   payload: SlotUpdate,
 ): Promise<EditorialSlot> {
   const { data } = await client.patch<EditorialSlot>(
-    `/calendar/slots/${id}`,
+    `/slots/${id}`,
     payload,
   );
   return data;
 }
 
-/** DELETE /calendar/slots/:id */
+/** DELETE /slots/:id */
 export async function deleteSlot(id: number): Promise<void> {
-  await client.delete(`/calendar/slots/${id}`);
+  await client.delete(`/slots/${id}`);
 }
 
-/** POST /calendar/slots/collision-check */
+/** POST /slots/check-collision */
 export async function checkCollision(
   payload: CollisionCheckRequest,
 ): Promise<CollisionCheckResponse> {
   const { data } = await client.post<CollisionCheckResponse>(
-    "/calendar/slots/collision-check",
+    "/slots/check-collision",
     payload,
   );
   return data;
 }
 
-/** GET /calendar/rules */
+/** GET /slots/rules */
 export async function getRules(): Promise<CalendarRule[]> {
-  const { data } = await client.get<CalendarRule[]>("/calendar/rules");
+  const { data } = await client.get<CalendarRule[]>("/slots/rules");
   return data;
 }
 
-/** PATCH /calendar/rules/:id */
+/** PATCH /slots/rules/:id */
 export async function updateRule(
   id: number,
   payload: CalendarRuleUpdate,
 ): Promise<CalendarRule> {
   const { data } = await client.patch<CalendarRule>(
-    `/calendar/rules/${id}`,
+    `/slots/rules/${id}`,
     payload,
   );
   return data;

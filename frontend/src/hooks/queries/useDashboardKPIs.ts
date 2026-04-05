@@ -19,7 +19,7 @@ export function useDashboardKPIs() {
 export function useRecentJobs() {
   return useQuery({
     queryKey: queryKeys.dashboard.recentJobs(),
-    queryFn: getRecentJobs,
+    queryFn: () => getRecentJobs(),
     staleTime: 15_000,
   });
 }

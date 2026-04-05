@@ -28,6 +28,9 @@ export interface SearchRun {
   articles_created: number;
   duplicates_skipped: number;
   errors_count: number;
+  language_filtered: number;
+  date_filtered: number;
+  relevance_filtered: number;
   error_message: string | null;
   results: SearchResult[] | null;
 }

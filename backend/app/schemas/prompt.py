@@ -15,6 +15,7 @@ class PromptCreate(BaseModel):
     schedule_enabled: bool = False
     schedule_frequency_hours: Optional[int] = None
     schedule_specific_times: Optional[List[str]] = None
+    folder_id: Optional[int] = None
 
 
 class PromptUpdate(BaseModel):
@@ -30,6 +31,7 @@ class PromptUpdate(BaseModel):
     schedule_frequency_hours: Optional[int] = None
     schedule_specific_times: Optional[List[str]] = None
     is_active: Optional[bool] = None
+    folder_id: Optional[int] = None
 
 
 class PromptResponse(BaseModel):
@@ -46,7 +48,10 @@ class PromptResponse(BaseModel):
     schedule_frequency_hours: Optional[int] = None
     schedule_specific_times: Optional[List[str]] = None
     schedule_next_run_at: Optional[datetime] = None
+    last_run_at: Optional[datetime] = None
     is_active: bool
+    folder_id: Optional[int] = None
+    folder_name: Optional[str] = None
     created_by: Optional[int] = None
     created_at: datetime
     updated_at: datetime

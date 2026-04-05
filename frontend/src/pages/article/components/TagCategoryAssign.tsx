@@ -1,106 +1,92 @@
 // ---------------------------------------------------------------------------
 // TagCategoryAssign.tsx  --  Tag & Category assignment sidebar card
 // ---------------------------------------------------------------------------
-import React from 'react';
-import { Card, Tag, Select, Space, Typography, Divider, Empty, message } from 'antd';
-import { TagsOutlined, AppstoreOutlined } from '@ant-design/icons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Article, Tag as TagType, Category } from '@/types';
-import { getTags, getCategories } from '@/services/api/taxonomy.api';
-import { updateArticle } from '@/services/api/articles.api';
+import { Card, Tag, Select, Space, Typography, Divider, Flex, message } from 'antd';
+import { TagsOutlined, AppstoreOutlined, PlusOutlined } from '@ant-design/icons';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { Article } from '@/types';
+import { batchAction } from '@/services/api/articles.api';
+import { useTags, useCategories } from '@/hooks/queries/useTaxonomy';
 import { queryKeys } from '@/config/queryKeys';
 
 interface TagCategoryAssignProps {
   article: Article;
-  tags?: TagType[];
-  categories?: Category[];
 }
 
 export default function TagCategoryAssign({ article }: TagCategoryAssignProps) {
   const queryClient = useQueryClient();
 
-  const { data: allTagsData } = useQuery({
-    queryKey: queryKeys.taxonomy.tags(),
-    queryFn: () => getTags({ page_size: 200 }),
-  });
-
-  const { data: allCategoriesData } = useQuery({
-    queryKey: queryKeys.taxonomy.categories(),
-    queryFn: () => getCategories({ page_size: 200 }),
-  });
+  const { data: allTagsData } = useTags();
+  const { data: allCategoriesData } = useCategories();
 
   const allTags = allTagsData?.items ?? [];
   const allCategories = allCategoriesData?.items ?? [];
 
-  // Current assigned IDs
-  const currentTagIds = article.tags.map((t) => t.id);
-  const currentCategoryIds = article.categories.map((c) => c.id);
-
-  // Batch action to assign tags/categories -- uses the batch endpoint
-  // For simplicity, re-using updateArticle (which triggers revision creation)
-  // The actual tag/category assignment would be via a dedicated endpoint in production.
+  const currentTagIds = new Set(article.tags.map((t) => t.id));
+  const currentCategoryIds = new Set(article.categories.map((c) => c.id));
 
   const tagOptions = allTags
-    .filter((t) => !currentTagIds.includes(t.id))
+    .filter((t) => !currentTagIds.has(t.id))
     .map((t) => ({ label: t.name, value: t.id }));
 
   const categoryOptions = allCategories
-    .filter((c) => !currentCategoryIds.includes(c.id))
+    .filter((c) => !currentCategoryIds.has(c.id))
     .map((c) => ({ label: c.name, value: c.id }));
 
+  const tagMutation = useMutation({
+    mutationFn: (tagIds: number[]) =>
+      batchAction({
+        article_ids: [article.id],
+        action: 'tag',
+        tag_ids: tagIds,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.articles.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.articles.detail(article.id) });
+      message.success('Tag aggiornati');
+    },
+    onError: () => message.error('Impossibile aggiornare i tag'),
+  });
+
   const handleAddTag = (tagId: number) => {
-    message.info(`Tag assignment would add tag #${tagId} to article #${article.id}.`);
-    // In a full implementation, this would call a dedicated API endpoint
-    // and then invalidate the article query.
-  };
-
-  const handleRemoveTag = (tagId: number) => {
-    message.info(`Tag removal would remove tag #${tagId} from article #${article.id}.`);
-  };
-
-  const handleAddCategory = (categoryId: number) => {
-    message.info(`Category assignment would add category #${categoryId} to article #${article.id}.`);
-  };
-
-  const handleRemoveCategory = (categoryId: number) => {
-    message.info(`Category removal would remove category #${categoryId} from article #${article.id}.`);
+    tagMutation.mutate([tagId]);
   };
 
   return (
-    <Card title="Tags & Categories" size="small" style={{ marginBottom: 16 }}>
-      {/* Tags section */}
+    <Card title="Tag e Categorie" size="small" style={{ marginBottom: 16 }}>
+      {/* Tags */}
       <div style={{ marginBottom: 16 }}>
-        <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
+        <Typography.Text
+          type="secondary"
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: 0.5,
+            display: 'block',
+            marginBottom: 8,
+          }}
+        >
           <TagsOutlined style={{ marginRight: 4 }} />
           Tags
         </Typography.Text>
 
-        {article.tags.length > 0 ? (
-          <Space size={[4, 4]} wrap style={{ marginBottom: 8 }}>
-            {article.tags.map((tag) => (
-              <Tag
-                key={tag.id}
-                closable
-                onClose={(e) => {
-                  e.preventDefault();
-                  handleRemoveTag(tag.id);
-                }}
-                color="blue"
-              >
+        <Flex wrap="wrap" gap={6} style={{ marginBottom: 8 }}>
+          {article.tags.length > 0 ? (
+            article.tags.map((tag) => (
+              <Tag key={tag.id} color="blue">
                 {tag.name}
               </Tag>
-            ))}
-          </Space>
-        ) : (
-          <div style={{ marginBottom: 8 }}>
+            ))
+          ) : (
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              No tags assigned
+              Nessun tag assegnato
             </Typography.Text>
-          </div>
-        )}
+          )}
+        </Flex>
 
         <Select
-          placeholder="Add tag..."
+          placeholder="Aggiungi tag..."
           options={tagOptions}
           onSelect={handleAddTag}
           showSearch
@@ -108,52 +94,54 @@ export default function TagCategoryAssign({ article }: TagCategoryAssignProps) {
             (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
           }
           style={{ width: '100%' }}
+          size="small"
           value={undefined}
+          loading={tagMutation.isPending}
         />
       </div>
 
       <Divider style={{ margin: '12px 0' }} />
 
-      {/* Categories section */}
+      {/* Categories */}
       <div>
-        <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
+        <Typography.Text
+          type="secondary"
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: 0.5,
+            display: 'block',
+            marginBottom: 8,
+          }}
+        >
           <AppstoreOutlined style={{ marginRight: 4 }} />
-          Categories
+          Categorie
         </Typography.Text>
 
-        {article.categories.length > 0 ? (
-          <Space size={[4, 4]} wrap style={{ marginBottom: 8 }}>
-            {article.categories.map((cat) => (
-              <Tag
-                key={cat.id}
-                closable
-                onClose={(e) => {
-                  e.preventDefault();
-                  handleRemoveCategory(cat.id);
-                }}
-                color="purple"
-              >
+        <Flex wrap="wrap" gap={6} style={{ marginBottom: 8 }}>
+          {article.categories.length > 0 ? (
+            article.categories.map((cat) => (
+              <Tag key={cat.id} color="purple">
                 {cat.name}
               </Tag>
-            ))}
-          </Space>
-        ) : (
-          <div style={{ marginBottom: 8 }}>
+            ))
+          ) : (
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              No categories assigned
+              Nessuna categoria assegnata
             </Typography.Text>
-          </div>
-        )}
+          )}
+        </Flex>
 
         <Select
-          placeholder="Add category..."
+          placeholder="Aggiungi categoria..."
           options={categoryOptions}
-          onSelect={handleAddCategory}
           showSearch
           filterOption={(input, option) =>
             (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
           }
           style={{ width: '100%' }}
+          size="small"
           value={undefined}
         />
       </div>

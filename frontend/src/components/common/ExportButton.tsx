@@ -20,7 +20,7 @@ export default function ExportButton({ endpoint, queryParams = {}, filenamePrefi
       const response = await fetch(url, { credentials: 'include' });
 
       if (!response.ok) {
-        throw new Error(`Export failed with status ${response.status}`);
+        throw new Error(`Esportazione fallita con stato ${response.status}`);
       }
 
       const blob = await response.blob();
@@ -33,23 +33,23 @@ export default function ExportButton({ endpoint, queryParams = {}, filenamePrefi
       link.remove();
       window.URL.revokeObjectURL(downloadUrl);
 
-      message.success(`Exported as ${format.toUpperCase()}`);
+      message.success(`Esportato come ${format.toUpperCase()}`);
     } catch (err) {
-      message.error(err instanceof Error ? err.message : 'Export failed');
+      message.error(err instanceof Error ? err.message : 'Esportazione fallita');
     } finally {
       setLoading(false);
     }
   };
 
   const items: MenuProps['items'] = [
-    { key: 'csv', label: 'Export as CSV', onClick: () => handleExport('csv') },
-    { key: 'json', label: 'Export as JSON', onClick: () => handleExport('json') },
+    { key: 'csv', label: 'Esporta come CSV', onClick: () => handleExport('csv') },
+    { key: 'json', label: 'Esporta come JSON', onClick: () => handleExport('json') },
   ];
 
   return (
     <Dropdown menu={{ items }} trigger={['click']}>
       <Button icon={<DownloadOutlined />} loading={loading}>
-        Export
+        Esporta
       </Button>
     </Dropdown>
   );

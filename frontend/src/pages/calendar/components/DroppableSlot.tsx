@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// DroppableSlot.tsx  --  Droppable area for calendar drag-and-drop
+// DroppableSlot.tsx  --  Area droppable per il drag-and-drop del calendario
 // ---------------------------------------------------------------------------
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
@@ -9,9 +9,7 @@ import { useDroppable } from '@dnd-kit/core';
 // ---------------------------------------------------------------------------
 
 interface DroppableSlotProps {
-  /** Unique droppable identifier -- typically a date or datetime string. */
   id: string;
-  /** The date this droppable represents (YYYY-MM-DD). */
   date: string;
   children: React.ReactNode;
 }
@@ -28,13 +26,13 @@ export default function DroppableSlot({ id, date, children }: DroppableSlotProps
 
   const style: React.CSSProperties = {
     position: 'relative',
-    transition: 'background 0.15s ease',
+    transition: 'background 0.15s ease, outline 0.15s ease',
     ...(isOver && active
       ? {
           background: 'rgba(22, 119, 255, 0.06)',
           outline: '2px dashed #1677ff',
           outlineOffset: -2,
-          borderRadius: 4,
+          borderRadius: 6,
         }
       : {}),
   };

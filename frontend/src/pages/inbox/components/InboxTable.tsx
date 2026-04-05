@@ -5,11 +5,9 @@ import React from 'react';
 import { Table, Typography } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { SorterResult } from 'antd/es/table/interface';
-import { Link } from 'react-router-dom';
 import dayjs from 'dayjs';
 
 import type { Article } from '@/types';
-import { buildArticleDetailPath } from '@/config/routes';
 import StatusBadge from '@/pages/inbox/components/StatusBadge';
 import ScoreBadge from '@/pages/inbox/components/ScoreBadge';
 
@@ -45,22 +43,20 @@ interface InboxTableProps {
 
 const columns: ColumnsType<Article> = [
   {
-    title: 'Title',
+    title: 'Titolo',
     dataIndex: 'title',
     key: 'title',
     sorter: true,
     ellipsis: true,
     width: '30%',
-    render: (title: string, record: Article) => (
-      <Link to={buildArticleDetailPath(record.id)}>
-        <Typography.Text strong ellipsis style={{ maxWidth: '100%' }}>
-          {title}
-        </Typography.Text>
-      </Link>
+    render: (title: string) => (
+      <Typography.Text strong ellipsis style={{ maxWidth: '100%' }}>
+        {title}
+      </Typography.Text>
     ),
   },
   {
-    title: 'Source',
+    title: 'Fonte',
     dataIndex: 'source_domain',
     key: 'source_domain',
     sorter: true,
@@ -68,7 +64,7 @@ const columns: ColumnsType<Article> = [
     ellipsis: true,
   },
   {
-    title: 'Language',
+    title: 'Lingua',
     dataIndex: 'language',
     key: 'language',
     sorter: true,
@@ -76,7 +72,7 @@ const columns: ColumnsType<Article> = [
     render: (lang: string) => lang?.toUpperCase() ?? '—',
   },
   {
-    title: 'Status',
+    title: 'Stato',
     dataIndex: 'status',
     key: 'status',
     sorter: true,
@@ -84,30 +80,30 @@ const columns: ColumnsType<Article> = [
     render: (status: string) => <StatusBadge status={status} />,
   },
   {
-    title: 'AI Score',
+    title: 'Punteggio AI',
     dataIndex: 'ai_score',
     key: 'ai_score',
     sorter: true,
-    width: 100,
+    width: 110,
     align: 'center',
     render: (score: number | null) => <ScoreBadge score={score} />,
   },
   {
-    title: 'Published',
+    title: 'Pubblicato',
     dataIndex: 'published_at',
     key: 'published_at',
     sorter: true,
     width: 140,
     render: (date: string | null) =>
-      date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '—',
+      date ? dayjs(date).format('DD/MM/YY') : '—',
   },
   {
-    title: 'Imported',
+    title: 'Importato',
     dataIndex: 'created_at',
     key: 'created_at',
     sorter: true,
-    width: 140,
-    render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm'),
+    width: 110,
+    render: (date: string) => dayjs(date).format('DD/MM/YY'),
   },
 ];
 
@@ -164,7 +160,7 @@ export default function InboxTable({
         showSizeChanger: true,
         pageSizeOptions: ['10', '20', '50', '100'],
         showTotal: (total, range) =>
-          `${range[0]}-${range[1]} of ${total} articles`,
+          `${range[0]}-${range[1]} di ${total} articoli`,
       }}
       onChange={handleTableChange as never}
       onRow={(record) => ({

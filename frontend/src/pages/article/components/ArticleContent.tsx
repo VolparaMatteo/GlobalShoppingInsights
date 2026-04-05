@@ -1,55 +1,69 @@
 // ---------------------------------------------------------------------------
-// ArticleContent.tsx  --  Sanitized article content display
+// ArticleContent.tsx  --  Article content display (clean text + images)
 // ---------------------------------------------------------------------------
-import React from 'react';
-import { Card, Button, Image } from 'antd';
-import { EditOutlined } from '@ant-design/icons';
+import { Card, Image, Typography, Flex } from 'antd';
 import type { Article } from '@/types';
-import SafeHTML from '@/components/common/SafeHTML';
 
 interface ArticleContentProps {
   article: Article;
-  onEditClick?: () => void;
 }
 
-export default function ArticleContent({ article, onEditClick }: ArticleContentProps) {
-  const hasContent = article.content_html || article.content_text;
+const IMG_FALLBACK =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/+F9PQAI8wNPvd7POQAAAABJRU5ErkJggg==';
+
+export default function ArticleContent({ article }: ArticleContentProps) {
+  // Collect all images: featured first, then additional images
+  const allImages: string[] = [];
+  if (article.featured_image_url) allImages.push(article.featured_image_url);
+  if (article.images?.length) {
+    for (const img of article.images) {
+      if (img !== article.featured_image_url) allImages.push(img);
+    }
+  }
+
+  // Prefer content_text (clean plain text) over content_html (may contain raw tags)
+  const textContent = article.content_text || null;
 
   return (
-    <Card
-      title="Content"
-      extra={
-        onEditClick && (
-          <Button type="link" icon={<EditOutlined />} onClick={onEditClick}>
-            Edit
-          </Button>
-        )
-      }
-      style={{ marginBottom: 16 }}
-    >
-      {/* Featured image */}
-      {article.featured_image_url && (
-        <div style={{ marginBottom: 16, textAlign: 'center' }}>
-          <Image
-            src={article.featured_image_url}
-            alt={article.title}
-            style={{ maxWidth: '100%', maxHeight: 400, objectFit: 'cover', borderRadius: 8 }}
-            fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/+F9PQAI8wNPvd7POQAAAABJRU5ErkJggg=="
-          />
-        </div>
+    <Card title="Contenuto" style={{ marginBottom: 16 }}>
+      {/* Images */}
+      {allImages.length > 0 && (
+        <Flex wrap="wrap" gap={12} justify="center" style={{ marginBottom: 20 }}>
+          <Image.PreviewGroup>
+            {allImages.map((src, i) => (
+              <Image
+                key={i}
+                src={src}
+                alt={`${article.title} - immagine ${i + 1}`}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: 400,
+                  objectFit: 'cover',
+                  borderRadius: 8,
+                }}
+                fallback={IMG_FALLBACK}
+              />
+            ))}
+          </Image.PreviewGroup>
+        </Flex>
       )}
 
-      {/* HTML content */}
-      {article.content_html ? (
-        <SafeHTML html={article.content_html} className="article-body" />
-      ) : article.content_text ? (
-        <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.8 }}>
-          {article.content_text}
-        </div>
+      {/* Text content */}
+      {textContent ? (
+        <Typography.Paragraph
+          style={{
+            whiteSpace: 'pre-wrap',
+            lineHeight: 1.8,
+            margin: 0,
+            fontSize: 15,
+          }}
+        >
+          {textContent}
+        </Typography.Paragraph>
       ) : (
-        <div style={{ color: '#999', fontStyle: 'italic' }}>
-          No content available for this article.
-        </div>
+        <Typography.Text type="secondary" italic>
+          Nessun contenuto disponibile per questo articolo.
+        </Typography.Text>
       )}
     </Card>
   );
