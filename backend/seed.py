@@ -1,12 +1,26 @@
 """Seed the database with an admin user and sample data."""
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.dirname(__file__))
 
 from app.database import engine, Base, SessionLocal
-from app.models import *
+from app.models import *  # noqa: F401,F403 — Base.metadata.create_all ha bisogno dei modelli importati
+from app.utils.admin_seed import resolve_admin_password
 from app.utils.security import hash_password
 from app.config import settings
+
+
+def _print_generated_admin_password(password: str) -> None:
+    banner = "=" * 72
+    print(banner)
+    print("  ADMIN_PASSWORD non impostata in .env — password generata randomicamente:")
+    print()
+    print(f"    {password}")
+    print()
+    print("  Salvala ORA: non verrà più mostrata.")
+    print("  Per re-seedare con una password scelta, impostala in .env (ADMIN_PASSWORD).")
+    print(banner)
 
 
 def seed():
@@ -17,16 +31,19 @@ def seed():
         # Create admin user
         admin = db.query(User).filter(User.email == settings.ADMIN_EMAIL).first()
         if not admin:
+            password, was_generated = resolve_admin_password()
             admin = User(
                 email=settings.ADMIN_EMAIL,
                 name="Admin",
-                password_hash=hash_password(settings.ADMIN_PASSWORD),
+                password_hash=hash_password(password),
                 role="admin",
                 is_active=True,
             )
             db.add(admin)
             db.commit()
             print(f"Admin user created: {settings.ADMIN_EMAIL}")
+            if was_generated:
+                _print_generated_admin_password(password)
         else:
             print(f"Admin user already exists: {settings.ADMIN_EMAIL}")
 
