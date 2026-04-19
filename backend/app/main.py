@@ -77,11 +77,23 @@ async def lifespan(app: FastAPI):
             conn.commit()
     except Exception:
         pass
+    # One-shot: cifra eventuali password WP legacy salvate in plaintext.
+    # Sprint 2 sposterà questa logica in una migrazione Alembic dedicata.
+    import logging
+    _log = logging.getLogger(__name__)
+    try:
+        from app.utils.encryption import migrate_plaintext_passwords
+        migrated = migrate_plaintext_passwords()
+        if migrated:
+            _log.info("Cifrate %d password WP legacy in plaintext", migrated)
+    except Exception:
+        _log.exception("Migrazione delle password WP fallita")
+
     try:
         from app.workers.scheduler import start_scheduler
         start_scheduler()
     except Exception:
-        pass
+        _log.exception("Avvio scheduler fallito")
     yield
     try:
         from app.workers.scheduler import stop_scheduler

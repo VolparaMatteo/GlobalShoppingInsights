@@ -60,3 +60,36 @@ def is_encrypted(value: str | None) -> bool:
     except (InvalidToken, ValueError, TypeError):
         return False
     return True
+
+
+def migrate_plaintext_passwords(db=None) -> int:  # type: ignore[no-untyped-def]
+    """Migrazione idempotente: cifra le WP password salvate in plaintext.
+
+    Passando una sessione SQLAlchemy (`db`) la migrazione agisce su quella,
+    altrimenti ne apre una nuova (comportamento lifespan). Ritorna il numero
+    di record migrati (0 se già tutti cifrati). Sprint 2 sposterà questa
+    logica in una migrazione Alembic dedicata.
+    """
+    # Import locali per evitare cicli (encryption è utility di basso livello,
+    # i modelli importano config via Base).
+    from app.database import SessionLocal
+    from app.models.wordpress import WPConfig
+
+    owns_session = db is None
+    if owns_session:
+        db = SessionLocal()
+
+    migrated = 0
+    try:
+        configs = db.query(WPConfig).filter(WPConfig.wp_app_password_encrypted.isnot(None)).all()
+        for cfg in configs:
+            pwd = cfg.wp_app_password_encrypted
+            if pwd and not is_encrypted(pwd):
+                cfg.wp_app_password_encrypted = encrypt(pwd)
+                migrated += 1
+        if migrated:
+            db.commit()
+        return migrated
+    finally:
+        if owns_session:
+            db.close()

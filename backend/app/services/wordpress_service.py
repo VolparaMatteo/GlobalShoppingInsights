@@ -9,8 +9,26 @@ from app.models.taxonomy import Tag, Category
 from app.models.calendar import EditorialSlot
 from app.models.wordpress import WPConfig, WPPost
 from app.models.logs import JobLog
+from app.utils.encryption import decrypt, is_encrypted
 
 logger = logging.getLogger(__name__)
+
+
+def _wp_auth_credentials(config: WPConfig) -> tuple[str, str]:
+    """Restituisce (username, plaintext_password) dalla config WP.
+
+    Se la password è ancora in plaintext (legacy) la usa raw e logga un warning
+    — la migrazione di Batch 2 dovrebbe averla già cifrata all'avvio.
+    """
+    stored = config.wp_app_password_encrypted or ""
+    if not stored:
+        return (config.wp_username or "", "")
+    if is_encrypted(stored):
+        return (config.wp_username or "", decrypt(stored))
+    logger.warning(
+        "WP app password trovata in plaintext in DB: esegui la migrazione di cifratura."
+    )
+    return (config.wp_username or "", stored)
 
 
 def _text_to_html(text: str) -> str:
@@ -137,7 +155,7 @@ def publish_to_wordpress(article_id: int):
 
         try:
             wp_base = config.wp_url.rstrip("/")
-            wp_auth = (config.wp_username, config.wp_app_password_encrypted or "")
+            wp_auth = _wp_auth_credentials(config)
 
             # --- Build clean content ---
             content = ""

@@ -9,6 +9,7 @@ from app.schemas.wordpress import WPConfigUpdate, WPConfigResponse
 from app.schemas.settings import BlacklistCreate, BlacklistResponse, ScrapingSettings, DedupSettings
 from app.schemas.common import MessageResponse
 from app.api.deps import require_role
+from app.utils.encryption import encrypt
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
@@ -49,7 +50,7 @@ def update_wp_config(
     if body.wp_username is not None:
         config.wp_username = body.wp_username
     if body.wp_app_password is not None:
-        config.wp_app_password_encrypted = body.wp_app_password  # TODO: encrypt
+        config.wp_app_password_encrypted = encrypt(body.wp_app_password)
     if body.default_author_id is not None:
         config.default_author_id = body.default_author_id
     db.commit()
