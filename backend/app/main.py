@@ -1,10 +1,15 @@
 import os
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
 from app.config import settings
 from app.database import engine, Base
+from app.utils.rate_limit import limiter
 from app.api import auth, users, prompts, prompt_folders, search, articles, comments, calendar, publish, taxonomy, notifications, settings as settings_router, dashboard, export, health, unsplash
 
 
@@ -108,6 +113,10 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# Rate limiter (slowapi). In ENV=test è disabilitato (vedi app.utils.rate_limit).
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,

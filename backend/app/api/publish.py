@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query, Request
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.database import get_db
@@ -10,12 +10,15 @@ from app.schemas.wordpress import WPPostResponse
 from app.schemas.common import MessageResponse, PaginatedResponse
 from app.api.deps import get_current_user, require_min_role
 from app.utils.pagination import paginate
+from app.utils.rate_limit import limiter
 
 router = APIRouter(prefix="/publish", tags=["publish"])
 
 
 @router.post("/{article_id}", response_model=MessageResponse)
+@limiter.limit("10/minute")
 def publish_article(
+    request: Request,
     article_id: int,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
@@ -36,7 +39,9 @@ def publish_article(
 
 
 @router.post("/{article_id}/retry", response_model=MessageResponse)
+@limiter.limit("5/minute")
 def retry_publish(
+    request: Request,
     article_id: int,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),

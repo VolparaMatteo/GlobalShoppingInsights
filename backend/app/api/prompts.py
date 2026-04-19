@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func as sa_func
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -11,6 +11,7 @@ from app.schemas.prompt import PromptCreate, PromptUpdate, PromptResponse
 from app.schemas.common import PaginatedResponse, MessageResponse
 from app.api.deps import get_current_user, require_min_role
 from app.utils.pagination import paginate
+from app.utils.rate_limit import limiter
 
 router = APIRouter(prefix="/prompts", tags=["prompts"])
 
@@ -131,7 +132,9 @@ def delete_prompt(
 
 
 @router.post("/{prompt_id}/run", response_model=MessageResponse)
+@limiter.limit("20/minute")
 def run_prompt_search(
+    request: Request,
     prompt_id: int,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
