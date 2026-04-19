@@ -42,3 +42,9 @@ Thumbs.db
 .coverage
 htmlcov/
 test.db
+
+# Tooling caches
+.ruff_cache/
+.mypy_cache/
+frontend/coverage/
+frontend/.vite/
