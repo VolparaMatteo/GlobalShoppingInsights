@@ -1,11 +1,24 @@
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from app.database import Base, get_db
-from app.main import app
-from app.utils.security import hash_password
-from app.models.user import User
+"""Pytest fixtures condivise per il backend GSI."""
+
+from __future__ import annotations
+
+import os
+
+# Forza ENV=test prima che qualunque import di `app.config` lo legga dal .env.
+# Deve stare QUI in cima: disabilita i validator di produzione anche se
+# l'utente ha ENV=production nella sua shell. Gli import successivi attivano
+# `Settings()` a module-level.
+os.environ["ENV"] = "test"
+
+import pytest  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+from sqlalchemy import create_engine  # noqa: E402
+from sqlalchemy.orm import sessionmaker  # noqa: E402
+
+from app.database import Base, get_db  # noqa: E402
+from app.main import app  # noqa: E402
+from app.models.user import User  # noqa: E402
+from app.utils.security import hash_password  # noqa: E402
 
 TEST_DATABASE_URL = "sqlite:///./test.db"
 engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
@@ -59,7 +72,10 @@ def admin_user(db):
 
 @pytest.fixture
 def admin_token(client, admin_user):
-    response = client.post("/api/v1/auth/login", json={"email": "admin@test.com", "password": "testpass123"})
+    response = client.post(
+        "/api/v1/auth/login",
+        json={"email": "admin@test.com", "password": "testpass123"},
+    )
     return response.json()["access_token"]
 
 
