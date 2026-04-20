@@ -26,7 +26,7 @@ class SearchResult(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     search_run_id = Column(Integer, ForeignKey("search_runs.id"), nullable=False)
-    url = Column(Text, nullable=False)
+    url = Column(Text, nullable=False, index=True)
     title = Column(String(500), nullable=True)
     snippet = Column(Text, nullable=True)
     provider = Column(String(20), nullable=False)
