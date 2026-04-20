@@ -1,0 +1,17 @@
+# Forza LF sugli script shell e file dev (Windows checkout altrimenti applica CRLF
+# che rompe gli entrypoint dei container Linux).
+*.sh text eol=lf
+docker-entrypoint.sh text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# File binari: no transformation
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.pdf binary
+*.xlsx binary
+*.db binary

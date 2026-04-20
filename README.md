@@ -12,31 +12,57 @@ Editorial intelligence platform for global retail & shopping news. Automates dis
 
 ## Quick Start
 
-### Backend
+### 🐳 Con Docker (raccomandato)
 
+Prerequisito: [Docker Desktop](https://www.docker.com/products/docker-desktop/) in esecuzione.
+
+```powershell
+# Windows
+.\start.ps1
+```
 ```bash
+# Linux / macOS / Git Bash
+./start.sh
+```
+
+Lo script avvia `postgres` + `backend` + `frontend`. L'entrypoint del backend esegue automaticamente `alembic upgrade head` + `python seed.py` al primo avvio.
+
+- Backend: http://localhost:8000/docs
+- Frontend: http://localhost:5173
+- **Login dev**: `admin@gsi.local` / `devpassword1234`
+
+Altri comandi:
+- `.\start.ps1 -Stop` / `./start.sh stop` — ferma i container (mantiene i volumi)
+- `.\start.ps1 -Clean` / `./start.sh clean` — reset volumi (DB pulito)
+- `.\start.ps1 -Logs` / `./start.sh logs` — segue i log
+- `.\start.ps1 -WithLlm` / `./start.sh --with-llm` — abilita anche Ollama
+
+### 🧪 Senza Docker (venv)
+
+<details><summary>Setup manuale (Windows PowerShell)</summary>
+
+```powershell
 cd backend
 python -m venv venv
-venv\Scripts\activate       # Windows
-# source venv/bin/activate  # Linux/Mac
-pip install -r requirements.txt
+.\venv\Scripts\Activate.ps1
+pip install -r requirements-dev.txt
+Copy-Item .env.example .env
+.\venv\Scripts\alembic.exe upgrade head
 python seed.py
 uvicorn app.main:app --reload
 ```
 
-Default admin: `admin@gsi.local` / `admin123`
-
-API docs: http://localhost:8000/docs
-
-### Frontend
-
-```bash
+```powershell
 cd frontend
+Copy-Item .env.example .env
 npm install
 npm run dev
 ```
+</details>
 
-App: http://localhost:5173
+Default admin (se `ADMIN_PASSWORD` non impostata in `.env`): il seed ne genera una random e la stampa una volta sola.
+
+API docs: http://localhost:8000/docs · App: http://localhost:5173
 
 ## Features
 
