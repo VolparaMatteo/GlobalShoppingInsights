@@ -11,7 +11,7 @@ from app.config import settings
 from app.database import engine, Base
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.utils.rate_limit import limiter
-from app.api import auth, users, prompts, prompt_folders, search, articles, comments, calendar, publish, taxonomy, notifications, settings as settings_router, dashboard, export, health, unsplash
+from app.api import auth, audit_logs, users, prompts, prompt_folders, search, articles, comments, calendar, publish, taxonomy, notifications, settings as settings_router, dashboard, export, health, unsplash
 
 
 @asynccontextmanager
@@ -154,3 +154,4 @@ app.include_router(dashboard.router, prefix=PREFIX)
 app.include_router(export.router, prefix=PREFIX)
 app.include_router(health.router, prefix=PREFIX)
 app.include_router(unsplash.router, prefix=PREFIX)
+app.include_router(audit_logs.router, prefix=PREFIX)

@@ -12,6 +12,7 @@ from app.models.user import User
 from app.schemas.auth import LoginRequest, RefreshRequest, TokenResponse
 from app.schemas.common import MessageResponse
 from app.schemas.user import UserResponse
+from app.utils import audit
 from app.utils.rate_limit import limiter
 from app.utils.security import (
     create_access_token,
@@ -42,16 +43,34 @@ def _issue_tokens(db: Session, user: User) -> TokenResponse:
 def login(request: Request, body: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == body.email).first()
     if not user or not verify_password(body.password, user.password_hash):
+        audit.emit(
+            db,
+            user_id=user.id if user else None,
+            action="login.failed",
+            entity="user",
+            entity_id=user.id if user else None,
+            metadata={"email": body.email},
+        )
+        db.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
     if not user.is_active:
+        audit.emit(
+            db,
+            user_id=user.id,
+            action="login.deactivated",
+            entity="user",
+            entity_id=user.id,
+        )
+        db.commit()
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is deactivated",
         )
     user.last_login = datetime.now(timezone.utc)
+    audit.emit(db, user_id=user.id, action="login", entity="user", entity_id=user.id)
     db.commit()
     return _issue_tokens(db, user)
 
@@ -109,6 +128,14 @@ def logout(body: RefreshRequest, db: Session = Depends(get_db)):
         stored = db.query(RefreshToken).filter(RefreshToken.jti == jti).first()
         if stored is not None and stored.revoked_at is None:
             stored.revoked_at = datetime.now(timezone.utc)
+            user_id_raw = payload.get("sub")
+            audit.emit(
+                db,
+                user_id=int(user_id_raw) if user_id_raw else None,
+                action="logout",
+                entity="user",
+                entity_id=int(user_id_raw) if user_id_raw else None,
+            )
             db.commit()
     return MessageResponse(message="Logged out")
 
