@@ -9,6 +9,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.config import settings
 from app.database import engine, Base
+from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.utils.rate_limit import limiter
 from app.api import auth, users, prompts, prompt_folders, search, articles, comments, calendar, publish, taxonomy, notifications, settings as settings_router, dashboard, export, health, unsplash
 
@@ -125,6 +126,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Headers di sicurezza (HSTS, CSP, X-Frame-Options, ...).
+# Aggiunto per ultimo così starlette lo applica dopo il resto della pipeline.
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Serve uploaded files
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
