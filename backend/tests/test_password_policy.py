@@ -37,8 +37,10 @@ def test_create_accepts_at_boundary() -> None:
 
 
 def test_create_rejects_common_password() -> None:
+    """Una password >=12 caratteri ma nella blacklist deve essere rifiutata
+    come 'debole' — così testiamo il check lessicale e non quello di lunghezza."""
     with pytest.raises(ValidationError, match="debole"):
-        UserCreate(email="new@test.com", name="N", password="admin1234")
+        UserCreate(email="new@test.com", name="N", password="password1234")
 
 
 def test_create_rejects_password_with_leading_trailing_spaces() -> None:

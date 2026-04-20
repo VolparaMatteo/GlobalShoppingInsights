@@ -6,8 +6,11 @@ from pydantic import BaseModel, EmailStr, field_validator
 MIN_PASSWORD_LENGTH = 12
 
 # Password troppo comuni / ovvie (match case-insensitive). Lista minima,
-# copre i default storici di progetti simili.
+# copre i default storici di progetti simili. Include valori >=12 char
+# così che scattino PRIMA del check lunghezza.
 _WEAK_PASSWORDS = {
+    # corte (vengono in realtà rigettate dal check di lunghezza — le teniamo
+    # qui per documentazione)
     "password",
     "passw0rd",
     "admin",
@@ -19,7 +22,17 @@ _WEAK_PASSWORDS = {
     "welcome1",
     "qwerty",
     "qwerty123",
+    # >= 12 caratteri ma comunissime / prevedibili
+    "password1234",
+    "password12345",
     "123456789012",
+    "1234567890123",
+    "qwerty123456",
+    "iloveyou1234",
+    "welcome12345",
+    "admin12345678",
+    "changeme1234",
+    "letmein12345",
 }
 
 

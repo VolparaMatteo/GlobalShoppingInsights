@@ -15,7 +15,7 @@ router = APIRouter(prefix="/export", tags=["export"])
 
 @router.get("/articles")
 def export_articles(
-    format: str = Query("csv", regex="^(csv|json)$"),
+    format: str = Query("csv", pattern="^(csv|json)$"),
     status_filter: Optional[str] = Query(None, alias="status"),
     language: Optional[str] = None,
     db: Session = Depends(get_db),
