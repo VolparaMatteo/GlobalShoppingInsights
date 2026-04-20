@@ -88,6 +88,30 @@ cd frontend && npm run lint && npm run format:check && npm run type-check && npm
 ./deploy.sh  # pull → build → migrate → smoke test → switch
 ```
 
+### Database — Alembic
+```bash
+cd backend
+alembic upgrade head                       # applica tutte le migration pending
+alembic revision --autogenerate -m "msg"   # nuova migration dai modelli
+alembic stamp head                         # marca DB esistente come "in sync"
+alembic current / history                  # stato corrente / cronologia
+# Override URL (utile per staging/baseline):
+ALEMBIC_DATABASE_URL=postgresql+psycopg://... alembic upgrade head
+```
+
+### Backup / Restore (su VPS Linux)
+```bash
+# Backup one-shot
+scripts/backup.sh
+
+# Backup via cron (da aggiungere in Sprint 5 con systemd timer)
+0 3 * * * /opt/gsi/scripts/backup.sh >> /var/log/gsi-backup.log 2>&1
+
+# Restore distruttivo da backup specifico
+scripts/restore.sh /var/backups/gsi/gsi_20260420_030000.sql.gz
+```
+Vedi `scripts/README.md` per le variabili d'ambiente.
+
 ## Concetti dominio chiave
 
 ### Workflow articoli (state machine)

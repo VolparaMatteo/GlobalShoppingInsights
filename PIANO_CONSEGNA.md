@@ -81,28 +81,37 @@
 
 ---
 
-## Sprint 2 — DB, migrazioni & Postgres 🔴 `2 settimane`
+## Sprint 2 — DB, migrazioni & Postgres ✅ `COMPLETATO (light)`
 
 **Obiettivo**: database professionale, migrazioni affidabili, backup.
+**Strategia presa in corso**: Sprint 2 "light" — sync SQLAlchemy mantenuto, la migrazione ad async è rinviata a Sprint 6 (insieme ad ARQ/Redis queue). Il resto fatto per intero.
 
-### Migrazioni
-- [ ] Estrarre **tutto** l'SQL raw da `main.py` lifespan
-- [ ] Generare baseline Alembic + migrazioni incrementali
-- [ ] Rimuovere `except: pass` silenziosi
-- [ ] Fail-fast su errori di migrazione allo startup
+### Migrazioni ✅
+- [x] Estratto tutto l'SQL raw dal `main.py` lifespan (6 blocchi) — commit `c24133c`
+- [x] Alembic setup completo: `alembic.ini` in root di backend/, `env.py` che legge URL da `settings` con override `ALEMBIC_DATABASE_URL`, `script.py.mako`, `versions/` — commit `80ba510`
+- [x] Baseline migration `4ea4ce5720fb` che crea tutte le 22 tabelle — commit `80ba510`
+- [x] Rimossi tutti gli `except: pass` silenziosi (sostituiti da `logger.exception`) — commit `c24133c`
+- [x] `Base.metadata.create_all` rimosso dal lifespan: Alembic è ora autoritativo
 
-### Postgres
-- [ ] `asyncpg` driver + SQLAlchemy async engine
-- [ ] Pool connessioni: `pool_size`, `max_overflow`, `pool_pre_ping`
-- [ ] Aggiornare tutte le query per session async (`AsyncSession`)
-- [ ] Seed idempotente con `INSERT ... ON CONFLICT`
+### Postgres ✅ (sync)
+- [x] `psycopg[binary]>=3.2.0` in requirements — commit `5763cf8`
+- [x] Pool connessioni: `pool_size=5`, `max_overflow=10`, `pool_pre_ping=True`, `pool_recycle=3600` — applicati automaticamente ai dialect non-SQLite in `app/database.py`
+- [ ] ~~Conversione a `AsyncSession`~~ — **rinviato a Sprint 6**. L'async database non è bloccante per la consegna: useremo ARQ + Redis per spostare i task pesanti fuori dalla request in Sprint 6, dove la conversione async ha senso.
+- [x] `seed.py` idempotente: check-before-insert per ogni entità (admin, calendar_rules, tags, categories, wp_config); `_check_schema_ready()` fail-fast se Alembic non è stato eseguito — commit `cf32652`
 
-### Performance & backup
-- [ ] Indici mancanti: `article.content_hash`, `article.canonical_url`, `search_result.url`, `article.status` (già c'è), `article.created_at`
-- [ ] Script backup: `pg_dump` nightly compresso con retention 30gg su disco VPS
-- [ ] Script restore documentato e testato
+### Performance & backup ✅
+- [x] Indici aggiunti via Alembic migration `a44dfb48a9a0`: `article.content_hash`, `search_result.url`. `article.canonical_url`/`status`/`created_at` erano già indicizzati nel baseline — commit `eb4871c`
+- [x] `scripts/backup.sh`: `pg_dump` compresso con retention configurabile (default 30gg) — commit successivo al batch 2F
+- [x] `scripts/restore.sh`: drop + recreate + restore con conferma interattiva e `ON_ERROR_STOP=1`
+- [x] `scripts/README.md`: variabili d'ambiente, esempio cron, roadmap a systemd timer in Sprint 5
 
-**DoD**: `alembic upgrade head` su DB vuoto crea schema completo. Restore di un backup su staging funziona. SQLite rimane supportato solo in dev.
+**DoD raggiunto**:
+- ✅ `alembic upgrade head` su DB vuoto crea schema completo (verificato in locale)
+- ✅ Backup/restore documentati (da testare sul VPS quando disponibile)
+- ✅ SQLite rimane supportato in dev (dispatch automatico dei kwargs in `database.py`)
+- ⬜ Test di restore su staging — Sprint 5 quando il VPS è pronto
+
+**Test aggiunti** (+ 9 casi): `test_database_engine` (dispatch kwargs), `test_seed_idempotence` (tutte le funzioni).
 
 ---
 
