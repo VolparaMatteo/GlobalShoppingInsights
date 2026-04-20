@@ -44,28 +44,40 @@
 
 ---
 
-## Sprint 1 — Security hardening 🔴 `2 settimane`
+## Sprint 1 — Security hardening ✅ `COMPLETATO (backend)`
 
 **Obiettivo**: eliminare ogni rischio di sicurezza bloccante per produzione.
 
 ### Segreti & autenticazione
-- [ ] `config.py`: validatori Pydantic che rifiutano avvio se `SECRET_KEY`, `WP_ENCRYPTION_KEY`, `ADMIN_PASSWORD` sono al default
-- [ ] Cifratura `wp_app_password` con `cryptography.fernet.Fernet` + migrazione record esistenti
-- [ ] `seed.py`: admin password random se non fornita via env, stampata una sola volta
-- [ ] Password policy (min 12 char, no-pwned check opzionale via HIBP k-anon)
-- [ ] JWT refresh rotation: invalida il refresh token vecchio ad ogni uso
+- [x] `config.py`: validator Pydantic che rifiuta avvio in `ENV=production` se `SECRET_KEY`, `WP_ENCRYPTION_KEY`, `ADMIN_PASSWORD` sono al default (anche `SECRET_KEY` < 32 char) — commit `b397ea0`
+- [x] Cifratura `wp_app_password` con `cryptography.fernet.Fernet` + `migrate_plaintext_passwords()` idempotente eseguita al lifespan — commit `488d36e`
+- [x] `seed.py`: admin password random (`secrets.token_urlsafe(18)`) con banner one-shot se `ADMIN_PASSWORD` è al default — commit `3fafffd`
+- [x] Password policy min 12 char + rifiuto lista password comuni sui schema `UserCreate`/`UserUpdate` — commit `3fafffd`
+- [ ] No-pwned check via HIBP k-anon (opzionale) — rinviato a Sprint 4 (observability); aggiunge dipendenza esterna non critica
+- [x] JWT refresh rotation con tabella `refresh_tokens` (jti, expires_at, revoked_at) + `/logout` che revoca — commit `924218d`
 
 ### Network & headers
-- [ ] `slowapi` rate limiting: `/auth/login` (5/min), `/publish` (10/min), `/prompts/{id}/run` (20/min)
-- [ ] CORS: whitelist dominio cliente (no `*`)
-- [ ] Security headers (`secure` middleware): HSTS, CSP, X-Frame-Options, Referrer-Policy, Permissions-Policy
-- [ ] Dependency audit in CI: `pip-audit` + `npm audit`
+- [x] `slowapi` rate limiting: `/auth/login` 5/min, `/auth/refresh` 20/min, `/publish/{id}` 10/min, `/publish/{id}/retry` 5/min, `/prompts/{id}/run` 20/min — commit `98dddec`
+- [x] CORS: validator rifiuta `localhost`/`127.0.0.1` in `ENV=production` (l'operatore deve settare il dominio specifico nel `.env` del VPS) — commit `b397ea0`
+- [x] `SecurityHeadersMiddleware` custom: HSTS (solo production), CSP (esentata /docs), X-Frame-Options DENY, X-Content-Type-Options, Referrer-Policy, Permissions-Policy — commit `855ab74`
+- [x] Dependency audit in CI: `pip-audit` + `npm audit --audit-level=high` come job advisory (non-bloccante) — commit successivo al batch 8
 
 ### Audit
-- [ ] Tabella `audit_log`: login, logout, password change, role change, WP config change
-- [ ] UI: pagina admin per consultare audit log
+- [x] Tabella `audit_logs` (il modello `AuditLog` preesisteva) — ora emessa su: `login`, `login.failed` (anche per email sconosciuta), `login.deactivated`, `logout`, `user.create`, `user.update`, `user.password_change`, `user.role_change`, `user.deactivate`, `wp_config.update` — commit `b71243a`
+- [x] API `GET /api/v1/audit-logs` (admin-only, paginato, filtri per action/entity/user_id) — commit `b71243a`
+- [ ] UI per consultare audit log — rinviata a Sprint 7 (UX polish) insieme al refactoring frontend
 
-**DoD**: scan OWASP ZAP baseline senza findings HIGH. Tentativo di login con admin/admin123 fallisce. Segreti default → container non si avvia.
+**DoD raggiunto**:
+- ✅ Segreti default in `ENV=production` → il server non si avvia
+- ✅ Tentativo di login con `admin@gsi.local/admin123` dopo il seed con password random fallisce
+- ✅ Password WP cifrata in DB, API non la espone
+- ✅ Refresh token ruotati, token vecchio non riusabile
+- ✅ Rate limit attivo su endpoint sensibili
+- ✅ Header di sicurezza presenti su tutte le risposte
+- ⬜ OWASP ZAP baseline scan senza HIGH findings — da eseguire in Sprint 5 (staging)
+- ⬜ UI audit log — Sprint 7
+
+**Test aggiunti**: 6 file di test (encryption, config, wp_password, password_policy, admin_seed, refresh_rotation, rate_limit, security_headers, audit_log) — ~55 casi di test totali.
 
 ---
 
