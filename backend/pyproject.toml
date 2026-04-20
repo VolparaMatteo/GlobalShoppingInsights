@@ -106,4 +106,4 @@ exclude_lines = [
 ]
 show_missing = true
 skip_covered = false
-fail_under = 0  # gate verrà alzato in Sprint 3
+fail_under = 50  # baseline Sprint 3 — alziamo a 70 in Sprint 3.5 / 8
