@@ -12,13 +12,15 @@
 // ---------------------------------------------------------------------------
 import { useMemo } from 'react';
 
-import { Layout, Space, theme as antdTheme, Typography } from 'antd';
+import { Button, Layout, Space, theme as antdTheme, Tooltip, Typography } from 'antd';
+import { LogOut } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
 import ThemeToggle from '@/components/common/ThemeToggle';
 import HeaderAvatar from '@/layouts/components/HeaderAvatar';
 import HeaderSearchButton from '@/layouts/components/HeaderSearchButton';
 import NotificationBell from '@/layouts/components/NotificationBell';
+import { useAuthStore } from '@/stores/authStore';
 
 const { Header } = Layout;
 
@@ -65,6 +67,7 @@ const ROUTE_META: Record<string, RouteMeta> = {
 export default function AppHeader() {
   const location = useLocation();
   const { token } = antdTheme.useToken();
+  const logout = useAuthStore((s) => s.logout);
 
   const meta: RouteMeta = useMemo(() => {
     const path = location.pathname;
@@ -152,6 +155,16 @@ export default function AppHeader() {
           }}
         />
         <HeaderAvatar />
+        <Tooltip title="Esci" placement="bottom">
+          <Button
+            type="text"
+            shape="circle"
+            icon={<LogOut size={17} />}
+            onClick={logout}
+            aria-label="Esci dall'applicazione"
+            style={{ color: token.colorTextSecondary }}
+          />
+        </Tooltip>
       </Space>
     </Header>
   );
