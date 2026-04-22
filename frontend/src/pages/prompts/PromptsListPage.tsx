@@ -3,36 +3,11 @@
 // ---------------------------------------------------------------------------
 import { useCallback, useMemo, useState } from 'react';
 
-import {
-  App,
-  Button,
-  Dropdown,
-  Input,
-  Modal,
-  Table,
-  Tooltip,
-  Tree,
-  Typography,
-  theme as antdTheme,
-} from 'antd';
+import { App, Button, Input, Modal, Table, Tooltip, Typography, theme as antdTheme } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
-import type { DataNode } from 'antd/es/tree';
 import dayjs from 'dayjs';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  FolderPlus,
-  FolderTree,
-  Folder,
-  FolderOpen,
-  Inbox,
-  MoreHorizontal,
-  Pause,
-  Pencil,
-  Play,
-  Plus,
-  Search,
-  Trash2,
-} from 'lucide-react';
+import { FolderOpen, FolderTree, Inbox, Pause, Play, Plus, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import EmptyIllustrated from '@/components/common/EmptyIllustrated';
@@ -45,6 +20,7 @@ import {
   useUpdatePromptFolder,
 } from '@/hooks/queries/usePromptFolders';
 import { useToast } from '@/hooks/useToast';
+import PromptFolderTree from '@/pages/prompts/components/PromptFolderTree';
 import { getPrompts } from '@/services/api/prompts.api';
 import type { Prompt, PromptFolder } from '@/types';
 
@@ -84,18 +60,6 @@ function countAllPrompts(folders: PromptFolder[]): number {
     if (f.children.length > 0) total += countAllPrompts(f.children);
   }
   return total;
-}
-
-function buildTreeData(
-  folders: PromptFolder[],
-  renderTitle: (folder: PromptFolder) => React.ReactNode,
-): DataNode[] {
-  return folders.map((f) => ({
-    key: String(f.id),
-    title: renderTitle(f),
-    icon: <Folder size={14} />,
-    children: f.children.length > 0 ? buildTreeData(f.children, renderTitle) : undefined,
-  }));
 }
 
 // ---------------------------------------------------------------------------
@@ -275,106 +239,7 @@ function FolderSidebar({
     [deleteMutation, selectedFolder, onSelect, queryClient, modal, toast],
   );
 
-  const renderNodeTitle = useCallback(
-    (folder: PromptFolder) => (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          width: '100%',
-          padding: '2px 0',
-          gap: 6,
-        }}
-      >
-        <span
-          style={{
-            flex: 1,
-            minWidth: 0,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            fontSize: 13,
-            color: token.colorText,
-          }}
-        >
-          {folder.name}
-        </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-          <Text type="secondary" style={{ fontSize: 11, lineHeight: 1 }}>
-            {folder.prompt_count}
-          </Text>
-          <Dropdown
-            trigger={['click']}
-            menu={{
-              items: [
-                {
-                  key: 'rename',
-                  icon: <Pencil size={13} />,
-                  label: 'Rinomina',
-                  onClick: (e) => {
-                    e.domEvent.stopPropagation();
-                    openRename(folder);
-                  },
-                },
-                {
-                  key: 'subfolder',
-                  icon: <FolderPlus size={13} />,
-                  label: 'Nuova sottocartella',
-                  onClick: (e) => {
-                    e.domEvent.stopPropagation();
-                    openCreate(folder.id);
-                  },
-                },
-                { type: 'divider' },
-                {
-                  key: 'delete',
-                  icon: <Trash2 size={13} />,
-                  label: 'Elimina',
-                  danger: true,
-                  onClick: (e) => {
-                    e.domEvent.stopPropagation();
-                    handleDeleteFolder(folder);
-                  },
-                },
-              ],
-            }}
-          >
-            <Button
-              type="text"
-              size="small"
-              icon={<MoreHorizontal size={14} />}
-              onClick={(e) => e.stopPropagation()}
-              className="folder-action-btn"
-              style={{
-                minWidth: 22,
-                width: 22,
-                height: 22,
-                padding: 0,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 4,
-                opacity: 0,
-                transition: 'opacity var(--transition-fast)',
-              }}
-            />
-          </Dropdown>
-        </span>
-      </div>
-    ),
-    [openRename, openCreate, handleDeleteFolder, token.colorText],
-  );
-
-  const treeData = useMemo(
-    () => buildTreeData(folders, renderNodeTitle),
-    [folders, renderNodeTitle],
-  );
-
-  const selectedKeys = useMemo(() => {
-    if (typeof selectedFolder === 'number') return [String(selectedFolder)];
-    return [];
-  }, [selectedFolder]);
+  const selectedNumericId = typeof selectedFolder === 'number' ? selectedFolder : null;
 
   return (
     <aside
@@ -430,7 +295,7 @@ function FolderSidebar({
         onClick={() => onSelect('unfiled')}
       />
 
-      {treeData.length > 0 && (
+      {folders.length > 0 && (
         <div
           style={{
             height: 1,
@@ -446,54 +311,32 @@ function FolderSidebar({
             Caricamento…
           </Text>
         </div>
-      ) : treeData.length > 0 ? (
-        <div className="folder-tree-wrap" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+      ) : folders.length > 0 ? (
+        <div
+          className="gsi-folder-tree-wrap"
+          style={{ flex: 1, minHeight: 0, overflow: 'auto', paddingTop: 4 }}
+        >
           <style>{`
-            .folder-tree-wrap .ant-tree {
-              background: transparent;
-              font-size: 13px;
+            .gsi-folder-row:hover {
+              background: ${token.colorBgLayout} !important;
             }
-            .folder-tree-wrap .ant-tree .ant-tree-node-content-wrapper {
-              display: flex;
-              align-items: center;
-              min-width: 0;
-              border-radius: 8px;
-              padding: 4px 8px;
-              transition: background var(--transition-fast);
-            }
-            .folder-tree-wrap .ant-tree .ant-tree-title { flex: 1; min-width: 0; }
-            .folder-tree-wrap .ant-tree .ant-tree-treenode { padding: 1px 0; width: 100%; }
-            .folder-tree-wrap .ant-tree .ant-tree-node-content-wrapper:hover .folder-action-btn,
-            .folder-tree-wrap .ant-tree .ant-tree-node-selected .folder-action-btn {
+            .gsi-folder-row:hover .gsi-folder-actions,
+            .gsi-folder-row:focus-within .gsi-folder-actions {
               opacity: 1 !important;
             }
-            .folder-tree-wrap .ant-tree .ant-tree-node-content-wrapper:hover {
-              background: ${token.colorBgLayout};
-            }
-            .folder-tree-wrap .ant-tree .ant-tree-node-selected {
-              background: linear-gradient(135deg, rgba(22,119,255,0.12) 0%, rgba(114,46,209,0.12) 100%) !important;
-            }
-            .folder-tree-wrap .ant-tree .ant-tree-switcher {
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              width: 20px;
-            }
           `}</style>
-          <Tree
-            showIcon
-            defaultExpandAll
-            blockNode
-            selectedKeys={selectedKeys}
-            treeData={treeData}
-            onSelect={(keys) => {
-              if (keys.length > 0) onSelect(Number(keys[0]));
-            }}
+          <PromptFolderTree
+            folders={folders}
+            selectedId={selectedNumericId}
+            onSelect={(id) => onSelect(id)}
+            onRename={openRename}
+            onCreateChild={(parentId) => openCreate(parentId)}
+            onDelete={handleDeleteFolder}
           />
         </div>
       ) : null}
 
-      <div style={{ marginTop: treeData.length > 0 ? 8 : 6 }}>
+      <div style={{ marginTop: folders.length > 0 ? 8 : 6 }}>
         <Button
           type="dashed"
           icon={<Plus size={14} />}
