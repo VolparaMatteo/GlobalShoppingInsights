@@ -14,7 +14,7 @@ import type { ArticleUpdate, StatusChangeRequest } from '@/types';
 export function useArticle(id: string | number) {
   return useQuery({
     queryKey: queryKeys.articles.detail(id),
-    queryFn: () => getArticle(id),
+    queryFn: () => getArticle(Number(id)),
     enabled: !!id,
   });
 }
@@ -27,8 +27,7 @@ export function useUpdateArticle() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: ArticleUpdate }) =>
-      updateArticle(id, data),
+    mutationFn: ({ id, data }: { id: number; data: ArticleUpdate }) => updateArticle(id, data),
     onSuccess: (_result, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.detail(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.lists() });
@@ -44,8 +43,7 @@ export function useUploadArticleImage() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, file }: { id: number; file: File }) =>
-      uploadArticleImage(id, file),
+    mutationFn: ({ id, file }: { id: number; file: File }) => uploadArticleImage(id, file),
     onSuccess: (_result, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.detail(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.lists() });
@@ -61,13 +59,7 @@ export function useChangeStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      id,
-      data,
-    }: {
-      id: number;
-      data: StatusChangeRequest;
-    }) => changeStatus(id, data),
+    mutationFn: ({ id, data }: { id: number; data: StatusChangeRequest }) => changeStatus(id, data),
     onSuccess: (_result, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.detail(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.lists() });

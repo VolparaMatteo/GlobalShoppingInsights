@@ -35,10 +35,7 @@ export default function DuplicatePanel({ articleId }: DuplicatePanelProps) {
           <Spin size="small" />
         </div>
       ) : !duplicates || duplicates.length === 0 ? (
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="No duplicates found"
-        />
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No duplicates found" />
       ) : (
         <List
           size="small"

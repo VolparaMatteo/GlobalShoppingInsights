@@ -1,16 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func as sa_func
 from sqlalchemy.orm import Session
-from typing import Optional
+
+from app.api.deps import get_current_user, require_min_role
 from app.database import get_db
-from app.models.user import User
 from app.models.prompt import Prompt
 from app.models.prompt_folder import PromptFolder
 from app.models.search import SearchRun
-from app.schemas.prompt import PromptCreate, PromptUpdate, PromptResponse
-from app.schemas.common import PaginatedResponse, MessageResponse
-from app.api.deps import get_current_user, require_min_role
+from app.models.user import User
+from app.schemas.common import MessageResponse, PaginatedResponse
+from app.schemas.prompt import PromptCreate, PromptResponse, PromptUpdate
 from app.utils.pagination import paginate
+from app.utils.rate_limit import limiter
 
 router = APIRouter(prefix="/prompts", tags=["prompts"])
 
@@ -19,13 +20,13 @@ router = APIRouter(prefix="/prompts", tags=["prompts"])
 def list_prompts(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    search: Optional[str] = None,
-    folder_id: Optional[int] = None,
-    unfiled: Optional[bool] = None,
+    search: str | None = None,
+    folder_id: int | None = None,
+    unfiled: bool | None = None,
     db: Session = Depends(get_db),
     _current_user: User = Depends(get_current_user),
 ):
-    query = db.query(Prompt).filter(Prompt.is_active == True)
+    query = db.query(Prompt).filter(Prompt.is_active)
     if search:
         query = query.filter(Prompt.title.ilike(f"%{search}%"))
     if folder_id is not None:
@@ -33,7 +34,12 @@ def list_prompts(
     elif unfiled:
         query = query.filter(Prompt.folder_id.is_(None))
     total = query.count()
-    prompts = query.order_by(Prompt.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+    prompts = (
+        query.order_by(Prompt.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
 
     # Compute last_run_at for each prompt in a single query
     prompt_ids = [p.id for p in prompts]
@@ -51,7 +57,11 @@ def list_prompts(
     folder_ids = {p.folder_id for p in prompts if p.folder_id is not None}
     folder_names = {}
     if folder_ids:
-        rows = db.query(PromptFolder.id, PromptFolder.name).filter(PromptFolder.id.in_(folder_ids)).all()
+        rows = (
+            db.query(PromptFolder.id, PromptFolder.name)
+            .filter(PromptFolder.id.in_(folder_ids))
+            .all()
+        )
         folder_names = {fid: fname for fid, fname in rows}
 
     items = []
@@ -131,7 +141,9 @@ def delete_prompt(
 
 
 @router.post("/{prompt_id}/run", response_model=MessageResponse)
+@limiter.limit("20/minute")
 def run_prompt_search(
+    request: Request,
     prompt_id: int,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
@@ -141,5 +153,6 @@ def run_prompt_search(
     if not prompt:
         raise HTTPException(status_code=404, detail="Prompt not found")
     from app.services.discovery_service import run_discovery_pipeline
+
     background_tasks.add_task(run_discovery_pipeline, prompt_id, current_user.id)
     return MessageResponse(message="Search started")

@@ -129,7 +129,10 @@ export default function ScheduleModal({
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
         <div style={{ flex: 1 }}>
-          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+          <Typography.Text
+            type="secondary"
+            style={{ fontSize: 12, display: 'block', marginBottom: 4 }}
+          >
             Data
           </Typography.Text>
           <DatePicker
@@ -141,7 +144,10 @@ export default function ScheduleModal({
           />
         </div>
         <div style={{ flex: 1 }}>
-          <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+          <Typography.Text
+            type="secondary"
+            style={{ fontSize: 12, display: 'block', marginBottom: 4 }}
+          >
             Ora
           </Typography.Text>
           <TimePicker
@@ -156,7 +162,10 @@ export default function ScheduleModal({
       </div>
 
       <div>
-        <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+        <Typography.Text
+          type="secondary"
+          style={{ fontSize: 12, display: 'block', marginBottom: 4 }}
+        >
           Fuso orario
         </Typography.Text>
         <Select

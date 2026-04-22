@@ -3,12 +3,7 @@
 // ---------------------------------------------------------------------------
 import React, { useState } from 'react';
 import { Typography, Space, Input, Tag, Button } from 'antd';
-import {
-  EditOutlined,
-  GlobalOutlined,
-  UserOutlined,
-  CalendarOutlined,
-} from '@ant-design/icons';
+import { EditOutlined, GlobalOutlined, UserOutlined, CalendarOutlined } from '@ant-design/icons';
 import type { Article } from '@/types';
 import { STATUS_MAP, type ArticleStatus } from '@/config/constants';
 import { formatDate } from '@/utils/date';
@@ -103,9 +98,7 @@ export default function ArticleHeader({ article, onEdit }: ArticleHeaderProps) {
         {article.published_at && (
           <Space size={4}>
             <CalendarOutlined />
-            <Typography.Text type="secondary">
-              {formatDate(article.published_at)}
-            </Typography.Text>
+            <Typography.Text type="secondary">{formatDate(article.published_at)}</Typography.Text>
           </Space>
         )}
 

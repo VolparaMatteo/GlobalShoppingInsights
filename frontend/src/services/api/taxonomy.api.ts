@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // services/api/taxonomy.api.ts  --  Tags & Categories CRUD + WP sync
 // ---------------------------------------------------------------------------
-import client from "./client";
+import client from './client';
 import type {
   PaginatedResponse,
   Tag,
@@ -11,7 +11,7 @@ import type {
   CategoryCreate,
   CategoryUpdate,
   MessageResponse,
-} from "@/types";
+} from '@/types';
 
 // ---- Tags ----------------------------------------------------------------
 
@@ -22,10 +22,8 @@ export interface GetTagsParams {
 }
 
 /** GET /tags */
-export async function getTags(
-  params?: GetTagsParams,
-): Promise<PaginatedResponse<Tag>> {
-  const { data } = await client.get<PaginatedResponse<Tag>>("/tags", {
+export async function getTags(params?: GetTagsParams): Promise<PaginatedResponse<Tag>> {
+  const { data } = await client.get<PaginatedResponse<Tag>>('/tags', {
     params,
   });
   return data;
@@ -33,15 +31,12 @@ export async function getTags(
 
 /** POST /tags */
 export async function createTag(payload: TagCreate): Promise<Tag> {
-  const { data } = await client.post<Tag>("/tags", payload);
+  const { data } = await client.post<Tag>('/tags', payload);
   return data;
 }
 
 /** PATCH /tags/:id */
-export async function updateTag(
-  id: number,
-  payload: TagUpdate,
-): Promise<Tag> {
+export async function updateTag(id: number, payload: TagUpdate): Promise<Tag> {
   const { data } = await client.patch<Tag>(`/tags/${id}`, payload);
   return data;
 }
@@ -64,30 +59,19 @@ export interface GetCategoriesParams {
 export async function getCategories(
   params?: GetCategoriesParams,
 ): Promise<PaginatedResponse<Category>> {
-  const { data } = await client.get<PaginatedResponse<Category>>(
-    "/categories",
-    { params },
-  );
+  const { data } = await client.get<PaginatedResponse<Category>>('/categories', { params });
   return data;
 }
 
 /** POST /categories */
-export async function createCategory(
-  payload: CategoryCreate,
-): Promise<Category> {
-  const { data } = await client.post<Category>("/categories", payload);
+export async function createCategory(payload: CategoryCreate): Promise<Category> {
+  const { data } = await client.post<Category>('/categories', payload);
   return data;
 }
 
 /** PATCH /categories/:id */
-export async function updateCategory(
-  id: number,
-  payload: CategoryUpdate,
-): Promise<Category> {
-  const { data } = await client.patch<Category>(
-    `/categories/${id}`,
-    payload,
-  );
+export async function updateCategory(id: number, payload: CategoryUpdate): Promise<Category> {
+  const { data } = await client.patch<Category>(`/categories/${id}`, payload);
   return data;
 }
 
@@ -100,6 +84,6 @@ export async function deleteCategory(id: number): Promise<void> {
 
 /** POST /taxonomy/sync-wp  --  sync tags & categories with WordPress */
 export async function syncWP(): Promise<MessageResponse> {
-  const { data } = await client.post<MessageResponse>("/taxonomy/sync-wp");
+  const { data } = await client.post<MessageResponse>('/taxonomy/sync-wp');
   return data;
 }

@@ -1,4 +1,16 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, JSON, ForeignKey, Table, func
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Table,
+    Text,
+    func,
+)
+
 from app.database import Base
 
 article_prompts = Table(
@@ -36,7 +48,7 @@ class Article(Base):
     country = Column(String(10), nullable=True)
     content_html = Column(Text, nullable=True)
     content_text = Column(Text, nullable=True)
-    content_hash = Column(String(64), nullable=True)
+    content_hash = Column(String(64), nullable=True, index=True)
     status = Column(String(20), nullable=False, default="imported", index=True)
     featured_image_url = Column(Text, nullable=True)
     images = Column(JSON, default=list)

@@ -1,4 +1,3 @@
-from typing import Optional
 from pydantic import BaseModel
 
 
@@ -17,13 +16,13 @@ class DedupSettings(BaseModel):
 
 class BlacklistCreate(BaseModel):
     domain: str
-    reason: Optional[str] = None
+    reason: str | None = None
 
 
 class BlacklistResponse(BaseModel):
     id: int
     domain: str
-    reason: Optional[str] = None
-    added_by: Optional[int] = None
+    reason: str | None = None
+    added_by: int | None = None
 
     model_config = {"from_attributes": True}

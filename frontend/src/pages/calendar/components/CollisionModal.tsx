@@ -80,10 +80,9 @@ export default function CollisionModal({
     >
       <Typography.Paragraph>
         {existingSlots.length === 1 ? "C'è già" : 'Ci sono già'}{' '}
-        <strong>{existingSlots.length}</strong>{' '}
-        slot pianificat{existingSlots.length !== 1 ? 'i' : 'o'} per il{' '}
-        <strong>{formattedDate}</strong>. Aggiungerne un altro potrebbe superare
-        il limite di pubblicazione giornaliero.
+        <strong>{existingSlots.length}</strong> slot pianificat
+        {existingSlots.length !== 1 ? 'i' : 'o'} per il <strong>{formattedDate}</strong>.
+        Aggiungerne un altro potrebbe superare il limite di pubblicazione giornaliero.
       </Typography.Paragraph>
 
       <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
@@ -104,10 +103,7 @@ export default function CollisionModal({
               <Typography.Text type="secondary" style={{ fontSize: 12, flexShrink: 0 }}>
                 {dayjs(slot.scheduled_for).format('HH:mm')}
               </Typography.Text>
-              <Tag
-                color={SLOT_TAG_COLORS[slot.status] || 'default'}
-                style={{ margin: 0 }}
-              >
+              <Tag color={SLOT_TAG_COLORS[slot.status] || 'default'} style={{ margin: 0 }}>
                 {getStatusLabel(slot.status)}
               </Tag>
             </div>

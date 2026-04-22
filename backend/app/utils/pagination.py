@@ -1,4 +1,5 @@
-from typing import TypeVar, Generic, List, Optional
+from typing import Generic, TypeVar
+
 from pydantic import BaseModel
 
 T = TypeVar("T")
@@ -14,14 +15,14 @@ class PaginationParams(BaseModel):
 
 
 class PaginatedResponse(BaseModel, Generic[T]):
-    items: List[T]
+    items: list[T]
     total: int
     page: int
     page_size: int
     total_pages: int
 
 
-def paginate(items: List, total: int, page: int, page_size: int) -> dict:
+def paginate(items: list, total: int, page: int, page_size: int) -> dict:
     return {
         "items": items,
         "total": total,

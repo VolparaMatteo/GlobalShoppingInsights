@@ -1,19 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func as sa_func
 from sqlalchemy.orm import Session
-from typing import List, Set
+
+from app.api.deps import get_current_user, require_min_role
 from app.database import get_db
-from app.models.user import User
 from app.models.prompt import Prompt
 from app.models.prompt_folder import PromptFolder
-from app.schemas.prompt_folder import PromptFolderCreate, PromptFolderUpdate, PromptFolderResponse
+from app.models.user import User
 from app.schemas.common import MessageResponse
-from app.api.deps import get_current_user, require_min_role
+from app.schemas.prompt_folder import PromptFolderCreate, PromptFolderResponse, PromptFolderUpdate
 
 router = APIRouter(prefix="/prompt-folders", tags=["prompt-folders"])
 
 
-def _build_tree(folders: list, counts: dict) -> List[PromptFolderResponse]:
+def _build_tree(folders: list, counts: dict) -> list[PromptFolderResponse]:
     """Build a nested tree from a flat list of folders."""
     by_id: dict[int, PromptFolderResponse] = {}
     for f in folders:
@@ -22,7 +22,7 @@ def _build_tree(folders: list, counts: dict) -> List[PromptFolderResponse]:
         resp.children = []
         by_id[f.id] = resp
 
-    roots: List[PromptFolderResponse] = []
+    roots: list[PromptFolderResponse] = []
     for f in folders:
         node = by_id[f.id]
         if f.parent_id and f.parent_id in by_id:
@@ -33,9 +33,9 @@ def _build_tree(folders: list, counts: dict) -> List[PromptFolderResponse]:
     return roots
 
 
-def _collect_descendant_ids(folder_id: int, db: Session) -> Set[int]:
+def _collect_descendant_ids(folder_id: int, db: Session) -> set[int]:
     """Recursively collect all descendant folder IDs."""
-    ids: Set[int] = set()
+    ids: set[int] = set()
     queue = [folder_id]
     while queue:
         current = queue.pop()
@@ -52,7 +52,7 @@ def _is_descendant_of(folder_id: int, ancestor_id: int, db: Session) -> bool:
     return ancestor_id in descendants
 
 
-@router.get("", response_model=List[PromptFolderResponse])
+@router.get("", response_model=list[PromptFolderResponse])
 def list_prompt_folders(
     db: Session = Depends(get_db),
     _current_user: User = Depends(get_current_user),
@@ -61,7 +61,7 @@ def list_prompt_folders(
 
     counts = dict(
         db.query(Prompt.folder_id, sa_func.count(Prompt.id))
-        .filter(Prompt.is_active == True, Prompt.folder_id.isnot(None))
+        .filter(Prompt.is_active, Prompt.folder_id.isnot(None))
         .group_by(Prompt.folder_id)
         .all()
     )
@@ -88,7 +88,9 @@ def create_prompt_folder(
     else:
         existing_query = existing_query.filter(PromptFolder.parent_id == body.parent_id)
     if existing_query.first():
-        raise HTTPException(status_code=409, detail="Una cartella con questo nome esiste già in questa posizione")
+        raise HTTPException(
+            status_code=409, detail="Una cartella con questo nome esiste già in questa posizione"
+        )
 
     folder = PromptFolder(name=body.name, parent_id=body.parent_id)
     db.add(folder)
@@ -118,12 +120,16 @@ def update_prompt_folder(
     # Validate parent_id changes
     if body.parent_id is not None:
         if body.parent_id == folder_id:
-            raise HTTPException(status_code=400, detail="Una cartella non può essere figlia di sé stessa")
+            raise HTTPException(
+                status_code=400, detail="Una cartella non può essere figlia di sé stessa"
+            )
         parent = db.query(PromptFolder).filter(PromptFolder.id == body.parent_id).first()
         if not parent:
             raise HTTPException(status_code=404, detail="Cartella padre non trovata")
         if _is_descendant_of(folder_id, body.parent_id, db):
-            raise HTTPException(status_code=400, detail="Spostamento non valido: creerebbe un ciclo")
+            raise HTTPException(
+                status_code=400, detail="Spostamento non valido: creerebbe un ciclo"
+            )
 
     # Uniqueness check for (name, parent_id)
     dup_query = db.query(PromptFolder).filter(
@@ -135,7 +141,9 @@ def update_prompt_folder(
     else:
         dup_query = dup_query.filter(PromptFolder.parent_id == new_parent_id)
     if dup_query.first():
-        raise HTTPException(status_code=409, detail="Una cartella con questo nome esiste già in questa posizione")
+        raise HTTPException(
+            status_code=409, detail="Una cartella con questo nome esiste già in questa posizione"
+        )
 
     if body.name is not None:
         folder.name = body.name
@@ -145,9 +153,11 @@ def update_prompt_folder(
     db.commit()
     db.refresh(folder)
 
-    count = db.query(sa_func.count(Prompt.id)).filter(
-        Prompt.folder_id == folder_id, Prompt.is_active == True
-    ).scalar()
+    count = (
+        db.query(sa_func.count(Prompt.id))
+        .filter(Prompt.folder_id == folder_id, Prompt.is_active)
+        .scalar()
+    )
     resp = PromptFolderResponse.model_validate(folder)
     resp.prompt_count = count or 0
     resp.children = []

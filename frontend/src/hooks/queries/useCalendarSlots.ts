@@ -44,8 +44,7 @@ export function useUpdateSlot() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: SlotUpdate }) =>
-      updateSlot(id, data),
+    mutationFn: ({ id, data }: { id: number; data: SlotUpdate }) => updateSlot(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
     },

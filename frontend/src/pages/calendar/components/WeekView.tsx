@@ -139,9 +139,7 @@ export default function WeekView({ slots, currentDate, onSlotClick }: WeekViewPr
       {/* Righe orarie */}
       {HOURS.map((hour) => (
         <React.Fragment key={hour}>
-          <div style={hourLabelStyle}>
-            {String(hour).padStart(2, '0')}:00
-          </div>
+          <div style={hourLabelStyle}>{String(hour).padStart(2, '0')}:00</div>
 
           {days.map((day) => {
             const dateKey = day.format('YYYY-MM-DD');
@@ -158,11 +156,7 @@ export default function WeekView({ slots, currentDate, onSlotClick }: WeekViewPr
                   }}
                 >
                   {hourSlots.map((slot) => (
-                    <SlotCard
-                      key={slot.id}
-                      slot={slot}
-                      onClick={() => onSlotClick(slot)}
-                    />
+                    <SlotCard key={slot.id} slot={slot} onClick={() => onSlotClick(slot)} />
                   ))}
                 </div>
               </DroppableSlot>

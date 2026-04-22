@@ -5,17 +5,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Button,
-  Dropdown,
-  Input,
-  Modal,
-  Table,
-  Tag,
-  Tree,
-  Typography,
-  message,
-} from 'antd';
+import { Button, Dropdown, Input, Modal, Table, Tag, Tree, Typography, message } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { DataNode } from 'antd/es/tree';
 import {
@@ -156,7 +146,9 @@ function SidebarItem({
     >
       <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
         {icon}
-        <span className="text-ellipsis" style={{ flex: 1, minWidth: 0 }}>{label}</span>
+        <span className="text-ellipsis" style={{ flex: 1, minWidth: 0 }}>
+          {label}
+        </span>
       </span>
       <Text
         type="secondary"
@@ -235,16 +227,18 @@ function FolderSidebar({
       }
       setModalOpen(false);
     } catch {
-      message.error(modalMode === 'create' ? 'Impossibile creare la cartella' : 'Impossibile rinominare la cartella');
+      message.error(
+        modalMode === 'create'
+          ? 'Impossibile creare la cartella'
+          : 'Impossibile rinominare la cartella',
+      );
     }
   }, [folderName, modalMode, editingFolder, parentIdForCreate, createMutation, updateMutation]);
 
   const handleDeleteFolder = useCallback(
     (folder: PromptFolder) => {
       const childCount = folder.children.length;
-      const extraMsg = childCount > 0
-        ? ` Le ${childCount} sotto-cartelle verranno eliminate.`
-        : '';
+      const extraMsg = childCount > 0 ? ` Le ${childCount} sotto-cartelle verranno eliminate.` : '';
       Modal.confirm({
         title: 'Elimina Cartella',
         content: `Eliminare "${folder.name}"?${extraMsg} I prompt contenuti non verranno eliminati, ma saranno spostati tra quelli senza cartella.`,
@@ -300,10 +294,7 @@ function FolderSidebar({
             flexShrink: 0,
           }}
         >
-          <Text
-            type="secondary"
-            style={{ fontSize: 'var(--font-size-xs)', lineHeight: 1 }}
-          >
+          <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)', lineHeight: 1 }}>
             {folder.prompt_count}
           </Text>
           <Dropdown
@@ -314,13 +305,19 @@ function FolderSidebar({
                   key: 'rename',
                   icon: <EditOutlined />,
                   label: 'Rinomina',
-                  onClick: (e) => { e.domEvent.stopPropagation(); openRename(folder); },
+                  onClick: (e) => {
+                    e.domEvent.stopPropagation();
+                    openRename(folder);
+                  },
                 },
                 {
                   key: 'subfolder',
                   icon: <SubnodeOutlined />,
                   label: 'Nuova Sottocartella',
-                  onClick: (e) => { e.domEvent.stopPropagation(); openCreate(folder.id); },
+                  onClick: (e) => {
+                    e.domEvent.stopPropagation();
+                    openCreate(folder.id);
+                  },
                 },
                 { type: 'divider' },
                 {
@@ -328,7 +325,10 @@ function FolderSidebar({
                   icon: <DeleteOutlined />,
                   label: 'Elimina',
                   danger: true,
-                  onClick: (e) => { e.domEvent.stopPropagation(); handleDeleteFolder(folder); },
+                  onClick: (e) => {
+                    e.domEvent.stopPropagation();
+                    handleDeleteFolder(folder);
+                  },
                 },
               ],
             }}
@@ -386,7 +386,15 @@ function FolderSidebar({
     >
       {/* Header */}
       <div style={{ marginBottom: 8 }}>
-        <Text strong style={{ fontSize: 'var(--font-size-sm)', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--color-text-tertiary)' }}>
+        <Text
+          strong
+          style={{
+            fontSize: 'var(--font-size-sm)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.04em',
+            color: 'var(--color-text-tertiary)',
+          }}
+        >
           Cartelle
         </Text>
       </div>
@@ -415,7 +423,9 @@ function FolderSidebar({
       {/* Folder tree */}
       {foldersLoading ? (
         <div style={{ padding: '12px 0', textAlign: 'center' }}>
-          <Text type="secondary" style={{ fontSize: 'var(--font-size-sm)' }}>Caricamento...</Text>
+          <Text type="secondary" style={{ fontSize: 'var(--font-size-sm)' }}>
+            Caricamento...
+          </Text>
         </div>
       ) : treeData.length > 0 ? (
         <div className="folder-tree-wrap" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
@@ -487,7 +497,9 @@ function FolderSidebar({
       <Modal
         title={
           modalMode === 'create'
-            ? (parentIdForCreate ? 'Nuova Sottocartella' : 'Nuova Cartella')
+            ? parentIdForCreate
+              ? 'Nuova Sottocartella'
+              : 'Nuova Cartella'
             : 'Rinomina Cartella'
         }
         open={modalOpen}
@@ -556,19 +568,14 @@ export default function PromptsListPage() {
         width: 130,
         align: 'center' as const,
         render: (_: unknown, record: Prompt) =>
-          record.schedule_enabled ? (
-            <Tag color="green">Attiva</Tag>
-          ) : (
-            <Tag>Disattivata</Tag>
-          ),
+          record.schedule_enabled ? <Tag color="green">Attiva</Tag> : <Tag>Disattivata</Tag>,
       },
       {
         title: 'Ultima Esecuzione',
         dataIndex: 'last_run_at',
         key: 'last_run',
         width: 170,
-        render: (val: string | null) =>
-          val ? dayjs(val).format('DD/MM/YY HH:mm') : '--',
+        render: (val: string | null) => (val ? dayjs(val).format('DD/MM/YY HH:mm') : '--'),
       },
     ],
     [],
@@ -612,11 +619,7 @@ export default function PromptsListPage() {
             Gestisci e monitora i tuoi prompt di ricerca automatizzati.
           </Text>
         </div>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => navigate('/prompts/new')}
-        >
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/prompts/new')}>
           Nuovo Prompt
         </Button>
       </div>

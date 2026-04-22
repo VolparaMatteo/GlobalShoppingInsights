@@ -1,8 +1,8 @@
 // ---------------------------------------------------------------------------
 // services/api/search.api.ts  --  Search run endpoints
 // ---------------------------------------------------------------------------
-import client from "./client";
-import type { PaginatedResponse, SearchRun } from "@/types";
+import client from './client';
+import type { PaginatedResponse, SearchRun } from '@/types';
 
 export interface GetSearchRunsParams {
   page?: number;
@@ -15,10 +15,7 @@ export interface GetSearchRunsParams {
 export async function getSearchRuns(
   params?: GetSearchRunsParams,
 ): Promise<PaginatedResponse<SearchRun>> {
-  const { data } = await client.get<PaginatedResponse<SearchRun>>(
-    "/search-runs",
-    { params },
-  );
+  const { data } = await client.get<PaginatedResponse<SearchRun>>('/search-runs', { params });
   return data;
 }
 

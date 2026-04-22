@@ -34,11 +34,7 @@ import dayjs from 'dayjs';
 import type { Article } from '@/types';
 import { getArticle, changeStatus } from '@/services/api/articles.api';
 import { queryKeys } from '@/config/queryKeys';
-import {
-  ARTICLE_STATUSES,
-  STATUS_MAP,
-  type ArticleStatus,
-} from '@/config/constants';
+import { ARTICLE_STATUSES, STATUS_MAP, type ArticleStatus } from '@/config/constants';
 import { buildPromptDetailPath } from '@/config/routes';
 
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -75,8 +71,7 @@ export default function ArticleDetailPage() {
 
   // ---- Status mutation (force: any status) --------------------------------
   const statusMutation = useMutation({
-    mutationFn: (newStatus: string) =>
-      changeStatus(articleId, { new_status: newStatus }, true),
+    mutationFn: (newStatus: string) => changeStatus(articleId, { new_status: newStatus }, true),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.detail(articleId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.all });
@@ -101,44 +96,36 @@ export default function ArticleDetailPage() {
   }
 
   // ---- Status dropdown (all statuses except current) ----------------------
-  const statusMenuItems: MenuProps['items'] = ARTICLE_STATUSES
-    .filter((s) => s !== article.status)
-    .map((s) => {
-      const meta = STATUS_MAP[s];
-      return {
-        key: s,
-        label: (
-          <Flex align="center" gap={8}>
-            <span
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                background: meta?.color ?? '#8c8c8c',
-                flexShrink: 0,
-              }}
-            />
-            {meta?.label ?? s}
-          </Flex>
-        ),
-        onClick: () => statusMutation.mutate(s),
-      };
-    });
+  const statusMenuItems: MenuProps['items'] = ARTICLE_STATUSES.filter(
+    (s) => s !== article.status,
+  ).map((s) => {
+    const meta = STATUS_MAP[s];
+    return {
+      key: s,
+      label: (
+        <Flex align="center" gap={8}>
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: meta?.color ?? '#8c8c8c',
+              flexShrink: 0,
+            }}
+          />
+          {meta?.label ?? s}
+        </Flex>
+      ),
+      onClick: () => statusMutation.mutate(s),
+    };
+  });
 
   // ---- Render -------------------------------------------------------------
   return (
     <div style={{ maxWidth: 1400, margin: '0 auto' }}>
       {/* ---- Top bar ---- */}
-      <Flex
-        align="center"
-        justify="space-between"
-        style={{ marginBottom: 16 }}
-      >
-        <Button
-          type="text"
-          icon={<ArrowLeftOutlined />}
-          onClick={() => navigate(-1)}
-        >
+      <Flex align="center" justify="space-between" style={{ marginBottom: 16 }}>
+        <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
           Torna indietro
         </Button>
 
@@ -147,10 +134,7 @@ export default function ArticleDetailPage() {
             <Button icon={<SwapOutlined />}>Cambia Stato</Button>
           </Dropdown>
           {!isEditing && (
-            <Button
-              icon={<EditOutlined />}
-              onClick={() => setIsEditing(true)}
-            >
+            <Button icon={<EditOutlined />} onClick={() => setIsEditing(true)}>
               Modifica
             </Button>
           )}
@@ -179,18 +163,17 @@ export default function ArticleDetailPage() {
           <ScoreBadge score={article.ai_score} />
         </Flex>
 
-        <Typography.Title level={3} style={{ margin: '0 0 16px', whiteSpace: 'normal', wordBreak: 'break-word' }}>
+        <Typography.Title
+          level={3}
+          style={{ margin: '0 0 16px', whiteSpace: 'normal', wordBreak: 'break-word' }}
+        >
           {article.title}
         </Typography.Title>
 
         <Flex wrap="wrap" gap={16}>
           <Flex align="center" gap={6} style={{ fontSize: 13, color: '#595959' }}>
             <GlobalOutlined style={{ color: '#8c8c8c' }} />
-            <a
-              href={article.canonical_url}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a href={article.canonical_url} target="_blank" rel="noopener noreferrer">
               {article.source_domain}
             </a>
             <Tag style={{ fontSize: 11, lineHeight: '18px', padding: '0 6px' }}>
@@ -213,9 +196,7 @@ export default function ArticleDetailPage() {
           <Flex align="center" gap={6} style={{ fontSize: 13, color: '#595959' }}>
             <CalendarOutlined style={{ color: '#8c8c8c' }} />
             Pubblicato il{' '}
-            {article.published_at
-              ? dayjs(article.published_at).format('DD/MM/YY')
-              : '—'}
+            {article.published_at ? dayjs(article.published_at).format('DD/MM/YY') : '—'}
           </Flex>
 
           <Flex align="center" gap={6} style={{ fontSize: 13, color: '#595959' }}>

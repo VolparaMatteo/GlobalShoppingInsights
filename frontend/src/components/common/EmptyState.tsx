@@ -13,11 +13,10 @@ export default function EmptyState({
   children,
 }: EmptyStateProps) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
-      <Empty
-        image={image || Empty.PRESENTED_IMAGE_SIMPLE}
-        description={description}
-      >
+    <div
+      style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}
+    >
+      <Empty image={image || Empty.PRESENTED_IMAGE_SIMPLE} description={description}>
         {children}
       </Empty>
     </div>

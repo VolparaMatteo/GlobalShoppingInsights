@@ -1,16 +1,49 @@
 import logging
 import os
 from datetime import datetime, timezone
+
 import httpx
+
 from app.config import settings
 from app.database import SessionLocal
-from app.models.article import Article, article_tags, article_categories
-from app.models.taxonomy import Tag, Category
+from app.models.article import Article, article_categories, article_tags
 from app.models.calendar import EditorialSlot
-from app.models.wordpress import WPConfig, WPPost
 from app.models.logs import JobLog
+from app.models.taxonomy import Category, Tag
+from app.models.wordpress import WPConfig, WPPost
+from app.utils.encryption import decrypt, is_encrypted
+from app.utils.retry import with_retry
 
 logger = logging.getLogger(__name__)
+
+
+@with_retry(max_attempts=3, initial_delay=1.0)
+def _wp_http_get(url: str, **kwargs) -> httpx.Response:
+    r = httpx.get(url, **kwargs)
+    r.raise_for_status()
+    return r
+
+
+@with_retry(max_attempts=3, initial_delay=1.0)
+def _wp_http_post(url: str, **kwargs) -> httpx.Response:
+    r = httpx.post(url, **kwargs)
+    r.raise_for_status()
+    return r
+
+
+def _wp_auth_credentials(config: WPConfig) -> tuple[str, str]:
+    """Restituisce (username, plaintext_password) dalla config WP.
+
+    Se la password è ancora in plaintext (legacy) la usa raw e logga un warning
+    — la migrazione di Batch 2 dovrebbe averla già cifrata all'avvio.
+    """
+    stored = config.wp_app_password_encrypted or ""
+    if not stored:
+        return (config.wp_username or "", "")
+    if is_encrypted(stored):
+        return (config.wp_username or "", decrypt(stored))
+    logger.warning("WP app password trovata in plaintext in DB: esegui la migrazione di cifratura.")
+    return (config.wp_username or "", stored)
 
 
 def _text_to_html(text: str) -> str:
@@ -67,21 +100,25 @@ def _upload_featured_image(
             with open(filepath, "rb") as f:
                 file_bytes = f.read()
         else:
-            # Remote URL: download
-            resp = httpx.get(image_url, timeout=30, follow_redirects=True)
-            resp.raise_for_status()
+            # Remote URL: download con retry su errori transitori
+            resp = _wp_http_get(image_url, timeout=30, follow_redirects=True)
             file_bytes = resp.content
             # Derive filename from URL
-            filename = image_url.rsplit("/", 1)[-1].split("?")[0] or "image.jpg"
+            filename = image_url.rsplit("/", 1)[-1].split("?", maxsplit=1)[0] or "image.jpg"
 
         # Determine content type from extension
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "jpg"
-        content_types = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
-                         "gif": "image/gif", "webp": "image/webp"}
+        content_types = {
+            "jpg": "image/jpeg",
+            "jpeg": "image/jpeg",
+            "png": "image/png",
+            "gif": "image/gif",
+            "webp": "image/webp",
+        }
         content_type = content_types.get(ext, "image/jpeg")
 
         media_url = f"{wp_base_url.rstrip('/')}/wp-json/wp/v2/media"
-        response = httpx.post(
+        response = _wp_http_post(
             media_url,
             content=file_bytes,
             headers={
@@ -91,7 +128,6 @@ def _upload_featured_image(
             auth=auth,
             timeout=60,
         )
-        response.raise_for_status()
         return response.json().get("id")
     except Exception as e:
         logger.error(f"Featured image upload failed: {e}")
@@ -137,7 +173,7 @@ def publish_to_wordpress(article_id: int):
 
         try:
             wp_base = config.wp_url.rstrip("/")
-            wp_auth = (config.wp_username, config.wp_app_password_encrypted or "")
+            wp_auth = _wp_auth_credentials(config)
 
             # --- Build clean content ---
             content = ""
@@ -165,14 +201,13 @@ def publish_to_wordpress(article_id: int):
                 if media_id:
                     post_data["featured_media"] = media_id
 
-            # --- Create post ---
-            response = httpx.post(
+            # --- Create post (con retry su errori transitori / 5xx) ---
+            response = _wp_http_post(
                 f"{wp_base}/wp-json/wp/v2/posts",
                 json=post_data,
                 auth=wp_auth,
                 timeout=60,
             )
-            response.raise_for_status()
             wp_data = response.json()
 
             wp_post = WPPost(

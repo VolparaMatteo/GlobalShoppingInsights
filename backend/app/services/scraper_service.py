@@ -1,14 +1,16 @@
 import logging
-from typing import Optional
+
 import httpx
+import py3langid as langid
 import trafilatura
 from htmldate import find_date
-import py3langid as langid
+
+from app.utils.retry import with_retry
 
 logger = logging.getLogger(__name__)
 
 
-def detect_language(text: str) -> Optional[str]:
+def detect_language(text: str) -> str | None:
     """Detect language using py3langid. Returns ISO 639-1 code or None."""
     if not text or len(text.strip()) < 50:
         return None
@@ -19,6 +21,7 @@ def detect_language(text: str) -> Optional[str]:
         logger.warning(f"Language detection failed: {e}")
         return None
 
+
 DEFAULT_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -26,10 +29,21 @@ DEFAULT_HEADERS = {
 }
 
 
-def scrape_url(url: str, timeout: int = 30) -> Optional[dict]:
+@with_retry(max_attempts=3, initial_delay=1.0)
+def _fetch_html(url: str, timeout: int) -> httpx.Response:
+    """Download HTML con retry su timeout / connection / 5xx.
+
+    Isolata qui così il retry copre SOLO la chiamata HTTP, non le fasi di
+    scraping/parsing che seguono (ripeterle sarebbe costoso e inutile).
+    """
+    response = httpx.get(url, headers=DEFAULT_HEADERS, timeout=timeout, follow_redirects=True)
+    response.raise_for_status()
+    return response
+
+
+def scrape_url(url: str, timeout: int = 30) -> dict | None:
     try:
-        response = httpx.get(url, headers=DEFAULT_HEADERS, timeout=timeout, follow_redirects=True)
-        response.raise_for_status()
+        response = _fetch_html(url, timeout)
         html = response.text
 
         # Extract main text content

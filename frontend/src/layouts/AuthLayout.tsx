@@ -49,12 +49,7 @@ export default function AuthLayout() {
         }}
       >
         <Suspense
-          fallback={
-            <Spin
-              size="large"
-              style={{ display: 'block', margin: '40px auto' }}
-            />
-          }
+          fallback={<Spin size="large" style={{ display: 'block', margin: '40px auto' }} />}
         >
           <Outlet />
         </Suspense>

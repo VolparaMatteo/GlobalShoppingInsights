@@ -152,12 +152,7 @@ export default function DayView({ slots, currentDate, onSlotClick }: DayViewProp
 
               <div style={cellStyle}>
                 {hourSlots.map((slot) => (
-                  <SlotCard
-                    key={slot.id}
-                    slot={slot}
-                    detailed
-                    onClick={() => onSlotClick(slot)}
-                  />
+                  <SlotCard key={slot.id} slot={slot} detailed onClick={() => onSlotClick(slot)} />
                 ))}
               </div>
             </div>

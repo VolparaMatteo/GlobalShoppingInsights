@@ -2,12 +2,7 @@
 // BatchActionsBar  --  Floating bar shown when one or more rows are selected
 // ---------------------------------------------------------------------------
 import { Button, Dropdown, Space, Typography } from 'antd';
-import {
-  SwapOutlined,
-  TagsOutlined,
-  DeleteOutlined,
-  CloseOutlined,
-} from '@ant-design/icons';
+import { SwapOutlined, TagsOutlined, DeleteOutlined, CloseOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { showConfirmModal } from '@/components/common/ConfirmModal';
 import { ARTICLE_STATUSES, STATUS_MAP, type ArticleStatus } from '@/config/constants';
@@ -34,11 +29,7 @@ interface BatchActionsBarProps {
 // Component
 // ---------------------------------------------------------------------------
 
-export default function BatchActionsBar({
-  selectedIds,
-  onAction,
-  onClear,
-}: BatchActionsBarProps) {
+export default function BatchActionsBar({ selectedIds, onAction, onClear }: BatchActionsBarProps) {
   if (selectedIds.length === 0) return null;
 
   // Status dropdown items
@@ -76,35 +67,22 @@ export default function BatchActionsBar({
         borderRadius: '0 0 8px 8px',
       }}
     >
-      <Typography.Text strong>
-        {selectedIds.length} selezionati
-      </Typography.Text>
+      <Typography.Text strong>{selectedIds.length} selezionati</Typography.Text>
 
       <Space>
         <Dropdown menu={{ items: statusMenuItems }} trigger={['click']}>
           <Button icon={<SwapOutlined />}>Cambia Stato</Button>
         </Dropdown>
 
-        <Button
-          icon={<TagsOutlined />}
-          onClick={() => onAction({ type: 'tag' })}
-        >
+        <Button icon={<TagsOutlined />} onClick={() => onAction({ type: 'tag' })}>
           Aggiungi Tag
         </Button>
 
-        <Button
-          danger
-          icon={<DeleteOutlined />}
-          onClick={handleDiscard}
-        >
+        <Button danger icon={<DeleteOutlined />} onClick={handleDiscard}>
           Scarta
         </Button>
 
-        <Button
-          type="text"
-          icon={<CloseOutlined />}
-          onClick={onClear}
-        >
+        <Button type="text" icon={<CloseOutlined />} onClick={onClear}>
           Deseleziona
         </Button>
       </Space>

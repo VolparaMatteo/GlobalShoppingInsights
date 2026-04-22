@@ -1,26 +1,31 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
 from datetime import datetime
-from typing import Optional, List
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from app.api.deps import get_current_user, require_min_role
 from app.database import get_db
-from app.models.user import User
 from app.models.article import Article
-from app.models.calendar import EditorialSlot, CalendarRule
+from app.models.calendar import CalendarRule, EditorialSlot
+from app.models.user import User
 from app.schemas.calendar import (
-    SlotCreate, SlotUpdate, SlotResponse,
-    CollisionCheckRequest, CollisionCheckResponse,
-    CalendarRuleResponse, CalendarRuleUpdate,
+    CalendarRuleResponse,
+    CalendarRuleUpdate,
+    CollisionCheckRequest,
+    CollisionCheckResponse,
+    SlotCreate,
+    SlotResponse,
+    SlotUpdate,
 )
 from app.schemas.common import MessageResponse
-from app.api.deps import get_current_user, require_min_role
 
 router = APIRouter(prefix="/slots", tags=["calendar"])
 
 
-@router.get("", response_model=List[SlotResponse])
+@router.get("", response_model=list[SlotResponse])
 def list_slots(
-    start: Optional[datetime] = None,
-    end: Optional[datetime] = None,
+    start: datetime | None = None,
+    end: datetime | None = None,
     db: Session = Depends(get_db),
     _current_user: User = Depends(get_current_user),
 ):
@@ -119,10 +124,14 @@ def check_collision(
         query = query.filter(EditorialSlot.id != body.exclude_slot_id)
     existing = query.all()
 
-    max_rule = db.query(CalendarRule).filter(
-        CalendarRule.rule_type == "max_posts_per_day",
-        CalendarRule.is_active == True,
-    ).first()
+    max_rule = (
+        db.query(CalendarRule)
+        .filter(
+            CalendarRule.rule_type == "max_posts_per_day",
+            CalendarRule.is_active,
+        )
+        .first()
+    )
     max_per_day = max_rule.value if max_rule else 10
 
     return CollisionCheckResponse(
@@ -131,7 +140,7 @@ def check_collision(
     )
 
 
-@router.get("/rules", response_model=List[CalendarRuleResponse])
+@router.get("/rules", response_model=list[CalendarRuleResponse])
 def get_rules(
     db: Session = Depends(get_db),
     _current_user: User = Depends(get_current_user),

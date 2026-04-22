@@ -1,0 +1,139 @@
+[project]
+name = "gsi-backend"
+version = "1.0.0"
+description = "Global Shopping Insights — editorial intelligence backend"
+requires-python = ">=3.10"
+
+# ----------------------------------------------------------------------------
+# Ruff: linting + formatting (sostituisce flake8/isort/pylint/black)
+# ----------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = ["alembic/versions", "venv", ".venv"]
+
+[tool.ruff.lint]
+select = [
+  "E", "W",  # pycodestyle
+  "F",       # pyflakes
+  "I",       # isort
+  "N",       # pep8-naming
+  "UP",      # pyupgrade
+  "B",       # flake8-bugbear
+  "A",       # flake8-builtins
+  "C4",      # comprehensions
+  "SIM",     # flake8-simplify
+  "RET",     # flake8-return
+  "PT",      # flake8-pytest-style
+  "PL",      # pylint subset
+]
+ignore = [
+  "E501",    # line-too-long (formatter handles)
+  "B008",    # function call in default arg — pattern FastAPI Depends()
+  "PLR0913", # too many args — tipico degli endpoint FastAPI
+  "PLR0912", # too many branches — complexity metric, non bloccante
+  "PLR0915", # too many statements — complexity metric, non bloccante
+  "PLR2004", # magic values — accettabili in config/test
+  "PLW0603", # global statement — uso legittimo (cache, ContextVar)
+  "PLW0108", # unnecessary lambda — stile
+  "PLW2901", # redefined loop name — stile
+  "PLC0415", # import outside top-level — usato per lazy import / cicli
+  "N818",    # exception naming — meno rigido
+  "C416",    # unnecessary comprehension — micro-ottimizzazione
+  "PT028",   # pytest parameter default — stile
+  "RET504",  # unnecessary assign before return — stile (leggibilità)
+  "A002",    # builtin arg shadowing — FastAPI usa 'id', 'type' come param
+  "SIM105",  # suppressible exception — a volte voluto
+  "SIM118",  # in-dict-keys — stile
+  "E741",    # ambiguous variable name — spesso deliberato (es. 'l' in listcomp)
+]
+
+[tool.ruff.lint.per-file-ignores]
+# I test hanno import locali legittimi (es. isolamento fixture / evitare cicli)
+# e uso frequente di assert / varargs non usati — silenzi mirati.
+"tests/**/*" = ["S101", "PLR", "ARG", "PLC0415", "PT028", "PT006", "PT019", "F841"]
+"alembic/env.py" = ["E402"]
+"seed.py" = ["T201"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+combine-as-imports = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+docstring-code-format = true
+
+# ----------------------------------------------------------------------------
+# Mypy: modalita' baseline — progressive strictening (Sprint 6+)
+# ----------------------------------------------------------------------------
+# Il progetto usa SQLAlchemy 1.x-style (Column[str]) al posto di Mapped[].
+# Senza il plugin sqlalchemy-ext-mypy (che richiede SQLAlchemy >=2.0 + stubs)
+# mypy genera centinaia di falsi positivi "Incompatible types in assignment"
+# su pattern legittimi ORM. Finche' non migreremo a Mapped[] (Sprint 6,
+# insieme ad async session + ARQ), teniamo una config baseline che valida
+# import, signature pubbliche, e tipi semplici senza bloccare la CI.
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+no_implicit_optional = true
+disallow_untyped_defs = false
+check_untyped_defs = false
+warn_unused_configs = false     # override su tests/alembic: ok anche se non nel path
+warn_unused_ignores = false     # mypy vs ruff puo' avere noqa/ignore legittimi
+warn_return_any = false         # falsi positivi SQLAlchemy sync ORM
+warn_redundant_casts = true     # ancora utile
+# Codici errore pervasivi sul pattern SQLAlchemy Column[] assignment e
+# Starlette handler signature — silenziati finche' non si migra a Mapped[].
+disable_error_code = [
+  "assignment",    # Column[str] = "value" falsi positivi
+  "arg-type",      # Starlette add_exception_handler signature
+  "attr-defined",  # dynamic attrs su Base
+  "call-arg",      # SQLAlchemy inspect/relationship
+  "call-overload", # dict.get(Column[str], default) — ORM key/value confusion
+  "return-value",
+  "misc",
+  "var-annotated",
+  "index",         # Row[...] indexing dinamico
+  "union-attr",    # Optional[Model].attr without None check
+]
+
+# ----------------------------------------------------------------------------
+# Pytest
+# ----------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+addopts = [
+  "-ra",
+  "--strict-markers",
+  "--strict-config",
+]
+markers = [
+  "slow: marca test lenti (deselect: -m 'not slow')",
+  "integration: richiede servizi esterni (DB, Ollama, WP)",
+  "e2e: test end-to-end completi",
+]
+
+# ----------------------------------------------------------------------------
+# Coverage
+# ----------------------------------------------------------------------------
+[tool.coverage.run]
+source = ["app"]
+branch = true
+omit = ["tests/*", "alembic/*", "seed.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "raise NotImplementedError",
+  "if TYPE_CHECKING:",
+  "if __name__ == .__main__.:",
+]
+show_missing = true
+skip_covered = false
+fail_under = 50  # baseline Sprint 3 — alziamo a 70 in Sprint 3.5 / 8

@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend — lint + mypy + pytest
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Ruff lint
+        run: ruff check .
+
+      - name: Ruff format check
+        run: ruff format --check .
+
+      - name: Mypy
+        run: mypy app
+
+      - name: Pytest with coverage
+        # Gate minimo 50% — verrà alzato al 70% quando la suite sarà matura
+        # (atteso Sprint 3.5 con test aggiuntivi su discovery/scheduler/workers).
+        env:
+          ENV: test
+        run: pytest --cov=app --cov-report=term --cov-report=xml --cov-fail-under=50
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend/coverage.xml
+
+  frontend:
+    name: Frontend — lint + prettier + tsc + vitest
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Prettier check
+        run: npm run format:check
+
+      - name: TypeScript check
+        run: npm run type-check
+
+      - name: Vitest
+        run: npm run test
+
+  dependency-audit:
+    # Scan advisory (non blocca la PR finché non stabilizziamo i baseline).
+    # In Sprint 3+ passeremo a blocking dopo aver risolto eventuali vuln note.
+    name: Dependency audit (advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Backend dependency audit (pip-audit)
+        # --ignore-vuln PYSEC-2022-252: vulnerability su deep-translator ha
+        # riguardato una release compromessa nel 2022 (account takeover via
+        # phishing). L'autore ha riacquisito il progetto e le release
+        # successive (incluso 1.11.x) sono considerate sicure. Rivedere se
+        # deep-translator cambia owner/maintainer o emerge nuova CVE.
+        run: pip-audit -r backend/requirements.txt --desc --ignore-vuln PYSEC-2022-252
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Frontend dependency audit (npm audit)
+        working-directory: frontend
+        run: npm audit --audit-level=high

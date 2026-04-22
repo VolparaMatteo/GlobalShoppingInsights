@@ -1,93 +1,80 @@
+import logging
 import os
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
+from app.api import (
+    articles,
+    audit_logs,
+    auth,
+    calendar,
+    comments,
+    dashboard,
+    export,
+    health,
+    notifications,
+    prompt_folders,
+    prompts,
+    publish,
+    search,
+    settings as settings_router,
+    taxonomy,
+    unsplash,
+    users,
+)
 from app.config import settings
-from app.database import engine, Base
-from app.api import auth, users, prompts, prompt_folders, search, articles, comments, calendar, publish, taxonomy, notifications, settings as settings_router, dashboard, export, health, unsplash
+from app.middleware.request_id import RequestIdMiddleware
+from app.middleware.security_headers import SecurityHeadersMiddleware
+from app.utils.logging import configure_logging
+from app.utils.rate_limit import limiter
+
+# Configurazione logging (structlog): JSON in produzione, console in dev/test.
+configure_logging()
+
+_log = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
-    # Migration: add folder_id column to prompts table if missing
+    # Lo schema DB è gestito da **Alembic**. In produzione eseguire
+    #   alembic upgrade head
+    # PRIMA di avviare l'app (o dentro lo script di deploy).
+    # In dev locale, dopo aver modificato un modello:
+    #   alembic revision --autogenerate -m "descrizione"
+    #   alembic upgrade head
+
+    # Migrazione di DATI (non schema): cifra password WP legacy in plaintext.
+    # Idempotente, sicura da rieseguire. Rimarrà qui finché non avremo un
+    # pattern consolidato di data-migrations in Alembic (Sprint successivo).
     try:
-        with engine.connect() as conn:
-            conn.execute(
-                __import__("sqlalchemy").text(
-                    "ALTER TABLE prompts ADD COLUMN folder_id INTEGER REFERENCES prompt_folders(id)"
-                )
-            )
-            conn.commit()
+        from app.utils.encryption import migrate_plaintext_passwords
+
+        migrated = migrate_plaintext_passwords()
+        if migrated:
+            _log.info("Cifrate %d password WP legacy in plaintext", migrated)
     except Exception:
-        pass
-    # Migration: add parent_id column to prompt_folders table if missing
-    try:
-        with engine.connect() as conn:
-            conn.execute(
-                __import__("sqlalchemy").text(
-                    "ALTER TABLE prompt_folders ADD COLUMN parent_id INTEGER REFERENCES prompt_folders(id)"
-                )
-            )
-            conn.commit()
-    except Exception:
-        pass
-    # Migration: add language_filtered column to search_runs table if missing
-    try:
-        with engine.connect() as conn:
-            conn.execute(
-                __import__("sqlalchemy").text(
-                    "ALTER TABLE search_runs ADD COLUMN language_filtered INTEGER DEFAULT 0"
-                )
-            )
-            conn.commit()
-    except Exception:
-        pass
-    # Migration: add date_filtered column to search_runs table if missing
-    try:
-        with engine.connect() as conn:
-            conn.execute(
-                __import__("sqlalchemy").text(
-                    "ALTER TABLE search_runs ADD COLUMN date_filtered INTEGER DEFAULT 0"
-                )
-            )
-            conn.commit()
-    except Exception:
-        pass
-    # Migration: add relevance_filtered column to search_runs table if missing
-    try:
-        with engine.connect() as conn:
-            conn.execute(
-                __import__("sqlalchemy").text(
-                    "ALTER TABLE search_runs ADD COLUMN relevance_filtered INTEGER DEFAULT 0"
-                )
-            )
-            conn.commit()
-    except Exception:
-        pass
-    # Migration: add ai_relevance_comment column to articles table if missing
-    try:
-        with engine.connect() as conn:
-            conn.execute(
-                __import__("sqlalchemy").text(
-                    "ALTER TABLE articles ADD COLUMN ai_relevance_comment TEXT"
-                )
-            )
-            conn.commit()
-    except Exception:
-        pass
+        _log.exception("Migrazione delle password WP fallita")
+
     try:
         from app.workers.scheduler import start_scheduler
+
         start_scheduler()
     except Exception:
-        pass
+        _log.exception("Avvio scheduler fallito")
+
     yield
+
     try:
         from app.workers.scheduler import stop_scheduler
+
         stop_scheduler()
     except Exception:
-        pass
+        _log.exception("Arresto scheduler fallito")
 
 
 app = FastAPI(
@@ -97,6 +84,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Rate limiter (slowapi). In ENV=test è disabilitato (vedi app.utils.rate_limit).
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -104,6 +95,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Headers di sicurezza (HSTS, CSP, X-Frame-Options, ...).
+# Aggiunto per ultimo così starlette lo applica dopo il resto della pipeline.
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Request-ID: il più esterno. Popola la ContextVar consumata da structlog
+# (così ogni log di una request include il request_id) e aggiunge l'header
+# `X-Request-ID` alla risposta.
+app.add_middleware(RequestIdMiddleware)
 
 # Serve uploaded files
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
@@ -128,3 +128,4 @@ app.include_router(dashboard.router, prefix=PREFIX)
 app.include_router(export.router, prefix=PREFIX)
 app.include_router(health.router, prefix=PREFIX)
 app.include_router(unsplash.router, prefix=PREFIX)
+app.include_router(audit_logs.router, prefix=PREFIX)

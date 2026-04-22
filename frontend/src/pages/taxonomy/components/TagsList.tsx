@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { Table, Button, Modal, Form, Input, Space, message, Tag as AntTag } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, CheckCircleOutlined, MinusCircleOutlined } from '@ant-design/icons';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  CheckCircleOutlined,
+  MinusCircleOutlined,
+} from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/config/queryKeys';
 import { getTags, createTag, updateTag, deleteTag } from '@/services/api/taxonomy.api';
@@ -45,8 +51,7 @@ export default function TagsList() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: TagUpdate }) =>
-      updateTag(id, payload),
+    mutationFn: ({ id, payload }: { id: number; payload: TagUpdate }) => updateTag(id, payload),
     onSuccess: () => {
       message.success('Tag aggiornato e sincronizzato con WordPress');
       queryClient.invalidateQueries({ queryKey: queryKeys.taxonomy.tags() });
@@ -99,9 +104,7 @@ export default function TagsList() {
   }
 
   function handleDelete(tag: Tag) {
-    const wpNote = tag.wp_id
-      ? ' Verrà eliminato anche da WordPress.'
-      : '';
+    const wpNote = tag.wp_id ? ' Verrà eliminato anche da WordPress.' : '';
     showConfirmModal({
       title: 'Elimina Tag',
       content: `Sei sicuro di voler eliminare il tag "${tag.name}"?${wpNote} Questa azione non può essere annullata.`,

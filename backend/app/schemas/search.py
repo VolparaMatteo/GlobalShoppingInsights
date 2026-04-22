@@ -1,18 +1,18 @@
 from datetime import datetime
-from typing import Optional, List
+
 from pydantic import BaseModel
 
 
 class SearchResultResponse(BaseModel):
     id: int
     url: str
-    title: Optional[str] = None
-    snippet: Optional[str] = None
+    title: str | None = None
+    snippet: str | None = None
     provider: str
-    published_at_est: Optional[datetime] = None
-    domain: Optional[str] = None
-    language_est: Optional[str] = None
-    article_id: Optional[int] = None
+    published_at_est: datetime | None = None
+    domain: str | None = None
+    language_est: str | None = None
+    article_id: int | None = None
 
     model_config = {"from_attributes": True}
 
@@ -20,9 +20,9 @@ class SearchResultResponse(BaseModel):
 class SearchRunResponse(BaseModel):
     id: int
     prompt_id: int
-    triggered_by: Optional[int] = None
+    triggered_by: int | None = None
     started_at: datetime
-    ended_at: Optional[datetime] = None
+    ended_at: datetime | None = None
     status: str
     urls_found: int
     articles_created: int
@@ -31,7 +31,7 @@ class SearchRunResponse(BaseModel):
     language_filtered: int = 0
     date_filtered: int = 0
     relevance_filtered: int = 0
-    error_message: Optional[str] = None
-    results: Optional[List[SearchResultResponse]] = None
+    error_message: str | None = None
+    results: list[SearchResultResponse] | None = None
 
     model_config = {"from_attributes": True}

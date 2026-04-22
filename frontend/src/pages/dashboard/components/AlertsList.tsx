@@ -2,11 +2,7 @@
 // AlertsList.tsx  --  Modern dashboard alerts / warnings feed
 // ---------------------------------------------------------------------------
 import { Typography } from 'antd';
-import {
-  InfoCircleFilled,
-  WarningFilled,
-  CloseCircleFilled,
-} from '@ant-design/icons';
+import { InfoCircleFilled, WarningFilled, CloseCircleFilled } from '@ant-design/icons';
 import { useDashboardAlerts } from '@/hooks/queries/useDashboardKPIs';
 import RelativeTime from '@/components/common/RelativeTime';
 import EmptyState from '@/components/common/EmptyState';
@@ -61,7 +57,14 @@ export default function AlertsList() {
 
   return (
     <div style={containerStyle}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 16,
+        }}
+      >
         <Text strong style={{ fontSize: 14, color: '#595959' }}>
           Avvisi
         </Text>
@@ -87,11 +90,21 @@ export default function AlertsList() {
       {!isLoading && !isError && (
         <>
           {!alerts?.length ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 0' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '32px 0',
+              }}
+            >
               <div style={{ fontSize: 32, marginBottom: 8, opacity: 0.3 }}>
                 <CheckIcon />
               </div>
-              <Text type="secondary" style={{ fontSize: 13 }}>Tutto in ordine! Nessun avviso attivo.</Text>
+              <Text type="secondary" style={{ fontSize: 13 }}>
+                Tutto in ordine! Nessun avviso attivo.
+              </Text>
             </div>
           ) : (
             alerts.map((alert) => {
@@ -119,7 +132,16 @@ export default function AlertsList() {
 
 function CheckIcon() {
   return (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#52c41a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="32"
+      height="32"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#52c41a"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
       <polyline points="22 4 12 14.01 9 11.01" />
     </svg>

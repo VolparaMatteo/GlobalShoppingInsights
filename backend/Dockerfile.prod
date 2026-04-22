@@ -1,0 +1,84 @@
+# syntax=docker/dockerfile:1.7
+# ============================================================================
+# GSI Backend — PRODUCTION image
+# Multi-stage: builder (compila deps) + runtime (slim, non-root, solo run-time
+# deps). Entrypoint dedicato che lancia gunicorn + UvicornWorker.
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+# Stage 1: builder — installa deps Python in un virtualenv isolato
+# ---------------------------------------------------------------------------
+FROM python:3.11-slim AS builder
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Build deps: servono a compilare lxml / Pillow / psycopg. Non finiscono nel
+# runtime image.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        libxml2-dev \
+        libxslt1-dev \
+        libjpeg-dev \
+        zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+WORKDIR /build
+COPY requirements.txt requirements-prod.txt ./
+RUN pip install --no-cache-dir -r requirements-prod.txt
+
+
+# ---------------------------------------------------------------------------
+# Stage 2: runtime — immagine finale, non-root, solo libreria di runtime
+# ---------------------------------------------------------------------------
+FROM python:3.11-slim AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/opt/venv/bin:$PATH" \
+    UPLOAD_DIR=/app/uploads \
+    HF_HOME=/app/.cache/huggingface
+
+# Runtime libs soltanto (niente *-dev). postgres-client serve a pg_isready nel
+# wait-for-db. curl per l'HEALTHCHECK.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libxml2 \
+        libxslt1.1 \
+        libjpeg62-turbo \
+        zlib1g \
+        postgresql-client \
+        curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system --gid 1001 gsi \
+    && useradd --system --uid 1001 --gid gsi --home-dir /app --shell /sbin/nologin gsi
+
+WORKDIR /app
+
+# Virtualenv dal builder (contiene gunicorn, uvicorn, fastapi, deps...)
+COPY --from=builder /opt/venv /opt/venv
+
+# Codice applicativo. Il contesto è backend/: .dockerignore esclude venv, test.db, __pycache__, ecc.
+COPY --chown=gsi:gsi . .
+
+# Entrypoint prod + normalizzazione CRLF (per checkout Windows) + directory
+# scrivibili per uploads e cache HF.
+RUN sed -i 's/\r$//' /app/docker-entrypoint.prod.sh \
+    && chmod +x /app/docker-entrypoint.prod.sh \
+    && mkdir -p /app/uploads /app/.cache/huggingface \
+    && chown -R gsi:gsi /app/uploads /app/.cache
+
+USER gsi
+
+EXPOSE 8000
+
+# L'healthcheck esterno (docker-compose, Traefik) userà lo stesso endpoint.
+# start-period generoso: il primo avvio scarica il modello sentence-transformers.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
+    CMD curl --fail --silent --show-error http://localhost:8000/api/v1/health || exit 1
+
+CMD ["/app/docker-entrypoint.prod.sh"]

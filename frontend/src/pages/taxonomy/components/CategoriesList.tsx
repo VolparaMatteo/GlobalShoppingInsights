@@ -1,5 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Space, message, Tree, Tag as AntTag } from 'antd';
+import {
+  Table,
+  Button,
+  Modal,
+  Form,
+  Input,
+  Select,
+  Space,
+  message,
+  Tree,
+  Tag as AntTag,
+} from 'antd';
 import {
   PlusOutlined,
   EditOutlined,
@@ -158,9 +169,7 @@ export default function CategoriesList() {
   }
 
   function handleDelete(category: Category) {
-    const wpNote = category.wp_id
-      ? ' Verrà eliminata anche da WordPress.'
-      : '';
+    const wpNote = category.wp_id ? ' Verrà eliminata anche da WordPress.' : '';
     showConfirmModal({
       title: 'Elimina Categoria',
       content: `Sei sicuro di voler eliminare la categoria "${category.name}"?${wpNote} Le sottocategorie potrebbero restare orfane.`,

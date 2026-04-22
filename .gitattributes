@@ -1,0 +1,49 @@
+# Default: tutti i file testuali usano LF (coerente con Prettier endOfLine=lf
+# e con i container Linux su cui gira la produzione). Windows users: Git
+# convertira' in LF sul commit e mantenera' CRLF nel working tree se
+# core.autocrlf=true, ma i file nell'indice restano LF.
+* text=auto eol=lf
+
+# Forza LF esplicito sugli script shell e file ops (Windows checkout altrimenti
+# applica CRLF che rompe gli entrypoint dei container Linux).
+*.sh text eol=lf
+docker-entrypoint.sh text eol=lf
+Dockerfile text eol=lf
+Dockerfile.* text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Sorgente backend Python
+*.py text eol=lf
+*.toml text eol=lf
+*.cfg text eol=lf
+*.ini text eol=lf
+
+# Sorgente frontend (TS/React + asset)
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.svg text eol=lf
+
+# File binari: no transformation
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.xlsx binary
+*.db binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary

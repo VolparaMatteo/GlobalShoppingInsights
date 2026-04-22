@@ -75,7 +75,7 @@ const kpiDefinitions: KPIDefinition[] = [
     icon: <ThunderboltOutlined />,
     gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
     iconBg: 'rgba(250, 112, 154, 0.12)',
-    getValue: (k) => k.avg_ai_score !== null ? k.avg_ai_score.toFixed(1) : '--',
+    getValue: (k) => (k.avg_ai_score !== null ? k.avg_ai_score.toFixed(1) : '--'),
   },
 ];
 
@@ -131,16 +131,20 @@ export default function KPICards({ kpis, isError }: KPICardsProps) {
               }}
             >
               <div style={iconWrapStyle(def.iconBg)}>
-                <span style={{ background: def.gradient, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                <span
+                  style={{
+                    background: def.gradient,
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
                   {def.icon}
                 </span>
               </div>
               <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.1, color: '#141414' }}>
                 {value}
               </div>
-              <div style={{ fontSize: 13, color: '#8c8c8c', marginTop: 4 }}>
-                {def.title}
-              </div>
+              <div style={{ fontSize: 13, color: '#8c8c8c', marginTop: 4 }}>{def.title}</div>
             </div>
           </Col>
         );

@@ -1,5 +1,4 @@
 import logging
-from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +11,7 @@ def _get_model():
     if _model is None:
         try:
             from sentence_transformers import SentenceTransformer
+
             _model = SentenceTransformer(MODEL_NAME)
         except Exception as e:
             logger.error(f"Failed to load sentence-transformers model: {e}")
@@ -29,7 +29,7 @@ def _extract_chunks(text: str, chunk_size: int = 1500, n_chunks: int = 5) -> lis
         # Text is short enough — split into consecutive non-overlapping chunks
         chunks = []
         for i in range(0, len(text), chunk_size):
-            chunk = text[i:i + chunk_size]
+            chunk = text[i : i + chunk_size]
             if chunk.strip():
                 chunks.append(chunk)
         return chunks[:n_chunks]
@@ -39,7 +39,7 @@ def _extract_chunks(text: str, chunk_size: int = 1500, n_chunks: int = 5) -> lis
     step = (len(text) - chunk_size) / (n_chunks - 1) if n_chunks > 1 else 0
     for i in range(n_chunks):
         start = int(i * step)
-        chunk = text[start:start + chunk_size]
+        chunk = text[start : start + chunk_size]
         if chunk.strip():
             chunks.append(chunk)
 
@@ -49,7 +49,7 @@ def _extract_chunks(text: str, chunk_size: int = 1500, n_chunks: int = 5) -> lis
 MIN_RELEVANCE_SCORE = 25
 
 
-def score_article(text: str, prompt_text: str, keywords: Optional[List[str]] = None) -> dict:
+def score_article(text: str, prompt_text: str, keywords: list[str] | None = None) -> dict:
     keywords = keywords or []
     model = _get_model()
     if model is None:
@@ -103,11 +103,17 @@ def score_article(text: str, prompt_text: str, keywords: Optional[List[str]] = N
         score = min(100, max(0, base_score + centrality_bonus + keyword_bonus + keyword_penalty))
 
         explanation = []
-        explanation.append(f"Semantic similarity: {max_sim:.2f} (avg {avg_sim:.2f} across {len(chunks)} chunks)")
+        explanation.append(
+            f"Semantic similarity: {max_sim:.2f} (avg {avg_sim:.2f} across {len(chunks)} chunks)"
+        )
         if centrality_bonus > 0:
-            explanation.append(f"Centrality bonus: +{centrality_bonus} (ratio {centrality_ratio:.2f})")
+            explanation.append(
+                f"Centrality bonus: +{centrality_bonus} (ratio {centrality_ratio:.2f})"
+            )
         if keywords:
-            explanation.append(f"Keywords: {keyword_matches}/{len(keywords)} matched (+{keyword_bonus})")
+            explanation.append(
+                f"Keywords: {keyword_matches}/{len(keywords)} matched (+{keyword_bonus})"
+            )
         if keyword_penalty < 0:
             explanation.append(f"No keyword match penalty: {keyword_penalty}")
         if score >= 70:
@@ -132,7 +138,7 @@ def score_article(text: str, prompt_text: str, keywords: Optional[List[str]] = N
         return _fallback_score(text, prompt_text, keywords)
 
 
-def _fallback_score(text: str, prompt_text: str, keywords: Optional[List[str]] = None) -> dict:
+def _fallback_score(text: str, prompt_text: str, keywords: list[str] | None = None) -> dict:
     text_lower = text.lower()
     # Score based on how many words from the prompt appear in the article
     prompt_words = [w for w in prompt_text.lower().split() if len(w) > 3]
@@ -157,7 +163,7 @@ def _fallback_score(text: str, prompt_text: str, keywords: Optional[List[str]] =
     }
 
 
-def _suggest_category(text: str) -> Optional[str]:
+def _suggest_category(text: str) -> str | None:
     text_lower = text.lower()
     categories = {
         "E-commerce": ["ecommerce", "e-commerce", "online shopping", "online store", "marketplace"],
@@ -165,7 +171,13 @@ def _suggest_category(text: str) -> Optional[str]:
         "Consumer Trends": ["consumer", "trend", "shopping behavior", "spending"],
         "Logistics": ["supply chain", "logistics", "delivery", "shipping", "warehouse"],
         "Market Analysis": ["market analysis", "market research", "industry report", "forecast"],
-        "Sustainability": ["sustainable", "sustainability", "green", "eco-friendly", "circular economy"],
+        "Sustainability": [
+            "sustainable",
+            "sustainability",
+            "green",
+            "eco-friendly",
+            "circular economy",
+        ],
     }
     best_cat = None
     best_count = 0

@@ -1,14 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+
+from app.api.deps import require_role
 from app.database import get_db
+from app.models.blacklist import BlockedDomain
 from app.models.user import User
 from app.models.wordpress import WPConfig
-from app.models.blacklist import BlockedDomain
-from app.schemas.wordpress import WPConfigUpdate, WPConfigResponse
-from app.schemas.settings import BlacklistCreate, BlacklistResponse, ScrapingSettings, DedupSettings
 from app.schemas.common import MessageResponse
-from app.api.deps import require_role
+from app.schemas.settings import BlacklistCreate, BlacklistResponse, DedupSettings, ScrapingSettings
+from app.schemas.wordpress import WPConfigResponse, WPConfigUpdate
+from app.utils import audit
+from app.utils.encryption import encrypt
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
@@ -38,20 +40,33 @@ def get_wp_config(
 def update_wp_config(
     body: WPConfigUpdate,
     db: Session = Depends(get_db),
-    _current_user: User = Depends(require_role(["admin"])),
+    current_user: User = Depends(require_role(["admin"])),
 ):
     config = db.query(WPConfig).filter(WPConfig.id == 1).first()
     if not config:
         config = WPConfig(id=1)
         db.add(config)
-    if body.wp_url is not None:
+    changed: list[str] = []
+    if body.wp_url is not None and body.wp_url != config.wp_url:
         config.wp_url = body.wp_url
-    if body.wp_username is not None:
+        changed.append("wp_url")
+    if body.wp_username is not None and body.wp_username != config.wp_username:
         config.wp_username = body.wp_username
+        changed.append("wp_username")
     if body.wp_app_password is not None:
-        config.wp_app_password_encrypted = body.wp_app_password  # TODO: encrypt
-    if body.default_author_id is not None:
+        config.wp_app_password_encrypted = encrypt(body.wp_app_password)
+        changed.append("wp_app_password")
+    if body.default_author_id is not None and body.default_author_id != config.default_author_id:
         config.default_author_id = body.default_author_id
+        changed.append("default_author_id")
+    if changed:
+        audit.emit(
+            db,
+            user_id=current_user.id,
+            action="wp_config.update",
+            entity="wp_config",
+            metadata={"fields": changed},
+        )
     db.commit()
     db.refresh(config)
     return WPConfigResponse(
@@ -66,7 +81,7 @@ def update_wp_config(
 @router.post("/wordpress/test", response_model=MessageResponse)
 def test_wp_connection(
     db: Session = Depends(get_db),
-    _current_user: User = Depends(require_role(["admin"])),
+    _current_user: User = Depends(require_role(["admin"])),  # noqa: PT019
 ):
     config = db.query(WPConfig).filter(WPConfig.id == 1).first()
     if not config or not config.wp_url:
@@ -75,7 +90,7 @@ def test_wp_connection(
 
 
 # --- Blacklist ---
-@router.get("/blacklist", response_model=List[BlacklistResponse])
+@router.get("/blacklist", response_model=list[BlacklistResponse])
 def list_blacklist(
     db: Session = Depends(get_db),
     _current_user: User = Depends(require_role(["admin"])),

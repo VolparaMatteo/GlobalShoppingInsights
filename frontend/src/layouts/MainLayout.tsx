@@ -8,7 +8,7 @@ import { useUiStore } from '@/stores/uiStore';
 const { Content } = Layout;
 
 export default function MainLayout() {
-  const collapsed = useUiStore((s) => s.siderCollapsed);
+  const collapsed = useUiStore((s) => s.sidebarCollapsed);
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -23,12 +23,7 @@ export default function MainLayout() {
           }}
         >
           <Suspense
-            fallback={
-              <Spin
-                size="large"
-                style={{ display: 'block', margin: '20% auto' }}
-              />
-            }
+            fallback={<Spin size="large" style={{ display: 'block', margin: '20% auto' }} />}
           >
             <Outlet />
           </Suspense>

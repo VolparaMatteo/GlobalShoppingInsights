@@ -1,0 +1,62 @@
+# Python cache / build
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# Virtual envs (non devono mai entrare nell'immagine)
+venv/
+.venv/
+
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Coverage artefacts
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# Database locali & temp (mai in immagine)
+*.db
+*.db-shm
+*.db-wal
+
+# Secrets
+.env
+.env.*
+!.env.example
+!.env.prod.example
+
+# Test suite (non serve in immagine di produzione)
+tests/
+
+# Upload locali di sviluppo (volume persistente in prod)
+uploads/
+
+# Alembic cache
+alembic/versions/__pycache__/
+
+# IDE / editor / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Git (non dovrebbe esserci — contesto è backend/ — ma per sicurezza)
+.git/
+.gitignore
+
+# Docker / compose (non servono dentro l'immagine)
+Dockerfile
+Dockerfile.*
+.dockerignore
+docker-compose*.yml
+
+# Documentazione
+*.md

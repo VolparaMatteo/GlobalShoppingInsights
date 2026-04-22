@@ -4,29 +4,10 @@
 import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Button,
-  Card,
-  message,
-  Modal,
-  Space,
-  Tabs,
-  Tag,
-  Typography,
-} from 'antd';
-import {
-  ArrowLeftOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  FolderOutlined,
-} from '@ant-design/icons';
+import { Button, Card, message, Modal, Space, Tabs, Tag, Typography } from 'antd';
+import { ArrowLeftOutlined, DeleteOutlined, EditOutlined, FolderOutlined } from '@ant-design/icons';
 
-import {
-  getPrompt,
-  createPrompt,
-  updatePrompt,
-  deletePrompt,
-} from '@/services/api/prompts.api';
+import { getPrompt, createPrompt, updatePrompt, deletePrompt } from '@/services/api/prompts.api';
 import { getSearchRuns } from '@/services/api/search.api';
 import type { Prompt, PromptCreate, PromptUpdate } from '@/types';
 
@@ -205,11 +186,7 @@ export default function PromptDetailPage() {
         }}
       >
         <Space>
-          <Button
-            type="text"
-            icon={<ArrowLeftOutlined />}
-            onClick={() => navigate('/prompts')}
-          />
+          <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate('/prompts')} />
           <Title level={4} style={{ margin: 0 }}>
             {isNew ? 'Nuovo Prompt' : prompt!.title}
           </Title>
@@ -240,11 +217,7 @@ export default function PromptDetailPage() {
 
       {/* Tabs */}
       <Card>
-        <Tabs
-          defaultActiveKey="details"
-          items={tabItems}
-          destroyInactiveTabPane={false}
-        />
+        <Tabs defaultActiveKey="details" items={tabItems} destroyInactiveTabPane={false} />
       </Card>
     </div>
   );

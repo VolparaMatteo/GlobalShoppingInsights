@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, func
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, func
+
 from app.database import Base
 
 
@@ -26,7 +27,7 @@ class SearchResult(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     search_run_id = Column(Integer, ForeignKey("search_runs.id"), nullable=False)
-    url = Column(Text, nullable=False)
+    url = Column(Text, nullable=False, index=True)
     title = Column(String(500), nullable=True)
     snippet = Column(Text, nullable=True)
     provider = Column(String(20), nullable=False)

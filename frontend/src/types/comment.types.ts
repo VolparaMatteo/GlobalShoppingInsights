@@ -10,7 +10,7 @@ export interface Comment {
   user_id: number;
   body: string;
   mentions: number[];
-  created_at: string;          // ISO-8601 datetime
+  created_at: string; // ISO-8601 datetime
   user_name: string | null;
 }
 

@@ -48,7 +48,8 @@ export default function TagCategoryAssign({ article }: TagCategoryAssignProps) {
     onError: () => message.error('Impossibile aggiornare i tag'),
   });
 
-  const handleAddTag = (tagId: number) => {
+  const handleAddTag = (tagId: number | undefined) => {
+    if (tagId === undefined) return;
     tagMutation.mutate([tagId]);
   };
 

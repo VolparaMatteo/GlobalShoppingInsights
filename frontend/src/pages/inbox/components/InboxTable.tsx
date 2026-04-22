@@ -94,8 +94,7 @@ const columns: ColumnsType<Article> = [
     key: 'published_at',
     sorter: true,
     width: 140,
-    render: (date: string | null) =>
-      date ? dayjs(date).format('DD/MM/YY') : '—',
+    render: (date: string | null) => (date ? dayjs(date).format('DD/MM/YY') : '—'),
   },
   {
     title: 'Importato',
@@ -159,8 +158,7 @@ export default function InboxTable({
         total: pagination.total,
         showSizeChanger: true,
         pageSizeOptions: ['10', '20', '50', '100'],
-        showTotal: (total, range) =>
-          `${range[0]}-${range[1]} di ${total} articoli`,
+        showTotal: (total, range) => `${range[0]}-${range[1]} di ${total} articoli`,
       }}
       onChange={handleTableChange as never}
       onRow={(record) => ({

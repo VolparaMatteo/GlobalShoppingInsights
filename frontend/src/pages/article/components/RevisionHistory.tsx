@@ -35,10 +35,7 @@ export default function RevisionHistory({ articleId }: RevisionHistoryProps) {
           <Spin size="small" />
         </div>
       ) : !revisions || revisions.length === 0 ? (
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="No revisions yet"
-        />
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No revisions yet" />
       ) : (
         <Timeline
           items={revisions.map((rev) => ({

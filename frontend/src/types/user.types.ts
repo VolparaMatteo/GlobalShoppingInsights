@@ -10,9 +10,9 @@ export interface User {
   name: string;
   role: string;
   is_active: boolean;
-  last_login: string | null;  // ISO-8601 datetime
-  created_at: string;         // ISO-8601 datetime
-  updated_at: string;         // ISO-8601 datetime
+  last_login: string | null; // ISO-8601 datetime
+  created_at: string; // ISO-8601 datetime
+  updated_at: string; // ISO-8601 datetime
 }
 
 /** POST /users request body. */

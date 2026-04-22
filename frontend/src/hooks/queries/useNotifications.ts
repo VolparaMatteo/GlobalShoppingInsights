@@ -1,8 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  markRead,
-  markAllRead,
-} from '@/services/api/notifications.api';
+import { markRead, markAllRead } from '@/services/api/notifications.api';
 
 /**
  * NOTE: The notification list is managed via the Zustand notificationStore

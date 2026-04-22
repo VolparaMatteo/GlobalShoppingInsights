@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -10,26 +10,26 @@ class SlotCreate(BaseModel):
 
 
 class SlotUpdate(BaseModel):
-    scheduled_for: Optional[datetime] = None
-    timezone: Optional[str] = None
+    scheduled_for: datetime | None = None
+    timezone: str | None = None
 
 
 class SlotResponse(BaseModel):
     id: int
-    article_id: Optional[int] = None
+    article_id: int | None = None
     scheduled_for: datetime
     timezone: str
-    created_by: Optional[int] = None
+    created_by: int | None = None
     status: str
-    created_at: Optional[datetime] = None
-    article_title: Optional[str] = None
+    created_at: datetime | None = None
+    article_title: str | None = None
 
     model_config = {"from_attributes": True}
 
 
 class CollisionCheckRequest(BaseModel):
     scheduled_for: datetime
-    exclude_slot_id: Optional[int] = None
+    exclude_slot_id: int | None = None
 
 
 class CollisionCheckResponse(BaseModel):
@@ -47,5 +47,5 @@ class CalendarRuleResponse(BaseModel):
 
 
 class CalendarRuleUpdate(BaseModel):
-    value: Optional[int] = None
-    is_active: Optional[bool] = None
+    value: int | None = None
+    is_active: bool | None = None

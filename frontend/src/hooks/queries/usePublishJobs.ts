@@ -1,10 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/config/queryKeys';
-import {
-  getPublishJobs,
-  publishArticle,
-  retryPublish,
-} from '@/services/api/publish.api';
+import { getPublishJobs, publishArticle, retryPublish } from '@/services/api/publish.api';
 
 /**
  * Fetches a paginated list of publish jobs with optional filters.

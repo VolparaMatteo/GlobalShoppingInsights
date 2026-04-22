@@ -151,9 +151,7 @@ export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersP
             min={0}
             max={100}
             value={[filters.minScore, filters.maxScore]}
-            onChange={([min, max]: number[]) =>
-              patch({ minScore: min, maxScore: max })
-            }
+            onChange={([min, max]: number[]) => patch({ minScore: min, maxScore: max })}
             tooltip={{ formatter: (v) => `Punteggio: ${v}` }}
           />
         </Col>
@@ -182,11 +180,7 @@ export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersP
 
         {/* ---- Clear Filters ---- */}
         <Col flex="none">
-          <Button
-            icon={<ClearOutlined />}
-            disabled={!isDirty}
-            onClick={handleClear}
-          >
+          <Button icon={<ClearOutlined />} disabled={!isDirty} onClick={handleClear}>
             Pulisci Filtri
           </Button>
         </Col>

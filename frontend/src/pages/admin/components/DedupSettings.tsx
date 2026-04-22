@@ -3,10 +3,7 @@ import { Form, Slider, Switch, Button, Spin, Typography, message } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/config/queryKeys';
-import {
-  getDedupSettings,
-  updateDedupSettings,
-} from '@/services/api/settings.api';
+import { getDedupSettings, updateDedupSettings } from '@/services/api/settings.api';
 import type { DedupSettings as DedupSettingsType } from '@/types';
 
 /** Query key for dedup settings (extends the settings root). */
@@ -24,8 +21,7 @@ export default function DedupSettings() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (payload: Partial<DedupSettingsType>) =>
-      updateDedupSettings(payload),
+    mutationFn: (payload: Partial<DedupSettingsType>) => updateDedupSettings(payload),
     onSuccess: () => {
       message.success('Deduplication settings saved');
       queryClient.invalidateQueries({ queryKey: DEDUP_KEY });

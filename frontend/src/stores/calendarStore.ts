@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
 // stores/calendarStore.ts  --  Editorial calendar UI state
 // ---------------------------------------------------------------------------
-import { create } from "zustand";
+import { create } from 'zustand';
 
-export type CalendarViewMode = "month" | "week" | "day";
+export type CalendarViewMode = 'month' | 'week' | 'day';
 
 export interface DragState {
   slotId: number | null;
@@ -30,7 +30,7 @@ const initialDragState: DragState = {
 };
 
 export const useCalendarStore = create<CalendarState>()((set) => ({
-  viewMode: "month",
+  viewMode: 'month',
   currentDate: new Date().toISOString().slice(0, 10),
   dragState: { ...initialDragState },
 

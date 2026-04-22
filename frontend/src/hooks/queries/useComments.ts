@@ -9,7 +9,7 @@ import type { CommentCreate } from '@/types';
 export function useComments(articleId: string | number) {
   return useQuery({
     queryKey: queryKeys.articles.comments(articleId),
-    queryFn: () => getComments(articleId),
+    queryFn: () => getComments(Number(articleId)),
     enabled: !!articleId,
   });
 }
@@ -22,7 +22,7 @@ export function useAddComment(articleId: string | number) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CommentCreate) => addComment(articleId, data),
+    mutationFn: (data: CommentCreate) => addComment(Number(articleId), data),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.articles.comments(articleId),

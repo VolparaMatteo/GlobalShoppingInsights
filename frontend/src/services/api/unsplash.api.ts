@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // services/api/unsplash.api.ts  --  Unsplash image search proxy
 // ---------------------------------------------------------------------------
-import client from "./client";
+import client from './client';
 
 export interface UnsplashPhoto {
   id: string;
@@ -24,15 +24,14 @@ export async function searchUnsplash(
   page = 1,
   per_page = 12,
 ): Promise<UnsplashSearchResponse> {
-  const { data } = await client.get<UnsplashSearchResponse>(
-    "/unsplash/search",
-    { params: { query, page, per_page } },
-  );
+  const { data } = await client.get<UnsplashSearchResponse>('/unsplash/search', {
+    params: { query, page, per_page },
+  });
   return data;
 }
 
 export async function trackDownload(download_location: string): Promise<void> {
-  await client.post("/unsplash/download", null, {
+  await client.post('/unsplash/download', null, {
     params: { download_location },
   });
 }

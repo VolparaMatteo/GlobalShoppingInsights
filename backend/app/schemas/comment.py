@@ -1,11 +1,11 @@
 from datetime import datetime
-from typing import Optional, List
+
 from pydantic import BaseModel
 
 
 class CommentCreate(BaseModel):
     body: str
-    mentions: List[int] = []
+    mentions: list[int] = []
 
 
 class CommentResponse(BaseModel):
@@ -13,8 +13,8 @@ class CommentResponse(BaseModel):
     article_id: int
     user_id: int
     body: str
-    mentions: List[int]
+    mentions: list[int]
     created_at: datetime
-    user_name: Optional[str] = None
+    user_name: str | None = None
 
     model_config = {"from_attributes": True}

@@ -1,10 +1,12 @@
 import logging
+from datetime import datetime, timezone
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from datetime import datetime, timezone
+
 from app.database import SessionLocal
-from app.models.prompt import Prompt
 from app.models.calendar import EditorialSlot
+from app.models.prompt import Prompt
 
 logger = logging.getLogger(__name__)
 
@@ -37,20 +39,28 @@ def check_scheduled_prompts():
     db = SessionLocal()
     try:
         now = datetime.now(timezone.utc)
-        prompts = db.query(Prompt).filter(
-            Prompt.schedule_enabled == True,
-            Prompt.is_active == True,
-            Prompt.schedule_next_run_at <= now,
-        ).all()
+        prompts = (
+            db.query(Prompt)
+            .filter(
+                Prompt.schedule_enabled,
+                Prompt.is_active,
+                Prompt.schedule_next_run_at <= now,
+            )
+            .all()
+        )
 
         for prompt in prompts:
             try:
                 from app.services.discovery_service import run_discovery_pipeline
+
                 run_discovery_pipeline(prompt.id)
 
                 if prompt.schedule_frequency_hours:
                     from datetime import timedelta
-                    prompt.schedule_next_run_at = now + timedelta(hours=prompt.schedule_frequency_hours)
+
+                    prompt.schedule_next_run_at = now + timedelta(
+                        hours=prompt.schedule_frequency_hours
+                    )
                     db.commit()
             except Exception as e:
                 logger.error(f"Scheduled prompt {prompt.id} failed: {e}")
@@ -62,15 +72,20 @@ def check_publishing_slots():
     db = SessionLocal()
     try:
         now = datetime.now(timezone.utc)
-        slots = db.query(EditorialSlot).filter(
-            EditorialSlot.status == "scheduled",
-            EditorialSlot.scheduled_for <= now,
-        ).all()
+        slots = (
+            db.query(EditorialSlot)
+            .filter(
+                EditorialSlot.status == "scheduled",
+                EditorialSlot.scheduled_for <= now,
+            )
+            .all()
+        )
 
         for slot in slots:
             try:
                 if slot.article_id:
                     from app.models.article import Article
+
                     article = db.query(Article).filter(Article.id == slot.article_id).first()
                     if article and article.status == "scheduled":
                         article.status = "publishing"
@@ -78,6 +93,7 @@ def check_publishing_slots():
                         db.commit()
 
                         from app.services.wordpress_service import publish_to_wordpress
+
                         publish_to_wordpress(article.id)
 
                         db.refresh(article)

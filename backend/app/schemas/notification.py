@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -8,9 +8,9 @@ class NotificationResponse(BaseModel):
     user_id: int
     type: str
     title: str
-    message: Optional[str] = None
-    entity_type: Optional[str] = None
-    entity_id: Optional[int] = None
+    message: str | None = None
+    entity_type: str | None = None
+    entity_id: int | None = None
     is_read: bool
     created_at: datetime
 

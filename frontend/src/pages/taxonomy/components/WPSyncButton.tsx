@@ -32,7 +32,9 @@ export default function WPSyncButton() {
       content:
         'This will synchronize all tags and categories with your WordPress site. Existing entries will be updated and new ones created. Continue?',
       okText: 'Sync Now',
-      onOk: () => syncMutation.mutateAsync(),
+      onOk: async () => {
+        await syncMutation.mutateAsync();
+      },
     });
   }
 

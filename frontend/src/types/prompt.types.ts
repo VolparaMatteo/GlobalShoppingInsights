@@ -35,8 +35,8 @@ export interface PromptCreate {
   excluded_keywords?: string[];
   language?: string | null;
   countries?: string[];
-  time_depth?: string;       // default "7d"
-  max_results?: number;      // default 20
+  time_depth?: string; // default "7d"
+  max_results?: number; // default 20
   schedule_enabled?: boolean; // default false
   schedule_frequency_hours?: number | null;
   schedule_specific_times?: string[] | null;

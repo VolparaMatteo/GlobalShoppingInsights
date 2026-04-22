@@ -1,0 +1,4 @@
+-r requirements.txt
+
+# Production WSGI/ASGI server
+gunicorn>=23.0.0

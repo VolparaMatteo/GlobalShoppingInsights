@@ -21,8 +21,8 @@ export interface SearchRun {
   id: number;
   prompt_id: number;
   triggered_by: number | null;
-  started_at: string;              // ISO-8601 datetime
-  ended_at: string | null;         // ISO-8601 datetime
+  started_at: string; // ISO-8601 datetime
+  ended_at: string | null; // ISO-8601 datetime
   status: string;
   urls_found: number;
   articles_created: number;

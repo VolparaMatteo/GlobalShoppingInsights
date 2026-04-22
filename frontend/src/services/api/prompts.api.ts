@@ -1,14 +1,8 @@
 // ---------------------------------------------------------------------------
 // services/api/prompts.api.ts  --  Search prompt CRUD + run
 // ---------------------------------------------------------------------------
-import client from "./client";
-import type {
-  PaginatedResponse,
-  Prompt,
-  PromptCreate,
-  PromptUpdate,
-  SearchRun,
-} from "@/types";
+import client from './client';
+import type { PaginatedResponse, Prompt, PromptCreate, PromptUpdate, SearchRun } from '@/types';
 
 export interface GetPromptsParams {
   page?: number;
@@ -20,10 +14,8 @@ export interface GetPromptsParams {
 }
 
 /** GET /prompts */
-export async function getPrompts(
-  params?: GetPromptsParams,
-): Promise<PaginatedResponse<Prompt>> {
-  const { data } = await client.get<PaginatedResponse<Prompt>>("/prompts", {
+export async function getPrompts(params?: GetPromptsParams): Promise<PaginatedResponse<Prompt>> {
+  const { data } = await client.get<PaginatedResponse<Prompt>>('/prompts', {
     params,
   });
   return data;
@@ -31,7 +23,7 @@ export async function getPrompts(
 
 /** POST /prompts */
 export async function createPrompt(payload: PromptCreate): Promise<Prompt> {
-  const { data } = await client.post<Prompt>("/prompts", payload);
+  const { data } = await client.post<Prompt>('/prompts', payload);
   return data;
 }
 
@@ -42,10 +34,7 @@ export async function getPrompt(id: number): Promise<Prompt> {
 }
 
 /** PATCH /prompts/:id */
-export async function updatePrompt(
-  id: number,
-  payload: PromptUpdate,
-): Promise<Prompt> {
+export async function updatePrompt(id: number, payload: PromptUpdate): Promise<Prompt> {
   const { data } = await client.patch<Prompt>(`/prompts/${id}`, payload);
   return data;
 }

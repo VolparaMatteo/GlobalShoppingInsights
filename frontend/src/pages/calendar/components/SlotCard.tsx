@@ -74,9 +74,7 @@ export default function SlotCard({
     background: '#fff',
     borderRadius: 6,
     padding: detailed ? '8px 10px' : '4px 6px',
-    boxShadow: overlay
-      ? '0 4px 12px rgba(0,0,0,0.15)'
-      : '0 1px 2px rgba(0,0,0,0.06)',
+    boxShadow: overlay ? '0 4px 12px rgba(0,0,0,0.15)' : '0 1px 2px rgba(0,0,0,0.06)',
     fontSize: 12,
     lineHeight: 1.4,
     transition: overlay ? undefined : 'box-shadow 0.2s',
