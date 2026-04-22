@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Layout, Typography, Space } from 'antd';
+import { Layout, Typography, Space, theme as antdTheme } from 'antd';
 import NotificationBell from '@/layouts/components/NotificationBell';
 import UserMenu from '@/layouts/components/UserMenu';
+import ThemeToggle from '@/components/common/ThemeToggle';
 
 const { Header } = Layout;
 const { Title } = Typography;
@@ -18,6 +19,7 @@ const PAGE_TITLES: Record<string, string> = {
 
 export default function AppHeader() {
   const location = useLocation();
+  const { token } = antdTheme.useToken();
 
   const pageTitle = useMemo(() => {
     const path = location.pathname;
@@ -41,19 +43,20 @@ export default function AppHeader() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        background: '#fff',
+        background: token.colorBgContainer,
         padding: '0 24px',
-        borderBottom: '1px solid #f0f0f0',
+        borderBottom: `1px solid ${token.colorBorderSecondary}`,
         position: 'sticky',
         top: 0,
         zIndex: 10,
       }}
     >
-      <Title level={4} style={{ margin: 0 }}>
+      <Title level={4} style={{ margin: 0, color: token.colorText }}>
         {pageTitle}
       </Title>
 
-      <Space size="middle">
+      <Space size="small">
+        <ThemeToggle />
         <NotificationBell />
         <UserMenu />
       </Space>

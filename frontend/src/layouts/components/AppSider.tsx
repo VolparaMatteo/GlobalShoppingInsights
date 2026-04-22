@@ -95,19 +95,27 @@ export default function AppSider({ collapsed }: AppSiderProps) {
     >
       <div
         style={{
-          height: 48,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
+          gap: 10,
           color: '#fff',
-          fontWeight: 700,
-          fontSize: collapsed ? 16 : 18,
-          padding: '16px 0',
+          fontWeight: 600,
+          fontSize: collapsed ? 0 : 15,
+          padding: '16px',
           whiteSpace: 'nowrap',
           overflow: 'hidden',
+          letterSpacing: 0.2,
         }}
       >
-        {collapsed ? 'GSI' : 'Global Shopping'}
+        <img
+          src="/favicon.svg"
+          alt=""
+          aria-hidden="true"
+          width={28}
+          height={28}
+          style={{ display: 'block', flexShrink: 0 }}
+        />
+        {!collapsed && <span>Global Shopping</span>}
       </div>
 
       <Menu
