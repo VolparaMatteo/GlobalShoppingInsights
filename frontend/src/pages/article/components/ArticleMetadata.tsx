@@ -49,9 +49,7 @@ function MetaRow({
         {icon}
         <span>{label}</span>
       </Flex>
-      <div style={{ color: '#262626', textAlign: 'right', maxWidth: '60%' }}>
-        {children}
-      </div>
+      <div style={{ color: '#262626', textAlign: 'right', maxWidth: '60%' }}>{children}</div>
     </Flex>
   );
 }
@@ -85,9 +83,7 @@ export default function ArticleMetadata({ article }: ArticleMetadataProps) {
         </MetaRow>
 
         <MetaRow icon={<CalendarOutlined />} label="Pubblicato">
-          {article.published_at
-            ? dayjs(article.published_at).format('DD/MM/YY')
-            : '—'}
+          {article.published_at ? dayjs(article.published_at).format('DD/MM/YY') : '—'}
         </MetaRow>
 
         <MetaRow icon={<ClockCircleOutlined />} label="Importato">
@@ -146,11 +142,7 @@ export default function ArticleMetadata({ article }: ArticleMetadataProps) {
                   Cambia
                 </Button>
               </Upload>
-              <Button
-                size="small"
-                icon={<PictureOutlined />}
-                onClick={() => setUnsplashOpen(true)}
-              >
+              <Button size="small" icon={<PictureOutlined />} onClick={() => setUnsplashOpen(true)}>
                 Unsplash
               </Button>
               <Button
@@ -193,11 +185,7 @@ export default function ArticleMetadata({ article }: ArticleMetadataProps) {
                 Clicca o trascina un'immagine
               </p>
             </Upload.Dragger>
-            <Button
-              block
-              icon={<SearchOutlined />}
-              onClick={() => setUnsplashOpen(true)}
-            >
+            <Button block icon={<SearchOutlined />} onClick={() => setUnsplashOpen(true)}>
               Cerca su Unsplash
             </Button>
           </Flex>

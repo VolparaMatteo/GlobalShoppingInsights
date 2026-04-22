@@ -3,10 +3,7 @@ import { Form, InputNumber, Input, Switch, Button, Spin, message } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/config/queryKeys';
-import {
-  getScrapingSettings,
-  updateScrapingSettings,
-} from '@/services/api/settings.api';
+import { getScrapingSettings, updateScrapingSettings } from '@/services/api/settings.api';
 import type { ScrapingSettings as ScrapingSettingsType } from '@/types';
 
 /** Query key for scraping settings (extends the settings root). */
@@ -24,8 +21,7 @@ export default function ScrapingSettings() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (payload: Partial<ScrapingSettingsType>) =>
-      updateScrapingSettings(payload),
+    mutationFn: (payload: Partial<ScrapingSettingsType>) => updateScrapingSettings(payload),
     onSuccess: () => {
       message.success('Scraping settings saved');
       queryClient.invalidateQueries({ queryKey: SCRAPING_KEY });
@@ -84,11 +80,7 @@ export default function ScrapingSettings() {
           <Input placeholder="GSI-Bot/1.0" />
         </Form.Item>
 
-        <Form.Item
-          name="respect_robots_txt"
-          label="Respect robots.txt"
-          valuePropName="checked"
-        >
+        <Form.Item name="respect_robots_txt" label="Respect robots.txt" valuePropName="checked">
           <Switch />
         </Form.Item>
 

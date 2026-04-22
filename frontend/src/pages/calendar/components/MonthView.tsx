@@ -119,11 +119,7 @@ export default function MonthView({ slots, currentDate, onSlotClick }: MonthView
               <div
                 style={{
                   ...baseCellStyle,
-                  background: isToday
-                    ? '#e6f4ff'
-                    : isOutside
-                      ? '#fafafa'
-                      : '#fff',
+                  background: isToday ? '#e6f4ff' : isOutside ? '#fafafa' : '#fff',
                   opacity: isOutside ? 0.45 : 1,
                 }}
               >
@@ -152,11 +148,7 @@ export default function MonthView({ slots, currentDate, onSlotClick }: MonthView
                 </div>
 
                 {daySlots.map((slot) => (
-                  <SlotCard
-                    key={slot.id}
-                    slot={slot}
-                    onClick={() => onSlotClick(slot)}
-                  />
+                  <SlotCard key={slot.id} slot={slot} onClick={() => onSlotClick(slot)} />
                 ))}
               </div>
             </DroppableSlot>

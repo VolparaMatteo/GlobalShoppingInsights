@@ -3,11 +3,7 @@ import { Form, Input, InputNumber, Button, Space, Spin, Typography, message } fr
 import { SaveOutlined, ApiOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/config/queryKeys';
-import {
-  getWPConfig,
-  updateWPConfig,
-  testWPConnection,
-} from '@/services/api/settings.api';
+import { getWPConfig, updateWPConfig, testWPConnection } from '@/services/api/settings.api';
 import { formatDateTime } from '@/utils/date';
 import type { WPConfigUpdate } from '@/types';
 

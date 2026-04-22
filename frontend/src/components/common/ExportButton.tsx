@@ -9,7 +9,11 @@ interface ExportButtonProps {
   filenamePrefix?: string;
 }
 
-export default function ExportButton({ endpoint, queryParams = {}, filenamePrefix = 'export' }: ExportButtonProps) {
+export default function ExportButton({
+  endpoint,
+  queryParams = {},
+  filenamePrefix = 'export',
+}: ExportButtonProps) {
   const [loading, setLoading] = useState(false);
 
   const handleExport = async (format: 'csv' | 'json') => {

@@ -23,7 +23,11 @@ interface WorkflowActionsProps {
 }
 
 /** Map certain statuses to specific button styles for visual clarity. */
-function getButtonProps(targetStatus: string): { type: 'primary' | 'default'; danger?: boolean; icon: React.ReactNode } {
+function getButtonProps(targetStatus: string): {
+  type: 'primary' | 'default';
+  danger?: boolean;
+  icon: React.ReactNode;
+} {
   switch (targetStatus) {
     case 'approved':
       return { type: 'primary', icon: <CheckCircleOutlined /> };
@@ -48,8 +52,7 @@ export default function WorkflowActions({ article, onStatusChange }: WorkflowAct
   });
 
   const mutation = useMutation({
-    mutationFn: (newStatus: string) =>
-      changeStatus(article.id, { new_status: newStatus }),
+    mutationFn: (newStatus: string) => changeStatus(article.id, { new_status: newStatus }),
     onSuccess: (updated) => {
       message.success(`Status changed to "${updated.status}".`);
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.detail(article.id) });

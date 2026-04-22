@@ -34,13 +34,7 @@ export const ARTICLE_STATUSES: ArticleStatus[] = [
 // Roles
 // ---------------------------------------------------------------------------
 
-export const ROLES = [
-  'admin',
-  'editor',
-  'reviewer',
-  'contributor',
-  'read_only',
-] as const;
+export const ROLES = ['admin', 'editor', 'reviewer', 'contributor', 'read_only'] as const;
 
 export type Role = (typeof ROLES)[number];
 
@@ -58,7 +52,9 @@ export const ROLE_LABELS: Record<Role, string> = {
 // ---------------------------------------------------------------------------
 
 /** Available publishing slot hours (24-h format). */
-export const SLOT_TIMES: number[] = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
+export const SLOT_TIMES: number[] = [
+  6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+];
 
 /** Default slot hours suggested by the RPD (09:00, 13:00, 18:00). */
 export const DEFAULT_SLOT_HOURS: number[] = [9, 13, 18];

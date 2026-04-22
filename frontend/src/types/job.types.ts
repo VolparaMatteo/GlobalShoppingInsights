@@ -9,8 +9,8 @@ export interface JobLog {
   job_type: string;
   entity_ref: string | null;
   status: string;
-  started_at: string;         // ISO-8601 datetime
-  ended_at: string | null;    // ISO-8601 datetime
+  started_at: string; // ISO-8601 datetime
+  ended_at: string | null; // ISO-8601 datetime
   error: string | null;
   payload: Record<string, unknown> | null;
   progress: number | null;

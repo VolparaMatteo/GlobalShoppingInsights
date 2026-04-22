@@ -151,13 +151,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'taxonomy:view',
   ],
 
-  read_only: [
-    'dashboard:view',
-    'article:view',
-    'prompt:view',
-    'calendar:view',
-    'taxonomy:view',
-  ],
+  read_only: ['dashboard:view', 'article:view', 'prompt:view', 'calendar:view', 'taxonomy:view'],
 } as const;
 
 // ---------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // stores/uiStore.ts  --  General UI state (sidebar, locale, etc.)
 // ---------------------------------------------------------------------------
-import { create } from "zustand";
+import { create } from 'zustand';
 
 interface UiState {
   sidebarCollapsed: boolean;
@@ -13,10 +13,9 @@ interface UiState {
 
 export const useUiStore = create<UiState>()((set) => ({
   sidebarCollapsed: false,
-  locale: "en",
+  locale: 'en',
 
-  toggleSidebar: () =>
-    set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+  toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 
   setLocale: (locale: string) => set({ locale }),
 }));

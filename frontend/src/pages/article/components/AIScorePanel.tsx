@@ -42,10 +42,7 @@ export default function AIScorePanel({ article }: AIScorePanelProps) {
             size={90}
           />
         ) : (
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description="Nessun punteggio disponibile"
-          />
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Nessun punteggio disponibile" />
         )}
       </div>
 
@@ -53,11 +50,7 @@ export default function AIScorePanel({ article }: AIScorePanelProps) {
       {article.ai_score_explanation && article.ai_score_explanation.length > 0 && (
         <Flex vertical gap={4}>
           {article.ai_score_explanation.map((reason, idx) => (
-            <Typography.Text
-              key={idx}
-              type="secondary"
-              style={{ fontSize: 12, lineHeight: 1.5 }}
-            >
+            <Typography.Text key={idx} type="secondary" style={{ fontSize: 12, lineHeight: 1.5 }}>
               &bull; {reason}
             </Typography.Text>
           ))}
@@ -77,16 +70,11 @@ export default function AIScorePanel({ article }: AIScorePanelProps) {
         >
           <Flex align="center" gap={6} style={{ marginBottom: 6 }}>
             <RobotOutlined style={{ fontSize: 13, color: '#1890ff' }} />
-            <Typography.Text
-              strong
-              style={{ fontSize: 12, color: '#1890ff' }}
-            >
+            <Typography.Text strong style={{ fontSize: 12, color: '#1890ff' }}>
               Analisi di Pertinenza
             </Typography.Text>
           </Flex>
-          <Typography.Text
-            style={{ fontSize: 12, lineHeight: 1.6, color: '#262626' }}
-          >
+          <Typography.Text style={{ fontSize: 12, lineHeight: 1.6, color: '#262626' }}>
             {article.ai_relevance_comment}
           </Typography.Text>
         </div>

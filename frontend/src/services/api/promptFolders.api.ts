@@ -1,24 +1,18 @@
 // ---------------------------------------------------------------------------
 // services/api/promptFolders.api.ts  --  Prompt folder CRUD
 // ---------------------------------------------------------------------------
-import client from "./client";
-import type {
-  PromptFolder,
-  PromptFolderCreate,
-  PromptFolderUpdate,
-} from "@/types";
+import client from './client';
+import type { PromptFolder, PromptFolderCreate, PromptFolderUpdate } from '@/types';
 
 /** GET /prompt-folders */
 export async function getPromptFolders(): Promise<PromptFolder[]> {
-  const { data } = await client.get<PromptFolder[]>("/prompt-folders");
+  const { data } = await client.get<PromptFolder[]>('/prompt-folders');
   return data;
 }
 
 /** POST /prompt-folders */
-export async function createPromptFolder(
-  payload: PromptFolderCreate,
-): Promise<PromptFolder> {
-  const { data } = await client.post<PromptFolder>("/prompt-folders", payload);
+export async function createPromptFolder(payload: PromptFolderCreate): Promise<PromptFolder> {
+  const { data } = await client.post<PromptFolder>('/prompt-folders', payload);
   return data;
 }
 
@@ -27,10 +21,7 @@ export async function updatePromptFolder(
   id: number,
   payload: PromptFolderUpdate,
 ): Promise<PromptFolder> {
-  const { data } = await client.patch<PromptFolder>(
-    `/prompt-folders/${id}`,
-    payload,
-  );
+  const { data } = await client.patch<PromptFolder>(`/prompt-folders/${id}`, payload);
   return data;
 }
 

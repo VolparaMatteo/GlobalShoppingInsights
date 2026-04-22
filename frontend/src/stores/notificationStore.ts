@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // stores/notificationStore.ts  --  Notification state
 // ---------------------------------------------------------------------------
-import { create } from "zustand";
+import { create } from 'zustand';
 
 export interface StoreNotification {
   id: number;
@@ -36,14 +36,11 @@ export const useNotificationStore = create<NotificationState>()((set) => ({
 
   increment: () => set((state) => ({ unreadCount: state.unreadCount + 1 })),
 
-  decrement: () =>
-    set((state) => ({ unreadCount: Math.max(0, state.unreadCount - 1) })),
+  decrement: () => set((state) => ({ unreadCount: Math.max(0, state.unreadCount - 1) })),
 
   markAsRead: (id: number) =>
     set((state) => {
-      const updated = state.notifications.map((n) =>
-        n.id === id ? { ...n, read: true } : n,
-      );
+      const updated = state.notifications.map((n) => (n.id === id ? { ...n, read: true } : n));
       return {
         notifications: updated,
         unreadCount: updated.filter((n) => !n.read).length,

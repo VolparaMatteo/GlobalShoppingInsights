@@ -10,12 +10,7 @@ import {
   updateCategory,
   deleteCategory,
 } from '@/services/api/taxonomy.api';
-import type {
-  TagCreate,
-  TagUpdate,
-  CategoryCreate,
-  CategoryUpdate,
-} from '@/types';
+import type { TagCreate, TagUpdate, CategoryCreate, CategoryUpdate } from '@/types';
 
 // ---------------------------------------------------------------------------
 // Tags
@@ -47,8 +42,7 @@ export function useUpdateTag() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: TagUpdate }) =>
-      updateTag(id, data),
+    mutationFn: ({ id, data }: { id: number; data: TagUpdate }) => updateTag(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.taxonomy.tags() });
     },
@@ -99,8 +93,7 @@ export function useUpdateCategory() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: CategoryUpdate }) =>
-      updateCategory(id, data),
+    mutationFn: ({ id, data }: { id: number; data: CategoryUpdate }) => updateCategory(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.taxonomy.categories(),

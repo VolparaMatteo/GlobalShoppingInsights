@@ -4,11 +4,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Button, Empty, Flex, Input, Modal, Pagination, Spin, Typography, message } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-import {
-  searchUnsplash,
-  trackDownload,
-  type UnsplashPhoto,
-} from '@/services/api/unsplash.api';
+import { searchUnsplash, trackDownload, type UnsplashPhoto } from '@/services/api/unsplash.api';
 
 interface ImagePickerModalProps {
   open: boolean;
@@ -104,11 +100,7 @@ export default function ImagePickerModal({
               Unsplash
             </a>
           </Typography.Text>
-          <Button
-            type="primary"
-            disabled={!selected}
-            onClick={handleConfirm}
-          >
+          <Button type="primary" disabled={!selected} onClick={handleConfirm}>
             Usa immagine
           </Button>
         </Flex>
@@ -121,7 +113,11 @@ export default function ImagePickerModal({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onSearch={handleSearch}
-        enterButton={<><SearchOutlined /> Cerca</>}
+        enterButton={
+          <>
+            <SearchOutlined /> Cerca
+          </>
+        }
         style={{ marginBottom: 16 }}
         allowClear
       />
@@ -133,8 +129,13 @@ export default function ImagePickerModal({
         </Flex>
       ) : results.length === 0 ? (
         <Empty
-          description={total === 0 && query ? 'Nessun risultato' : 'Cerca un\'immagine per iniziare'}
-          style={{ minHeight: 200, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
+          description={total === 0 && query ? 'Nessun risultato' : "Cerca un'immagine per iniziare"}
+          style={{
+            minHeight: 200,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+          }}
         />
       ) : (
         <>
@@ -156,9 +157,7 @@ export default function ImagePickerModal({
                     cursor: 'pointer',
                     borderRadius: 8,
                     overflow: 'hidden',
-                    border: isSelected
-                      ? '3px solid #1890ff'
-                      : '3px solid transparent',
+                    border: isSelected ? '3px solid #1890ff' : '3px solid transparent',
                     transition: 'border-color 0.2s',
                   }}
                 >

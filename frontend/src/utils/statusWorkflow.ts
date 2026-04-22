@@ -1,4 +1,12 @@
-export const STATUS_ORDER = ['imported', 'screened', 'in_review', 'approved', 'scheduled', 'publishing', 'published'];
+export const STATUS_ORDER = [
+  'imported',
+  'screened',
+  'in_review',
+  'approved',
+  'scheduled',
+  'publishing',
+  'published',
+];
 
 export const WORKFLOW_TRANSITIONS: Record<string, string[]> = {
   imported: ['screened', 'rejected'],

@@ -1,13 +1,13 @@
 // ---------------------------------------------------------------------------
 // services/api/client.ts  --  Axios instance with JWT interceptors
 // ---------------------------------------------------------------------------
-import axios from "axios";
-import type { AxiosError, InternalAxiosRequestConfig } from "axios";
-import { useAuthStore } from "@/stores/authStore";
+import axios from 'axios';
+import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { useAuthStore } from '@/stores/authStore';
 
 const client = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "/api/v1",
-  headers: { "Content-Type": "application/json" },
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
+  headers: { 'Content-Type': 'application/json' },
 });
 
 // ---- Request interceptor: attach Bearer token ----------------------------
@@ -79,7 +79,7 @@ client.interceptors.response.use(
       const { data } = await axios.post(
         `${client.defaults.baseURL}/auth/refresh`,
         { refresh_token: refreshToken },
-        { headers: { "Content-Type": "application/json" } },
+        { headers: { 'Content-Type': 'application/json' } },
       );
 
       const newAccessToken: string = data.access_token;

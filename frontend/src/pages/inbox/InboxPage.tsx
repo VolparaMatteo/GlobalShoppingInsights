@@ -8,10 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Article } from '@/types';
 import { queryKeys } from '@/config/queryKeys';
 import { DEFAULT_PAGE_SIZE } from '@/config/constants';
-import {
-  getArticles,
-  type GetArticlesParams,
-} from '@/services/api/articles.api';
+import { getArticles, type GetArticlesParams } from '@/services/api/articles.api';
 import { changeStatus } from '@/services/api/articles.api';
 import { batchAction } from '@/services/api/articles.api';
 
@@ -27,9 +24,7 @@ import InboxTable, {
   type SortState,
 } from '@/pages/inbox/components/InboxTable';
 import ArticlePreviewDrawer from '@/pages/inbox/components/ArticlePreviewDrawer';
-import BatchActionsBar, {
-  type BatchActionPayload,
-} from '@/pages/inbox/components/BatchActionsBar';
+import BatchActionsBar, { type BatchActionPayload } from '@/pages/inbox/components/BatchActionsBar';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -74,8 +69,7 @@ export default function InboxPage() {
   });
 
   // Debounce free-text inputs
-  const [debouncedFilters, setDebouncedFilters] =
-    useState<InboxFilterValues>(filters);
+  const [debouncedFilters, setDebouncedFilters] = useState<InboxFilterValues>(filters);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -148,21 +142,15 @@ export default function InboxPage() {
   });
 
   // ---- Callbacks ----------------------------------------------------------
-  const handleFiltersChange = useCallback(
-    (next: InboxFilterValues) => {
-      setFilters(next);
-      // Reset to first page on filter change.
-      setPagination((prev) => ({ ...prev, current: 1 }));
-    },
-    [],
-  );
+  const handleFiltersChange = useCallback((next: InboxFilterValues) => {
+    setFilters(next);
+    // Reset to first page on filter change.
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  }, []);
 
-  const handlePaginationChange = useCallback(
-    (page: number, pageSize: number) => {
-      setPagination((prev) => ({ ...prev, current: page, pageSize }));
-    },
-    [],
-  );
+  const handlePaginationChange = useCallback((page: number, pageSize: number) => {
+    setPagination((prev) => ({ ...prev, current: page, pageSize }));
+  }, []);
 
   const handleSort = useCallback((next: SortState | null) => {
     setSort(next);
@@ -216,18 +204,10 @@ export default function InboxPage() {
       <PageHeader
         title="Inbox"
         subtitle="Gestisci gli articoli importati: filtra, valuta e smista."
-        extra={
-          <ExportButton
-            endpoint="/api/v1/articles/export"
-            filenamePrefix="inbox_articles"
-          />
-        }
+        extra={<ExportButton endpoint="/api/v1/articles/export" filenamePrefix="inbox_articles" />}
       />
 
-      <InboxFilters
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-      />
+      <InboxFilters filters={filters} onFiltersChange={handleFiltersChange} />
 
       <Card>
         <InboxTable

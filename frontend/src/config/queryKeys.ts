@@ -17,13 +17,11 @@ export const queryKeys = {
 
     /** Paginated / filtered article lists. */
     lists: () => [...queryKeys.articles.all, 'list'] as const,
-    list: (filters: Record<string, unknown>) =>
-      [...queryKeys.articles.lists(), filters] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.articles.lists(), filters] as const,
 
     /** Single article by id. */
     details: () => [...queryKeys.articles.all, 'detail'] as const,
-    detail: (id: string | number) =>
-      [...queryKeys.articles.details(), String(id)] as const,
+    detail: (id: string | number) => [...queryKeys.articles.details(), String(id)] as const,
 
     /** Comments for a specific article. */
     comments: (articleId: string | number) =>
@@ -39,12 +37,10 @@ export const queryKeys = {
     all: ['prompts'] as const,
 
     lists: () => [...queryKeys.prompts.all, 'list'] as const,
-    list: (filters: Record<string, unknown>) =>
-      [...queryKeys.prompts.lists(), filters] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.prompts.lists(), filters] as const,
 
     details: () => [...queryKeys.prompts.all, 'detail'] as const,
-    detail: (id: string | number) =>
-      [...queryKeys.prompts.details(), String(id)] as const,
+    detail: (id: string | number) => [...queryKeys.prompts.details(), String(id)] as const,
 
     /** Search runs belonging to a prompt. */
     searchRuns: (promptId: string | number) =>
@@ -62,11 +58,9 @@ export const queryKeys = {
     all: ['searchRuns'] as const,
 
     lists: () => [...queryKeys.searchRuns.all, 'list'] as const,
-    list: (filters: Record<string, unknown>) =>
-      [...queryKeys.searchRuns.lists(), filters] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.searchRuns.lists(), filters] as const,
 
-    detail: (id: string | number) =>
-      [...queryKeys.searchRuns.all, 'detail', String(id)] as const,
+    detail: (id: string | number) => [...queryKeys.searchRuns.all, 'detail', String(id)] as const,
   },
 
   // -- Calendar / Editorial Slots -------------------------------------------
@@ -90,11 +84,9 @@ export const queryKeys = {
     all: ['users'] as const,
 
     lists: () => [...queryKeys.users.all, 'list'] as const,
-    list: (filters: Record<string, unknown>) =>
-      [...queryKeys.users.lists(), filters] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.users.lists(), filters] as const,
 
-    detail: (id: string | number) =>
-      [...queryKeys.users.all, 'detail', String(id)] as const,
+    detail: (id: string | number) => [...queryKeys.users.all, 'detail', String(id)] as const,
 
     /** The currently authenticated user. */
     me: () => [...queryKeys.users.all, 'me'] as const,

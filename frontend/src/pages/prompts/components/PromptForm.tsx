@@ -154,11 +154,11 @@ export default function PromptForm({
       time_depth: values.time_depth,
       max_results: values.max_results,
       schedule_enabled: values.schedule_enabled,
-      schedule_frequency_hours: values.schedule_enabled
-        ? values.schedule_frequency_hours
-        : null,
+      schedule_frequency_hours: values.schedule_enabled ? values.schedule_frequency_hours : null,
       schedule_specific_times: values.schedule_enabled
-        ? (values.schedule_specific_times?.length ? values.schedule_specific_times : null)
+        ? values.schedule_specific_times?.length
+          ? values.schedule_specific_times
+          : null
         : null,
     };
     onSubmit(payload);
@@ -241,11 +241,7 @@ export default function PromptForm({
       </Form.Item>
 
       <Form.Item name="language" label="Lingua">
-        <Select
-          placeholder="Seleziona lingua"
-          allowClear
-          options={LANGUAGE_OPTIONS}
-        />
+        <Select placeholder="Seleziona lingua" allowClear options={LANGUAGE_OPTIONS} />
       </Form.Item>
 
       <Form.Item name="countries" label="Paesi">
@@ -292,12 +288,7 @@ export default function PromptForm({
         {scheduleEnabled && (
           <>
             <Form.Item name="schedule_frequency_hours" label="Frequenza (ore)">
-              <InputNumber
-                min={1}
-                max={720}
-                placeholder="es. 24"
-                style={{ width: '100%' }}
-              />
+              <InputNumber min={1} max={720} placeholder="es. 24" style={{ width: '100%' }} />
             </Form.Item>
 
             <Form.Item

@@ -2,18 +2,7 @@
 // CommentsThread.tsx  --  Article comments list with add-comment form
 // ---------------------------------------------------------------------------
 import { useState } from 'react';
-import {
-  Card,
-  List,
-  Typography,
-  Input,
-  Button,
-  Space,
-  Avatar,
-  Empty,
-  Spin,
-  message,
-} from 'antd';
+import { Card, List, Typography, Input, Button, Space, Avatar, Empty, Spin, message } from 'antd';
 import { CommentOutlined, UserOutlined, SendOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getComments, addComment } from '@/services/api/comments.api';

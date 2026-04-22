@@ -1,9 +1,9 @@
 // ---------------------------------------------------------------------------
 // stores/authStore.ts  --  Authentication state (Zustand + persist)
 // ---------------------------------------------------------------------------
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import type { User } from "@/types";
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import type { User } from '@/types';
 
 interface AuthState {
   user: User | null;
@@ -32,9 +32,7 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (email: string, password: string) => {
         // Lazy-import to break circular dep (client.ts reads authStore)
-        const { login: apiLogin, getMe } = await import(
-          "@/services/api/auth.api"
-        );
+        const { login: apiLogin, getMe } = await import('@/services/api/auth.api');
         const tokens = await apiLogin({ email, password });
         set({
           accessToken: tokens.access_token,
@@ -57,7 +55,7 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: "gsi-auth",
+      name: 'gsi-auth',
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,

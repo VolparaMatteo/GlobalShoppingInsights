@@ -51,13 +51,17 @@ function DraggableArticle({ article }: DraggableArticleProps) {
 
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
-      <Typography.Text
-        ellipsis
-        style={{ display: 'block', fontWeight: 500, fontSize: 13 }}
-      >
+      <Typography.Text ellipsis style={{ display: 'block', fontWeight: 500, fontSize: 13 }}>
         {article.title}
       </Typography.Text>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginTop: 4,
+        }}
+      >
         <Typography.Text type="secondary" style={{ fontSize: 11 }}>
           {article.source_domain}
         </Typography.Text>
@@ -112,9 +116,7 @@ export default function CalendarSidebar() {
     if (!search.trim()) return items;
     const q = search.toLowerCase();
     return items.filter(
-      (a) =>
-        a.title.toLowerCase().includes(q) ||
-        a.source_domain.toLowerCase().includes(q),
+      (a) => a.title.toLowerCase().includes(q) || a.source_domain.toLowerCase().includes(q),
     );
   }, [data, search]);
 
@@ -123,7 +125,14 @@ export default function CalendarSidebar() {
   return (
     <aside style={sidebarStyle}>
       <div style={headerStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 10,
+          }}
+        >
           <Typography.Text strong style={{ fontSize: 14 }}>
             <FileTextOutlined style={{ marginRight: 6 }} />
             Pronti da pianificare
@@ -152,9 +161,7 @@ export default function CalendarSidebar() {
             style={{ marginTop: 32 }}
           />
         ) : (
-          articles.map((article) => (
-            <DraggableArticle key={article.id} article={article} />
-          ))
+          articles.map((article) => <DraggableArticle key={article.id} article={article} />)
         )}
       </div>
     </aside>

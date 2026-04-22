@@ -40,7 +40,11 @@ function jobTypeLabel(type: string) {
     ai_score: { label: 'Punteggio AI', color: 'purple' },
   };
   const m = map[type] || { label: type, color: 'default' };
-  return <Tag color={m.color} style={{ fontSize: 11, lineHeight: '18px', borderRadius: 4 }}>{m.label}</Tag>;
+  return (
+    <Tag color={m.color} style={{ fontSize: 11, lineHeight: '18px', borderRadius: 4 }}>
+      {m.label}
+    </Tag>
+  );
 }
 
 const containerStyle: CSSProperties = {

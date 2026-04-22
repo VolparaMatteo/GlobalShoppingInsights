@@ -123,9 +123,7 @@ export default function AuditLogViewer() {
           placeholder="Filter by action"
         />
         <RangePicker
-          onChange={(dates) =>
-            setDateRange(dates as [Dayjs | null, Dayjs | null] | null)
-          }
+          onChange={(dates) => setDateRange(dates as [Dayjs | null, Dayjs | null] | null)}
           allowClear
         />
       </Space>
@@ -137,8 +135,7 @@ export default function AuditLogViewer() {
         loading={isLoading}
         expandable={{
           expandedRowRender,
-          rowExpandable: (record) =>
-            !!record.metadata && Object.keys(record.metadata).length > 0,
+          rowExpandable: (record) => !!record.metadata && Object.keys(record.metadata).length > 0,
         }}
         pagination={{
           current: page,

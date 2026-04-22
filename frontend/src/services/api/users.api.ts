@@ -1,13 +1,8 @@
 // ---------------------------------------------------------------------------
 // services/api/users.api.ts  --  User management endpoints
 // ---------------------------------------------------------------------------
-import client from "./client";
-import type {
-  PaginatedResponse,
-  User,
-  UserCreate,
-  UserUpdate,
-} from "@/types";
+import client from './client';
+import type { PaginatedResponse, User, UserCreate, UserUpdate } from '@/types';
 
 export interface GetUsersParams {
   page?: number;
@@ -18,10 +13,8 @@ export interface GetUsersParams {
 }
 
 /** GET /users */
-export async function getUsers(
-  params?: GetUsersParams,
-): Promise<PaginatedResponse<User>> {
-  const { data } = await client.get<PaginatedResponse<User>>("/users", {
+export async function getUsers(params?: GetUsersParams): Promise<PaginatedResponse<User>> {
+  const { data } = await client.get<PaginatedResponse<User>>('/users', {
     params,
   });
   return data;
@@ -29,7 +22,7 @@ export async function getUsers(
 
 /** POST /users */
 export async function createUser(payload: UserCreate): Promise<User> {
-  const { data } = await client.post<User>("/users", payload);
+  const { data } = await client.post<User>('/users', payload);
   return data;
 }
 
@@ -40,10 +33,7 @@ export async function getUser(id: number): Promise<User> {
 }
 
 /** PATCH /users/:id */
-export async function updateUser(
-  id: number,
-  payload: UserUpdate,
-): Promise<User> {
+export async function updateUser(id: number, payload: UserUpdate): Promise<User> {
   const { data } = await client.patch<User>(`/users/${id}`, payload);
   return data;
 }

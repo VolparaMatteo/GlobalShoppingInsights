@@ -26,9 +26,7 @@ export default function RunSearchButton({ promptId }: RunSearchButtonProps) {
   const mutation = useMutation({
     mutationFn: () => runPromptSearch(promptId),
     onSuccess: (searchRun) => {
-      message.success(
-        `Ricerca avviata con successo (Esecuzione #${searchRun.id})`,
-      );
+      message.success(`Ricerca avviata con successo (Esecuzione #${searchRun.id})`);
       // Refresh search history data
       queryClient.invalidateQueries({ queryKey: ['searchRuns', promptId] });
     },

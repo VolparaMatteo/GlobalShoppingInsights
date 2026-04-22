@@ -28,5 +28,5 @@ export interface WPPost {
   wp_url: string | null;
   wp_status: string | null;
   published_at: string | null; // ISO-8601 datetime
-  created_at: string | null;   // ISO-8601 datetime
+  created_at: string | null; // ISO-8601 datetime
 }

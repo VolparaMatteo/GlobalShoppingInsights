@@ -49,7 +49,10 @@ export default function PipelineOverview({ byStatus }: PipelineOverviewProps) {
           const meta = STATUS_MAP[status];
           const count = byStatus[status] ?? 0;
           return (
-            <div key={status} style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+            <div
+              key={status}
+              style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}
+            >
               <Tooltip title={`${meta.label}: ${count} articoli`}>
                 <div
                   style={stageStyle(meta.color, meta.bgColor, false)}

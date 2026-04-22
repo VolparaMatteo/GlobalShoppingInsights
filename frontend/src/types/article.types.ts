@@ -3,8 +3,8 @@
 // Mirrors: backend/app/schemas/article.py
 // ---------------------------------------------------------------------------
 
-import type { Tag } from "./taxonomy.types";
-import type { Category } from "./taxonomy.types";
+import type { Tag } from './taxonomy.types';
+import type { Category } from './taxonomy.types';
 
 /** Lightweight prompt info attached to an article. */
 export interface PromptSummary {
@@ -20,7 +20,7 @@ export interface Article {
   source_domain: string;
   title: string;
   author: string | null;
-  published_at: string | null;        // ISO-8601 datetime
+  published_at: string | null; // ISO-8601 datetime
   language: string;
   country: string | null;
   content_html: string | null;
@@ -35,8 +35,8 @@ export interface Article {
   ai_suggested_category: string | null;
   ai_relevance_comment: string | null;
   duplicate_of_id: number | null;
-  created_at: string;                  // ISO-8601 datetime
-  updated_at: string;                  // ISO-8601 datetime
+  created_at: string; // ISO-8601 datetime
+  updated_at: string; // ISO-8601 datetime
   tags: Tag[];
   categories: Category[];
   prompts: PromptSummary[];

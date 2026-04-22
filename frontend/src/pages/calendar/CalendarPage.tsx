@@ -3,11 +3,7 @@
 // ---------------------------------------------------------------------------
 import React, { useCallback, useMemo, useState } from 'react';
 import { Button, Segmented, Space, Typography } from 'antd';
-import {
-  LeftOutlined,
-  RightOutlined,
-  CalendarOutlined,
-} from '@ant-design/icons';
+import { LeftOutlined, RightOutlined, CalendarOutlined } from '@ant-design/icons';
 import {
   DndContext,
   DragEndEvent,
@@ -121,18 +117,13 @@ export default function CalendarPage() {
   const { data: previewArticle } = useArticle(previewArticleId ?? 0);
 
   // --- Data fetching -------------------------------------------------------
-  const dateRange = useMemo(
-    () => getDateRange(viewMode, currentDate),
-    [viewMode, currentDate],
-  );
+  const dateRange = useMemo(() => getDateRange(viewMode, currentDate), [viewMode, currentDate]);
 
   const { data: slots = [], isLoading } = useCalendarSlots(dateRange);
   const updateSlot = useUpdateSlot();
 
   // --- Drag-and-drop -------------------------------------------------------
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-  );
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
@@ -146,9 +137,7 @@ export default function CalendarPage() {
         }
       } else {
         // Dragging an existing slot (block published/failed)
-        const slot = (slots as EditorialSlot[]).find(
-          (s) => s.id === Number(idStr),
-        );
+        const slot = (slots as EditorialSlot[]).find((s) => s.id === Number(idStr));
         if (slot && slot.status !== 'published' && slot.status !== 'failed') {
           setActiveSlot(slot);
           setDragState({

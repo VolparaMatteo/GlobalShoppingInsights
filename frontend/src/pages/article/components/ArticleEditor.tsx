@@ -61,11 +61,7 @@ export default function ArticleEditor({ article, onSave, onCancel }: ArticleEdit
           >
             Salva
           </Button>
-          <Button
-            icon={<CloseOutlined />}
-            onClick={onCancel}
-            disabled={mutation.isPending}
-          >
+          <Button icon={<CloseOutlined />} onClick={onCancel} disabled={mutation.isPending}>
             Annulla
           </Button>
         </Space>
@@ -73,9 +69,7 @@ export default function ArticleEditor({ article, onSave, onCancel }: ArticleEdit
       style={{ marginBottom: 16 }}
     >
       <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>
-          Titolo
-        </label>
+        <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>Titolo</label>
         <Input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -85,9 +79,7 @@ export default function ArticleEditor({ article, onSave, onCancel }: ArticleEdit
       </div>
 
       <div>
-        <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>
-          Contenuto
-        </label>
+        <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>Contenuto</label>
         <Input.TextArea
           value={content}
           onChange={(e) => setContent(e.target.value)}

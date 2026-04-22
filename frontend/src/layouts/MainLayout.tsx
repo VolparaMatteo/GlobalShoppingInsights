@@ -23,12 +23,7 @@ export default function MainLayout() {
           }}
         >
           <Suspense
-            fallback={
-              <Spin
-                size="large"
-                style={{ display: 'block', margin: '20% auto' }}
-              />
-            }
+            fallback={<Spin size="large" style={{ display: 'block', margin: '20% auto' }} />}
           >
             <Outlet />
           </Suspense>

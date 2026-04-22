@@ -74,13 +74,7 @@ function truncate(text: string | null | undefined, maxLen = 800): string {
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function Section({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 20 }}>
       <Typography.Text
@@ -101,18 +95,10 @@ function Section({
   );
 }
 
-function MetaItem({
-  icon,
-  children,
-}: {
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
+function MetaItem({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <Flex align="center" gap={6} style={{ fontSize: 13, color: '#595959' }}>
-      <span style={{ color: '#8c8c8c', fontSize: 14, display: 'flex' }}>
-        {icon}
-      </span>
+      <span style={{ color: '#8c8c8c', fontSize: 14, display: 'flex' }}>{icon}</span>
       {children}
     </Flex>
   );
@@ -238,29 +224,29 @@ export default function ArticlePreviewDrawer({
   };
 
   // ---- Status dropdown items (all statuses except current) ----------------
-  const statusMenuItems: MenuProps['items'] = ARTICLE_STATUSES
-    .filter((s) => s !== article.status)
-    .map((s) => {
-      const meta = STATUS_MAP[s];
-      return {
-        key: s,
-        label: (
-          <Flex align="center" gap={8}>
-            <span
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                background: meta?.color ?? '#8c8c8c',
-                flexShrink: 0,
-              }}
-            />
-            {meta?.label ?? s}
-          </Flex>
-        ),
-        onClick: () => statusMutation.mutate({ id: article.id, newStatus: s }),
-      };
-    });
+  const statusMenuItems: MenuProps['items'] = ARTICLE_STATUSES.filter(
+    (s) => s !== article.status,
+  ).map((s) => {
+    const meta = STATUS_MAP[s];
+    return {
+      key: s,
+      label: (
+        <Flex align="center" gap={8}>
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: meta?.color ?? '#8c8c8c',
+              flexShrink: 0,
+            }}
+          />
+          {meta?.label ?? s}
+        </Flex>
+      ),
+      onClick: () => statusMutation.mutate({ id: article.id, newStatus: s }),
+    };
+  });
 
   // ---- Tags already assigned to this article ------------------------------
   const assignedTagIds = new Set(article.tags?.map((t) => t.id) ?? []);
@@ -300,15 +286,8 @@ export default function ArticlePreviewDrawer({
             {readOnly ? (
               <StatusBadge status={article.status} />
             ) : (
-              <Dropdown
-                menu={{ items: statusMenuItems }}
-                trigger={['click']}
-              >
-                <Button
-                  size="small"
-                  type="text"
-                  style={{ padding: '0 4px', height: 'auto' }}
-                >
+              <Dropdown menu={{ items: statusMenuItems }} trigger={['click']}>
+                <Button size="small" type="text" style={{ padding: '0 4px', height: 'auto' }}>
                   <Flex align="center" gap={4}>
                     <StatusBadge status={article.status} />
                     <SwapOutlined style={{ fontSize: 11, color: '#8c8c8c' }} />
@@ -334,7 +313,9 @@ export default function ArticlePreviewDrawer({
                 {translation ? 'Mostra originale' : 'Traduci in italiano'}
               </Button>
               {translation && (
-                <Tag color="blue" style={{ margin: 0, fontSize: 11 }}>Tradotto</Tag>
+                <Tag color="blue" style={{ margin: 0, fontSize: 11 }}>
+                  Tradotto
+                </Tag>
               )}
             </Flex>
           )}
@@ -380,9 +361,7 @@ export default function ArticlePreviewDrawer({
 
               <MetaItem icon={<CalendarOutlined />}>
                 Pubblicato il{' '}
-                {article.published_at
-                  ? dayjs(article.published_at).format('DD/MM/YY')
-                  : '—'}
+                {article.published_at ? dayjs(article.published_at).format('DD/MM/YY') : '—'}
               </MetaItem>
 
               <MetaItem icon={<ClockCircleOutlined />}>
@@ -432,11 +411,7 @@ export default function ArticlePreviewDrawer({
                     {p.keywords.length > 0 && (
                       <Flex wrap="wrap" gap={4} style={{ marginTop: 4 }}>
                         {p.keywords.map((kw) => (
-                          <Tag
-                            key={kw}
-                            color="geekblue"
-                            style={{ fontSize: 11, margin: 0 }}
-                          >
+                          <Tag key={kw} color="geekblue" style={{ fontSize: 11, margin: 0 }}>
                             {kw}
                           </Tag>
                         ))}
@@ -450,48 +425,43 @@ export default function ArticlePreviewDrawer({
 
           {/* ---- AI Score Explanation ---- */}
           {(article.ai_score_explanation?.length || article.ai_relevance_comment) && (
-              <Section label="Analisi AI">
-                {article.ai_score_explanation && article.ai_score_explanation.length > 0 && (
-                  <Flex vertical gap={4}>
-                    {article.ai_score_explanation.map((reason, idx) => (
-                      <Typography.Text
-                        key={idx}
-                        type="secondary"
-                        style={{ fontSize: 13, lineHeight: 1.5 }}
-                      >
-                        &bull; {reason}
-                      </Typography.Text>
-                    ))}
-                  </Flex>
-                )}
-                {article.ai_relevance_comment && (
-                  <div
-                    style={{
-                      marginTop: article.ai_score_explanation?.length ? 10 : 0,
-                      padding: '10px 12px',
-                      background: 'linear-gradient(135deg, #f0f5ff 0%, #e6f7ff 100%)',
-                      borderRadius: 8,
-                      border: '1px solid #d6e4ff',
-                    }}
-                  >
-                    <Flex align="center" gap={6} style={{ marginBottom: 6 }}>
-                      <RobotOutlined style={{ fontSize: 13, color: '#1890ff' }} />
-                      <Typography.Text
-                        strong
-                        style={{ fontSize: 12, color: '#1890ff' }}
-                      >
-                        Analisi di Pertinenza
-                      </Typography.Text>
-                    </Flex>
+            <Section label="Analisi AI">
+              {article.ai_score_explanation && article.ai_score_explanation.length > 0 && (
+                <Flex vertical gap={4}>
+                  {article.ai_score_explanation.map((reason, idx) => (
                     <Typography.Text
-                      style={{ fontSize: 13, lineHeight: 1.6, color: '#262626' }}
+                      key={idx}
+                      type="secondary"
+                      style={{ fontSize: 13, lineHeight: 1.5 }}
                     >
-                      {article.ai_relevance_comment}
+                      &bull; {reason}
                     </Typography.Text>
-                  </div>
-                )}
-              </Section>
-            )}
+                  ))}
+                </Flex>
+              )}
+              {article.ai_relevance_comment && (
+                <div
+                  style={{
+                    marginTop: article.ai_score_explanation?.length ? 10 : 0,
+                    padding: '10px 12px',
+                    background: 'linear-gradient(135deg, #f0f5ff 0%, #e6f7ff 100%)',
+                    borderRadius: 8,
+                    border: '1px solid #d6e4ff',
+                  }}
+                >
+                  <Flex align="center" gap={6} style={{ marginBottom: 6 }}>
+                    <RobotOutlined style={{ fontSize: 13, color: '#1890ff' }} />
+                    <Typography.Text strong style={{ fontSize: 12, color: '#1890ff' }}>
+                      Analisi di Pertinenza
+                    </Typography.Text>
+                  </Flex>
+                  <Typography.Text style={{ fontSize: 13, lineHeight: 1.6, color: '#262626' }}>
+                    {article.ai_relevance_comment}
+                  </Typography.Text>
+                </div>
+              )}
+            </Section>
+          )}
 
           {/* ---- Tags ---- */}
           <Section label="Tags">
@@ -502,12 +472,14 @@ export default function ArticlePreviewDrawer({
                 </Tag>
               ))}
               {!article.tags?.length && (
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>Nessun tag</Typography.Text>
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  Nessun tag
+                </Typography.Text>
               )}
 
               {/* ---- Add tag inline (hidden in readOnly) ---- */}
-              {!readOnly && (
-                tagSelectOpen ? (
+              {!readOnly &&
+                (tagSelectOpen ? (
                   <Select
                     autoFocus
                     mode="multiple"
@@ -535,8 +507,7 @@ export default function ArticlePreviewDrawer({
                   >
                     <PlusOutlined /> Aggiungi
                   </Tag>
-                )
-              )}
+                ))}
             </Flex>
           </Section>
 
@@ -549,12 +520,14 @@ export default function ArticlePreviewDrawer({
                 </Tag>
               ))}
               {!article.categories?.length && (
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>Nessuna categoria</Typography.Text>
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  Nessuna categoria
+                </Typography.Text>
               )}
 
               {/* ---- Add category inline (hidden in readOnly) ---- */}
-              {!readOnly && (
-                catSelectOpen ? (
+              {!readOnly &&
+                (catSelectOpen ? (
                   <Select
                     autoFocus
                     mode="multiple"
@@ -582,8 +555,7 @@ export default function ArticlePreviewDrawer({
                   >
                     <PlusOutlined /> Aggiungi
                   </Tag>
-                )
-              )}
+                ))}
             </Flex>
           </Section>
 
@@ -673,15 +645,13 @@ export default function ArticlePreviewDrawer({
                     style={{ padding: '12px 0' }}
                   >
                     <p style={{ margin: 0, color: '#8c8c8c' }}>
-                      <PictureOutlined style={{ fontSize: 24, display: 'block', marginBottom: 4 }} />
+                      <PictureOutlined
+                        style={{ fontSize: 24, display: 'block', marginBottom: 4 }}
+                      />
                       Clicca o trascina un'immagine
                     </p>
                   </Upload.Dragger>
-                  <Button
-                    block
-                    icon={<SearchOutlined />}
-                    onClick={() => setUnsplashOpen(true)}
-                  >
+                  <Button block icon={<SearchOutlined />} onClick={() => setUnsplashOpen(true)}>
                     Cerca su Unsplash
                   </Button>
                 </Flex>
@@ -740,19 +710,10 @@ export default function ArticlePreviewDrawer({
             }}
           >
             <Flex justify="space-between" align="center">
-              <Dropdown
-                menu={{ items: statusMenuItems }}
-                trigger={['click']}
-              >
-                <Button icon={<SwapOutlined />}>
-                  Cambia Stato
-                </Button>
+              <Dropdown menu={{ items: statusMenuItems }} trigger={['click']}>
+                <Button icon={<SwapOutlined />}>Cambia Stato</Button>
               </Dropdown>
-              <Button
-                type="link"
-                icon={<ArrowRightOutlined />}
-                onClick={handleViewFull}
-              >
+              <Button type="link" icon={<ArrowRightOutlined />} onClick={handleViewFull}>
                 Dettaglio completo
               </Button>
             </Flex>

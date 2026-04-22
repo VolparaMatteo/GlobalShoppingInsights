@@ -3,11 +3,7 @@ import { Table, Button, Input, Space, Form, Modal, message } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/config/queryKeys';
-import {
-  getBlacklist,
-  addBlacklist,
-  removeBlacklist,
-} from '@/services/api/settings.api';
+import { getBlacklist, addBlacklist, removeBlacklist } from '@/services/api/settings.api';
 import { showConfirmModal } from '@/components/common/ConfirmModal';
 import type { BlacklistEntry, BlacklistCreate } from '@/types';
 import type { ColumnsType } from 'antd/es/table';
@@ -144,10 +140,7 @@ export default function BlacklistSettings() {
             <Input placeholder="example.com" />
           </Form.Item>
           <Form.Item name="reason" label="Reason">
-            <Input.TextArea
-              rows={3}
-              placeholder="Reason for blocking this domain (optional)"
-            />
+            <Input.TextArea rows={3} placeholder="Reason for blocking this domain (optional)" />
           </Form.Item>
         </Form>
       </Modal>

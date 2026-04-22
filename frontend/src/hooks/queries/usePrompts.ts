@@ -54,8 +54,7 @@ export function useUpdatePrompt() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: PromptUpdate }) =>
-      updatePrompt(id, data),
+    mutationFn: ({ id, data }: { id: number; data: PromptUpdate }) => updatePrompt(id, data),
     onSuccess: (_result, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.prompts.detail(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.prompts.lists() });

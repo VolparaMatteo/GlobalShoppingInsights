@@ -2,14 +2,7 @@
 // PromptSearchHistory.tsx  --  Table of past search runs for a prompt
 // ---------------------------------------------------------------------------
 import { useState, useMemo, useCallback } from 'react';
-import {
-  Badge,
-  Descriptions,
-  Drawer,
-  Table,
-  Tag,
-  Typography,
-} from 'antd';
+import { Badge, Descriptions, Drawer, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 
@@ -23,11 +16,14 @@ const { Title, Text, Link } = Typography;
 
 type RunStatus = 'running' | 'completed' | 'failed' | 'queued';
 
-const STATUS_BADGE: Record<RunStatus, { status: 'processing' | 'success' | 'error' | 'default'; text: string }> = {
-  running:   { status: 'processing', text: 'In Esecuzione' },
-  completed: { status: 'success',    text: 'Completata' },
-  failed:    { status: 'error',      text: 'Fallita' },
-  queued:    { status: 'default',    text: 'In Coda' },
+const STATUS_BADGE: Record<
+  RunStatus,
+  { status: 'processing' | 'success' | 'error' | 'default'; text: string }
+> = {
+  running: { status: 'processing', text: 'In Esecuzione' },
+  completed: { status: 'success', text: 'Completata' },
+  failed: { status: 'error', text: 'Fallita' },
+  queued: { status: 'default', text: 'In Coda' },
 };
 
 function getStatusBadge(status: string) {
@@ -96,16 +92,14 @@ function ResultsDrawer({ run, open, onClose }: ResultsDrawerProps) {
       dataIndex: 'published_at_est',
       key: 'published_at_est',
       width: 150,
-      render: (val: string | null) =>
-        val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '--',
+      render: (val: string | null) => (val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '--'),
     },
     {
       title: 'Articolo',
       dataIndex: 'article_id',
       key: 'article_id',
       width: 80,
-      render: (val: number | null) =>
-        val ? <Tag color="green">#{val}</Tag> : <Tag>--</Tag>,
+      render: (val: number | null) => (val ? <Tag color="green">#{val}</Tag> : <Tag>--</Tag>),
     },
   ];
 
@@ -119,52 +113,25 @@ function ResultsDrawer({ run, open, onClose }: ResultsDrawerProps) {
       destroyOnClose
     >
       {/* Run summary */}
-      <Descriptions
-        column={2}
-        bordered
-        size="small"
-        style={{ marginBottom: 24 }}
-      >
-        <Descriptions.Item label="Stato">
-          {getStatusBadge(run.status)}
-        </Descriptions.Item>
+      <Descriptions column={2} bordered size="small" style={{ marginBottom: 24 }}>
+        <Descriptions.Item label="Stato">{getStatusBadge(run.status)}</Descriptions.Item>
         <Descriptions.Item label="Avvio">
           {dayjs(run.started_at).format('YYYY-MM-DD HH:mm:ss')}
         </Descriptions.Item>
         <Descriptions.Item label="Fine">
-          {run.ended_at
-            ? dayjs(run.ended_at).format('YYYY-MM-DD HH:mm:ss')
-            : '--'}
+          {run.ended_at ? dayjs(run.ended_at).format('YYYY-MM-DD HH:mm:ss') : '--'}
         </Descriptions.Item>
-        <Descriptions.Item label="URL Trovati">
-          {run.urls_found}
-        </Descriptions.Item>
-        <Descriptions.Item label="Articoli Creati">
-          {run.articles_created}
-        </Descriptions.Item>
-        <Descriptions.Item label="Duplicati Ignorati">
-          {run.duplicates_skipped}
-        </Descriptions.Item>
+        <Descriptions.Item label="URL Trovati">{run.urls_found}</Descriptions.Item>
+        <Descriptions.Item label="Articoli Creati">{run.articles_created}</Descriptions.Item>
+        <Descriptions.Item label="Duplicati Ignorati">{run.duplicates_skipped}</Descriptions.Item>
         <Descriptions.Item label="Filtrati per Lingua">
-          {run.language_filtered > 0 ? (
-            <Text type="warning">{run.language_filtered}</Text>
-          ) : (
-            '0'
-          )}
+          {run.language_filtered > 0 ? <Text type="warning">{run.language_filtered}</Text> : '0'}
         </Descriptions.Item>
         <Descriptions.Item label="Filtrati per Data">
-          {run.date_filtered > 0 ? (
-            <Text type="warning">{run.date_filtered}</Text>
-          ) : (
-            '0'
-          )}
+          {run.date_filtered > 0 ? <Text type="warning">{run.date_filtered}</Text> : '0'}
         </Descriptions.Item>
         <Descriptions.Item label="Filtrati per Rilevanza">
-          {run.relevance_filtered > 0 ? (
-            <Text type="warning">{run.relevance_filtered}</Text>
-          ) : (
-            '0'
-          )}
+          {run.relevance_filtered > 0 ? <Text type="warning">{run.relevance_filtered}</Text> : '0'}
         </Descriptions.Item>
         <Descriptions.Item label="Errori">
           {run.errors_count > 0 ? (
@@ -265,11 +232,7 @@ export default function PromptSearchHistory({
         width: 120,
         align: 'right' as const,
         render: (count: number) =>
-          count > 0 ? (
-            <Text type="warning">{count}</Text>
-          ) : (
-            <Text type="secondary">0</Text>
-          ),
+          count > 0 ? <Text type="warning">{count}</Text> : <Text type="secondary">0</Text>,
       },
       {
         title: 'Filtro Data',
@@ -278,11 +241,7 @@ export default function PromptSearchHistory({
         width: 110,
         align: 'right' as const,
         render: (count: number) =>
-          count > 0 ? (
-            <Text type="warning">{count}</Text>
-          ) : (
-            <Text type="secondary">0</Text>
-          ),
+          count > 0 ? <Text type="warning">{count}</Text> : <Text type="secondary">0</Text>,
       },
       {
         title: 'Non Rilevanti',
@@ -291,11 +250,7 @@ export default function PromptSearchHistory({
         width: 120,
         align: 'right' as const,
         render: (count: number) =>
-          count > 0 ? (
-            <Text type="warning">{count}</Text>
-          ) : (
-            <Text type="secondary">0</Text>
-          ),
+          count > 0 ? <Text type="warning">{count}</Text> : <Text type="secondary">0</Text>,
       },
       {
         title: 'Errori',
@@ -304,11 +259,7 @@ export default function PromptSearchHistory({
         width: 90,
         align: 'right' as const,
         render: (count: number) =>
-          count > 0 ? (
-            <Text type="danger">{count}</Text>
-          ) : (
-            <Text type="secondary">0</Text>
-          ),
+          count > 0 ? <Text type="danger">{count}</Text> : <Text type="secondary">0</Text>,
       },
     ],
     [],
@@ -332,11 +283,7 @@ export default function PromptSearchHistory({
         locale={{ emptyText: 'Nessuna esecuzione di ricerca per questo prompt' }}
       />
 
-      <ResultsDrawer
-        run={selectedRun}
-        open={drawerOpen}
-        onClose={handleDrawerClose}
-      />
+      <ResultsDrawer run={selectedRun} open={drawerOpen} onClose={handleDrawerClose} />
     </>
   );
 }
