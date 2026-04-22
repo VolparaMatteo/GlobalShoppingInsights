@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button, Dropdown, message } from 'antd';
-import { DownloadOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
+import { Download } from 'lucide-react';
 
 interface ExportButtonProps {
   endpoint: string;
@@ -52,7 +52,11 @@ export default function ExportButton({
 
   return (
     <Dropdown menu={{ items }} trigger={['click']}>
-      <Button icon={<DownloadOutlined />} loading={loading}>
+      <Button
+        icon={<Download size={14} />}
+        loading={loading}
+        style={{ height: 40, borderRadius: 10, fontWeight: 500, padding: '0 16px' }}
+      >
         Esporta
       </Button>
     </Dropdown>

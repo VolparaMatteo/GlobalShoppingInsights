@@ -1,20 +1,17 @@
 // ---------------------------------------------------------------------------
-// InboxPage  --  Main editorial inbox: filtered article list with preview
+// InboxPage — Sprint 7 polish b10 (premium hero + card layout + floating bulk)
 // ---------------------------------------------------------------------------
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { Card, message } from 'antd';
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { Article } from '@/types';
-import { queryKeys } from '@/config/queryKeys';
-import { DEFAULT_PAGE_SIZE } from '@/config/constants';
-import { getArticles, type GetArticlesParams } from '@/services/api/articles.api';
-import { changeStatus } from '@/services/api/articles.api';
-import { batchAction } from '@/services/api/articles.api';
+import { theme as antdTheme, Typography } from 'antd';
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 
-import PageHeader from '@/components/common/PageHeader';
 import ExportButton from '@/components/common/ExportButton';
-
+import { DEFAULT_PAGE_SIZE } from '@/config/constants';
+import { queryKeys } from '@/config/queryKeys';
+import { useToast } from '@/hooks/useToast';
+import ArticlePreviewDrawer from '@/pages/inbox/components/ArticlePreviewDrawer';
+import BatchActionsBar, { type BatchActionPayload } from '@/pages/inbox/components/BatchActionsBar';
 import InboxFilters, {
   DEFAULT_FILTERS,
   type InboxFilterValues,
@@ -23,14 +20,20 @@ import InboxTable, {
   type InboxTablePagination,
   type SortState,
 } from '@/pages/inbox/components/InboxTable';
-import ArticlePreviewDrawer from '@/pages/inbox/components/ArticlePreviewDrawer';
-import BatchActionsBar, { type BatchActionPayload } from '@/pages/inbox/components/BatchActionsBar';
+import {
+  batchAction,
+  changeStatus,
+  getArticles,
+  type GetArticlesParams,
+} from '@/services/api/articles.api';
+import type { Article } from '@/types';
+
+const { Title, Text } = Typography;
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Convert UI filter state to API query params. */
 function filtersToParams(
   filters: InboxFilterValues,
   pagination: InboxTablePagination,
@@ -62,21 +65,17 @@ function filtersToParams(
 
 export default function InboxPage() {
   const queryClient = useQueryClient();
+  const { token } = antdTheme.useToken();
+  const toast = useToast();
 
   // ---- Filter state -------------------------------------------------------
-  const [filters, setFilters] = useState<InboxFilterValues>({
-    ...DEFAULT_FILTERS,
-  });
-
-  // Debounce free-text inputs
+  const [filters, setFilters] = useState<InboxFilterValues>({ ...DEFAULT_FILTERS });
   const [debouncedFilters, setDebouncedFilters] = useState<InboxFilterValues>(filters);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => {
-      setDebouncedFilters(filters);
-    }, 350);
+    debounceTimer.current = setTimeout(() => setDebouncedFilters(filters), 350);
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
@@ -88,7 +87,6 @@ export default function InboxPage() {
     pageSize: DEFAULT_PAGE_SIZE,
     total: 0,
   });
-
   const [sort, setSort] = useState<SortState | null>(null);
 
   // ---- Selection ----------------------------------------------------------
@@ -107,11 +105,8 @@ export default function InboxPage() {
     placeholderData: keepPreviousData,
   });
 
-  // Keep pagination total in sync with API response.
   useEffect(() => {
-    if (data) {
-      setPagination((prev) => ({ ...prev, total: data.total }));
-    }
+    if (data) setPagination((prev) => ({ ...prev, total: data.total }));
   }, [data]);
 
   const articles = data?.items ?? [];
@@ -122,11 +117,9 @@ export default function InboxPage() {
       changeStatus(id, { new_status: newStatus }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.all });
-      message.success('Stato aggiornato');
+      toast.success('Stato aggiornato');
     },
-    onError: () => {
-      message.error('Impossibile aggiornare lo stato');
-    },
+    onError: (err) => toast.error(err),
   });
 
   const batchMutation = useMutation({
@@ -134,17 +127,14 @@ export default function InboxPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.all });
       setSelectedRowKeys([]);
-      message.success('Azione di massa completata');
+      toast.success('Azione di massa completata');
     },
-    onError: () => {
-      message.error('Azione di massa fallita');
-    },
+    onError: (err) => toast.error(err),
   });
 
   // ---- Callbacks ----------------------------------------------------------
   const handleFiltersChange = useCallback((next: InboxFilterValues) => {
     setFilters(next);
-    // Reset to first page on filter change.
     setPagination((prev) => ({ ...prev, current: 1 }));
   }, []);
 
@@ -152,18 +142,14 @@ export default function InboxPage() {
     setPagination((prev) => ({ ...prev, current: page, pageSize }));
   }, []);
 
-  const handleSort = useCallback((next: SortState | null) => {
-    setSort(next);
-  }, []);
+  const handleSort = useCallback((next: SortState | null) => setSort(next), []);
 
   const handleRowClick = useCallback((article: Article) => {
     setPreviewArticle(article);
     setDrawerOpen(true);
   }, []);
 
-  const handleDrawerClose = useCallback(() => {
-    setDrawerOpen(false);
-  }, []);
+  const handleDrawerClose = useCallback(() => setDrawerOpen(false), []);
 
   const handleQuickAction = useCallback(
     (articleId: number, action: 'screened' | 'rejected') => {
@@ -183,33 +169,56 @@ export default function InboxPage() {
           new_status: payload.newStatus,
         });
       } else if (payload.type === 'discard') {
-        batchMutation.mutate({
-          article_ids: ids,
-          action: 'discard',
-        });
+        batchMutation.mutate({ article_ids: ids, action: 'discard' });
       } else if (payload.type === 'tag') {
-        message.info('Selettore tag in arrivo');
+        toast.info('Selettore tag in arrivo');
       }
     },
-    [selectedRowKeys, batchMutation],
+    [selectedRowKeys, batchMutation, toast],
   );
 
-  const handleClearSelection = useCallback(() => {
-    setSelectedRowKeys([]);
-  }, []);
+  const handleClearSelection = useCallback(() => setSelectedRowKeys([]), []);
 
   // ---- Render -------------------------------------------------------------
   return (
     <div style={{ maxWidth: 1400, margin: '0 auto' }}>
-      <PageHeader
-        title="Inbox"
-        subtitle="Gestisci gli articoli importati: filtra, valuta e smista."
-        extra={<ExportButton endpoint="/api/v1/articles/export" filenamePrefix="inbox_articles" />}
-      />
+      {/* Hero */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-end',
+          marginBottom: 24,
+          flexWrap: 'wrap',
+          gap: 16,
+        }}
+      >
+        <div>
+          <Title
+            level={3}
+            style={{ margin: 0, fontWeight: 700, letterSpacing: -0.3, color: token.colorText }}
+          >
+            Inbox
+          </Title>
+          <Text type="secondary" style={{ fontSize: 14 }}>
+            Filtra, valuta e smista gli articoli importati dalla pipeline di discovery.
+          </Text>
+        </div>
+        <ExportButton endpoint="/api/v1/articles/export" filenamePrefix="inbox_articles" />
+      </div>
 
-      <InboxFilters filters={filters} onFiltersChange={handleFiltersChange} />
+      {/* Main card: filters + table */}
+      <div
+        style={{
+          background: token.colorBgContainer,
+          borderRadius: 12,
+          border: `1px solid ${token.colorBorderSecondary}`,
+          padding: 20,
+          boxShadow: 'var(--shadow-sm)',
+        }}
+      >
+        <InboxFilters filters={filters} onFiltersChange={handleFiltersChange} />
 
-      <Card>
         <InboxTable
           articles={articles}
           loading={isLoading}
@@ -220,13 +229,14 @@ export default function InboxPage() {
           onRowClick={handleRowClick}
           onPaginationChange={handlePaginationChange}
         />
+      </div>
 
-        <BatchActionsBar
-          selectedIds={selectedRowKeys}
-          onAction={handleBatchAction}
-          onClear={handleClearSelection}
-        />
-      </Card>
+      {/* Floating bulk toolbar (mounted outside the card to float over viewport) */}
+      <BatchActionsBar
+        selectedIds={selectedRowKeys}
+        onAction={handleBatchAction}
+        onClear={handleClearSelection}
+      />
 
       <ArticlePreviewDrawer
         article={previewArticle}

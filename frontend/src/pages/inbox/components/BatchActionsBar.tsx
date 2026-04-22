@@ -1,11 +1,15 @@
 // ---------------------------------------------------------------------------
-// BatchActionsBar  --  Floating bar shown when one or more rows are selected
+// BatchActionsBar — Sprint 7 polish b10 (floating pill + Lucide + gradient)
+// Barra azioni di massa che appare centrata in basso quando c'è una selezione.
 // ---------------------------------------------------------------------------
-import { Button, Dropdown, Space, Typography } from 'antd';
-import { SwapOutlined, TagsOutlined, DeleteOutlined, CloseOutlined } from '@ant-design/icons';
+import { App, Button, Dropdown, Space, Typography, theme as antdTheme } from 'antd';
 import type { MenuProps } from 'antd';
-import { showConfirmModal } from '@/components/common/ConfirmModal';
-import { ARTICLE_STATUSES, STATUS_MAP, type ArticleStatus } from '@/config/constants';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeftRight, Tags, Trash2, X } from 'lucide-react';
+
+import { ARTICLE_STATUSES, STATUS_MAP } from '@/config/constants';
+
+const { Text } = Typography;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -15,7 +19,6 @@ export type BatchActionType = 'status' | 'tag' | 'discard';
 
 export interface BatchActionPayload {
   type: BatchActionType;
-  /** New status value -- only present when type === 'status'. */
   newStatus?: string;
 }
 
@@ -30,9 +33,10 @@ interface BatchActionsBarProps {
 // ---------------------------------------------------------------------------
 
 export default function BatchActionsBar({ selectedIds, onAction, onClear }: BatchActionsBarProps) {
-  if (selectedIds.length === 0) return null;
+  const { token } = antdTheme.useToken();
+  const { modal } = App.useApp();
+  const visible = selectedIds.length > 0;
 
-  // Status dropdown items
   const statusMenuItems: MenuProps['items'] = ARTICLE_STATUSES.map((s) => ({
     key: s,
     label: STATUS_MAP[s].label,
@@ -40,52 +44,129 @@ export default function BatchActionsBar({ selectedIds, onAction, onClear }: Batc
   }));
 
   const handleDiscard = () => {
-    showConfirmModal({
+    modal.confirm({
       title: 'Scartare gli articoli selezionati?',
       content: `Verranno scartati permanentemente ${selectedIds.length} articolo/i. Questa azione non può essere annullata.`,
       okText: 'Scarta',
-      danger: true,
+      okButtonProps: { danger: true },
+      cancelText: 'Annulla',
+      centered: true,
       onOk: () => onAction({ type: 'discard' }),
     });
   };
 
   return (
-    <div
-      style={{
-        position: 'sticky',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 20,
-        background: '#fff',
-        borderTop: '1px solid #f0f0f0',
-        boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.08)',
-        padding: '12px 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderRadius: '0 0 8px 8px',
-      }}
-    >
-      <Typography.Text strong>{selectedIds.length} selezionati</Typography.Text>
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          key="batch-actions-bar"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 24 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            left: 0,
+            right: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            zIndex: 30,
+            pointerEvents: 'none',
+          }}
+        >
+          <div
+            style={{
+              pointerEvents: 'auto',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              padding: '10px 16px 10px 18px',
+              background: token.colorBgElevated,
+              borderRadius: 14,
+              border: `1px solid ${token.colorBorderSecondary}`,
+              boxShadow:
+                '0 16px 48px -12px rgba(22,119,255,0.25), 0 6px 18px -4px rgba(0,0,0,0.15)',
+              backdropFilter: 'saturate(180%) blur(8px)',
+            }}
+          >
+            {/* Counter gradient */}
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '6px 12px',
+                borderRadius: 10,
+                background:
+                  'linear-gradient(135deg, rgba(22,119,255,0.12) 0%, rgba(114,46,209,0.12) 100%)',
+                border: `1px solid ${token.colorPrimary}33`,
+              }}
+            >
+              <Text
+                strong
+                style={{
+                  color: token.colorPrimary,
+                  fontSize: 13,
+                  fontVariantNumeric: 'tabular-nums',
+                  lineHeight: 1,
+                }}
+              >
+                {selectedIds.length}
+              </Text>
+              <Text style={{ color: token.colorPrimary, fontSize: 12, lineHeight: 1 }}>
+                {selectedIds.length === 1 ? 'selezionato' : 'selezionati'}
+              </Text>
+            </div>
 
-      <Space>
-        <Dropdown menu={{ items: statusMenuItems }} trigger={['click']}>
-          <Button icon={<SwapOutlined />}>Cambia Stato</Button>
-        </Dropdown>
+            <Space size={6}>
+              <Dropdown menu={{ items: statusMenuItems }} trigger={['click']} placement="topLeft">
+                <Button
+                  icon={<ArrowLeftRight size={14} />}
+                  style={{ borderRadius: 8, fontWeight: 500, height: 34 }}
+                >
+                  Cambia stato
+                </Button>
+              </Dropdown>
 
-        <Button icon={<TagsOutlined />} onClick={() => onAction({ type: 'tag' })}>
-          Aggiungi Tag
-        </Button>
+              <Button
+                icon={<Tags size={14} />}
+                onClick={() => onAction({ type: 'tag' })}
+                style={{ borderRadius: 8, fontWeight: 500, height: 34 }}
+              >
+                Tag
+              </Button>
 
-        <Button danger icon={<DeleteOutlined />} onClick={handleDiscard}>
-          Scarta
-        </Button>
+              <Button
+                danger
+                icon={<Trash2 size={14} />}
+                onClick={handleDiscard}
+                style={{ borderRadius: 8, fontWeight: 500, height: 34 }}
+              >
+                Scarta
+              </Button>
+            </Space>
 
-        <Button type="text" icon={<CloseOutlined />} onClick={onClear}>
-          Deseleziona
-        </Button>
-      </Space>
-    </div>
+            <div style={{ width: 1, height: 22, background: token.colorBorderSecondary }} />
+
+            <Button
+              type="text"
+              size="small"
+              icon={<X size={14} />}
+              onClick={onClear}
+              aria-label="Deseleziona tutto"
+              style={{
+                borderRadius: 8,
+                color: token.colorTextSecondary,
+                height: 30,
+                padding: '0 10px',
+              }}
+            >
+              Annulla
+            </Button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

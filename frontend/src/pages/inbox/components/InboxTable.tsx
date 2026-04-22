@@ -151,6 +151,7 @@ export default function InboxTable({
       rowSelection={{
         selectedRowKeys,
         onChange: (keys) => onSelectChange(keys),
+        preserveSelectedRowKeys: true,
       }}
       pagination={{
         current: pagination.current,
