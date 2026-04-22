@@ -50,6 +50,15 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // File watching via polling — necessario su Docker + bind mount Windows:
+    // il kernel Linux nel container non riceve inotify events dal filesystem
+    // host NTFS/WSL2. Senza questo, Vite non vede le modifiche → HMR morto.
+    // Interval 300ms (compromesso reattività/CPU). In dev nativo (non Docker)
+    // puoi rimuovere — polling ha costo CPU rispetto a inotify.
+    watch: {
+      usePolling: true,
+      interval: 300,
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
