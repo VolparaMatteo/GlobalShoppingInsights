@@ -220,7 +220,7 @@ export default function AuthLayout() {
             }}
           >
             <span>© {new Date().getFullYear()} Global Shopping Insights</span>
-            <span>v1.0.0 · build preview</span>
+            <span>Sviluppato da Spinotto Web Agency s.n.c.</span>
           </div>
         </div>
       </aside>
