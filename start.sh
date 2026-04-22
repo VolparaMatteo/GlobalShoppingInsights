@@ -13,6 +13,8 @@
 #   ./start.sh refresh-frontend-deps     # ricrea il volume node_modules
 #                                        # (usare dopo aver aggiunto/rimosso
 #                                        # dipendenze in frontend/package.json)
+#   ./start.sh refresh-backend-deps      # rebuild immagine backend
+#                                        # (usare dopo cambio requirements.txt)
 # ============================================================================
 
 set -euo pipefail
@@ -61,6 +63,13 @@ case "$CMD" in
         docker compose "${PROFILE_ARGS[@]}" build frontend
         docker compose "${PROFILE_ARGS[@]}" up -d
         echo "Fatto. Frontend ripartito su http://localhost:5173"
+        ;;
+    refresh-backend-deps)
+        echo "Rebuild immagine backend (dopo cambio requirements.txt)..."
+        docker compose "${PROFILE_ARGS[@]}" stop backend || true
+        docker compose "${PROFILE_ARGS[@]}" build backend
+        docker compose "${PROFILE_ARGS[@]}" up -d
+        echo "Fatto. Backend ripartito su http://localhost:8000"
         ;;
     up|"")
         docker compose "${PROFILE_ARGS[@]}" up -d
