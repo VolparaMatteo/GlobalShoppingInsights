@@ -24,3 +24,4 @@ psycopg[binary]>=3.2.0
 pydantic[email]
 py3langid>=0.2.2
 deep-translator>=1.11.0
+structlog>=24.4.0

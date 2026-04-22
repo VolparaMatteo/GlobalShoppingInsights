@@ -9,7 +9,9 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from app.config import settings
+from app.middleware.request_id import RequestIdMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
+from app.utils.logging import configure_logging
 from app.utils.rate_limit import limiter
 from app.api import (
     articles,
@@ -30,6 +32,9 @@ from app.api import (
     unsplash,
     users,
 )
+
+# Configurazione logging (structlog): JSON in produzione, console in dev/test.
+configure_logging()
 
 _log = logging.getLogger(__name__)
 
@@ -94,6 +99,11 @@ app.add_middleware(
 # Headers di sicurezza (HSTS, CSP, X-Frame-Options, ...).
 # Aggiunto per ultimo così starlette lo applica dopo il resto della pipeline.
 app.add_middleware(SecurityHeadersMiddleware)
+
+# Request-ID: il più esterno. Popola la ContextVar consumata da structlog
+# (così ogni log di una request include il request_id) e aggiunge l'header
+# `X-Request-ID` alla risposta.
+app.add_middleware(RequestIdMiddleware)
 
 # Serve uploaded files
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)

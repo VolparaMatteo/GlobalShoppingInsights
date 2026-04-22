@@ -10,8 +10,23 @@ from app.models.calendar import EditorialSlot
 from app.models.wordpress import WPConfig, WPPost
 from app.models.logs import JobLog
 from app.utils.encryption import decrypt, is_encrypted
+from app.utils.retry import with_retry
 
 logger = logging.getLogger(__name__)
+
+
+@with_retry(max_attempts=3, initial_delay=1.0)
+def _wp_http_get(url: str, **kwargs) -> httpx.Response:
+    r = httpx.get(url, **kwargs)
+    r.raise_for_status()
+    return r
+
+
+@with_retry(max_attempts=3, initial_delay=1.0)
+def _wp_http_post(url: str, **kwargs) -> httpx.Response:
+    r = httpx.post(url, **kwargs)
+    r.raise_for_status()
+    return r
 
 
 def _wp_auth_credentials(config: WPConfig) -> tuple[str, str]:
@@ -85,9 +100,8 @@ def _upload_featured_image(
             with open(filepath, "rb") as f:
                 file_bytes = f.read()
         else:
-            # Remote URL: download
-            resp = httpx.get(image_url, timeout=30, follow_redirects=True)
-            resp.raise_for_status()
+            # Remote URL: download con retry su errori transitori
+            resp = _wp_http_get(image_url, timeout=30, follow_redirects=True)
             file_bytes = resp.content
             # Derive filename from URL
             filename = image_url.rsplit("/", 1)[-1].split("?")[0] or "image.jpg"
@@ -99,7 +113,7 @@ def _upload_featured_image(
         content_type = content_types.get(ext, "image/jpeg")
 
         media_url = f"{wp_base_url.rstrip('/')}/wp-json/wp/v2/media"
-        response = httpx.post(
+        response = _wp_http_post(
             media_url,
             content=file_bytes,
             headers={
@@ -109,7 +123,6 @@ def _upload_featured_image(
             auth=auth,
             timeout=60,
         )
-        response.raise_for_status()
         return response.json().get("id")
     except Exception as e:
         logger.error(f"Featured image upload failed: {e}")
@@ -183,14 +196,13 @@ def publish_to_wordpress(article_id: int):
                 if media_id:
                     post_data["featured_media"] = media_id
 
-            # --- Create post ---
-            response = httpx.post(
+            # --- Create post (con retry su errori transitori / 5xx) ---
+            response = _wp_http_post(
                 f"{wp_base}/wp-json/wp/v2/posts",
                 json=post_data,
                 auth=wp_auth,
                 timeout=60,
             )
-            response.raise_for_status()
             wp_data = response.json()
 
             wp_post = WPPost(

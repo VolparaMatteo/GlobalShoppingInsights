@@ -5,6 +5,8 @@ import trafilatura
 from htmldate import find_date
 import py3langid as langid
 
+from app.utils.retry import with_retry
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,10 +28,21 @@ DEFAULT_HEADERS = {
 }
 
 
+@with_retry(max_attempts=3, initial_delay=1.0)
+def _fetch_html(url: str, timeout: int) -> httpx.Response:
+    """Download HTML con retry su timeout / connection / 5xx.
+
+    Isolata qui così il retry copre SOLO la chiamata HTTP, non le fasi di
+    scraping/parsing che seguono (ripeterle sarebbe costoso e inutile).
+    """
+    response = httpx.get(url, headers=DEFAULT_HEADERS, timeout=timeout, follow_redirects=True)
+    response.raise_for_status()
+    return response
+
+
 def scrape_url(url: str, timeout: int = 30) -> Optional[dict]:
     try:
-        response = httpx.get(url, headers=DEFAULT_HEADERS, timeout=timeout, follow_redirects=True)
-        response.raise_for_status()
+        response = _fetch_html(url, timeout)
         html = response.text
 
         # Extract main text content

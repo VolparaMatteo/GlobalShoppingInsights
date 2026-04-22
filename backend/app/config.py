@@ -39,6 +39,14 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "uploads"
     UNSPLASH_ACCESS_KEY: str = ""
 
+    # Base URL di Ollama per LLM second-opinion. Vuoto = disabilitato.
+    # Es: "http://ollama:11434" in compose, o "http://localhost:11434" in dev locale.
+    OLLAMA_BASE_URL: str = ""
+
+    # Soglia minima di spazio libero (GB) sul disco UPLOAD_DIR per considerare
+    # il servizio healthy (sotto: status=degraded).
+    HEALTH_MIN_FREE_DISK_GB: float = 1.0
+
     # ------------------------------------------------------------------
     # Derived helpers
     # ------------------------------------------------------------------

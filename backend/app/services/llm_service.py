@@ -12,11 +12,19 @@ from typing import Optional
 
 import httpx
 
+from app.config import settings
+from app.utils.retry import with_retry
+
 logger = logging.getLogger(__name__)
 
-OLLAMA_BASE_URL = "http://localhost:11434"
+# Base URL letta dalle settings (es. http://ollama:11434 in compose).
+# Vuoto = LLM disabilitato; la funzione evaluate_relevance restituisce il fallback.
 OLLAMA_MODEL = "qwen2.5:3b"
 OLLAMA_TIMEOUT = 60  # seconds
+
+
+def _ollama_base_url() -> str:
+    return (settings.OLLAMA_BASE_URL or "").rstrip("/")
 
 
 def _build_prompt(
@@ -84,38 +92,52 @@ def evaluate_relevance(
     """
     fallback = {"relevant": True, "comment": None, "confidence": 0.0, "score": None}
 
+    base_url = _ollama_base_url()
+    if not base_url:
+        # LLM non configurato: pipeline prosegue con i soli embeddings.
+        return fallback
+
     prompt = _build_prompt(
         article_title, article_text, prompt_description, prompt_keywords, language
     )
 
     try:
-        response = httpx.post(
-            f"{OLLAMA_BASE_URL}/api/generate",
-            json={
-                "model": OLLAMA_MODEL,
-                "prompt": prompt,
-                "stream": False,
-                "options": {
-                    "temperature": 0.1,
-                    "num_predict": 256,
-                },
-            },
-            timeout=OLLAMA_TIMEOUT,
-        )
-        response.raise_for_status()
+        raw_text = _call_ollama_generate(base_url, prompt)
     except httpx.ConnectError:
-        logger.warning("Ollama is not running — skipping LLM relevance check")
+        logger.warning("Ollama non raggiungibile — skipping LLM relevance check")
         return fallback
     except httpx.TimeoutException:
-        logger.warning("Ollama request timed out — skipping LLM relevance check")
+        logger.warning("Ollama timeout — skipping LLM relevance check")
         return fallback
     except httpx.HTTPStatusError as e:
-        logger.warning(f"Ollama returned HTTP {e.response.status_code} — skipping")
+        logger.warning(f"Ollama HTTP {e.response.status_code} — skipping")
         return fallback
 
-    raw_text = response.json().get("response", "").strip()
-
     return _parse_llm_response(raw_text, fallback)
+
+
+@with_retry(max_attempts=2, initial_delay=1.0)
+def _call_ollama_generate(base_url: str, prompt: str) -> str:
+    """Chiamata a /api/generate con retry (2 tentativi — LLM è lento di suo).
+
+    Ritorna il testo grezzo di `response`. Può sollevare httpx.* su errore
+    persistente (gestito dal chiamante con fallback permissivo).
+    """
+    response = httpx.post(
+        f"{base_url}/api/generate",
+        json={
+            "model": OLLAMA_MODEL,
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "temperature": 0.1,
+                "num_predict": 256,
+            },
+        },
+        timeout=OLLAMA_TIMEOUT,
+    )
+    response.raise_for_status()
+    return str(response.json().get("response", "")).strip()
 
 
 def _parse_llm_response(raw_text: str, fallback: dict) -> dict:
