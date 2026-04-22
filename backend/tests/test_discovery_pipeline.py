@@ -372,3 +372,87 @@ def test_search_failure_completes_run_with_zero(
     assert run.status == "completed"
     assert run.urls_found == 0
     assert run.articles_created == 0
+
+
+# =============================================================================
+# Regressione: un errore in un'iterazione NON deve cancellare le altre
+# =============================================================================
+
+
+def test_error_in_one_iteration_preserves_others(
+    db,
+    patch_discovery_session,
+    monkeypatch,
+) -> None:
+    """Regressione: prima del fix savepoint, un `db.rollback()` in-loop
+    cancellava TUTTI i SearchResult/Article della transazione corrente.
+    Ora ogni iterazione gira in un SAVEPOINT isolato.
+    """
+    from app.models.article import Article
+    from app.models.search import SearchResult, SearchRun
+    from app.services.discovery_service import run_discovery_pipeline
+
+    def _fake_search(_prompt):
+        return [
+            {"url": "https://news.example.com/ok1", "title": "OK 1", "body": "s1"},
+            {"url": "https://news.example.com/fail", "title": "Fail", "body": "s2"},
+            {"url": "https://news.example.com/ok2", "title": "OK 2", "body": "s3"},
+        ]
+
+    base_scrape = {
+        "title": "Retail Article",
+        "author": "X",
+        "date": "2026-04-15",
+        "language": "en",
+        "html": "<p>HTML</p>",
+        "image": None,
+    }
+
+    def _fake_scrape_selective(url):
+        if "fail" in url:
+            # Raise un'eccezione vera (non un return None) per innescare il
+            # ramo `except` del loop e verificare il rollback per-iterazione.
+            raise RuntimeError("Simulated scrape crash")
+        # Content diverso per URL così il content_hash non collide
+        return {**base_scrape, "text": f"Unique content for {url}"}
+
+    def _fake_score(_text, _prompt_text, _keywords):
+        return {
+            "score": 70,
+            "explanation": ["good"],
+            "tags": ["retail"],
+            "category": "News",
+            "model_version": "test",
+        }
+
+    def _fake_llm(**_kwargs):
+        return {"relevant": True, "score": 80, "comment": "ok", "confidence": 0.9}
+
+    monkeypatch.setattr("app.services.discovery_service._search_duckduckgo", _fake_search)
+    monkeypatch.setattr("app.services.discovery_service.scrape_url", _fake_scrape_selective)
+    monkeypatch.setattr("app.services.discovery_service.score_article", _fake_score)
+    monkeypatch.setattr("app.services.discovery_service.evaluate_relevance", _fake_llm)
+
+    prompt = _create_prompt(db)
+    prompt_id = prompt.id
+
+    run_discovery_pipeline(prompt_id)
+
+    db.expire_all()
+    run = db.query(SearchRun).filter(SearchRun.prompt_id == prompt_id).first()
+    assert run is not None
+    assert run.urls_found == 3
+    assert run.articles_created == 2  # solo ok1 e ok2
+    assert run.errors_count == 1  # il fail
+
+    # CORE del test: i SearchResult degli URL riusciti devono esistere.
+    search_results = db.query(SearchResult).filter(SearchResult.search_run_id == run.id).all()
+    urls_persisted = {sr.url for sr in search_results}
+    assert "https://news.example.com/ok1" in urls_persisted
+    assert "https://news.example.com/ok2" in urls_persisted
+
+    # I 2 articoli creati sono effettivamente in DB
+    articles = (
+        db.query(Article).filter(Article.canonical_url.like("https://news.example.com/ok%")).all()
+    )
+    assert len(articles) == 2
