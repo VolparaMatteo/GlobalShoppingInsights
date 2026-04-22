@@ -1,13 +1,37 @@
 // ---------------------------------------------------------------------------
-// PromptsListPage.tsx — Sprint 7 polish b7 (premium, Lucide, dark-mode aware)
+// PromptsListPage.tsx — Sprint 7 polish b9 (premium, Lucide, dark-mode aware)
+// Include: folder sidebar, column "Cartella" con quick-move per riga,
+// bulk-select con toolbar "Sposta in..." per spostare più prompt alla volta.
 // ---------------------------------------------------------------------------
 import { useCallback, useMemo, useState } from 'react';
 
-import { App, Button, Input, Modal, Table, Tooltip, Typography, theme as antdTheme } from 'antd';
+import {
+  App,
+  Button,
+  Input,
+  Modal,
+  Space,
+  Table,
+  Tooltip,
+  Typography,
+  theme as antdTheme,
+} from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FolderOpen, FolderTree, Inbox, Pause, Play, Plus, Search } from 'lucide-react';
+import {
+  Folder,
+  FolderInput,
+  FolderOpen,
+  FolderTree,
+  FolderX,
+  Inbox,
+  Pause,
+  Play,
+  Plus,
+  Search,
+  X,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import EmptyIllustrated from '@/components/common/EmptyIllustrated';
@@ -19,7 +43,9 @@ import {
   usePromptFolders,
   useUpdatePromptFolder,
 } from '@/hooks/queries/usePromptFolders';
+import { useUpdatePrompt } from '@/hooks/queries/usePrompts';
 import { useToast } from '@/hooks/useToast';
+import FolderPickerModal from '@/pages/prompts/components/FolderPickerModal';
 import PromptFolderTree from '@/pages/prompts/components/PromptFolderTree';
 import { getPrompts } from '@/services/api/prompts.api';
 import type { Prompt, PromptFolder } from '@/types';
@@ -387,11 +413,24 @@ function FolderSidebar({
 export default function PromptsListPage() {
   const navigate = useNavigate();
   const { token } = antdTheme.useToken();
+  const toast = useToast();
+  const updatePromptMutation = useUpdatePrompt();
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [search, setSearch] = useState('');
   const [selectedFolder, setSelectedFolder] = useState<FolderSelection>(null);
+
+  // Row-selection per bulk-move
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+
+  // Folder-picker modal (sia single che bulk)
+  const [pickerState, setPickerState] = useState<{
+    open: boolean;
+    promptIds: number[];
+    /** undefined per bulk (misto), number o null per single */
+    currentFolderId: number | null | undefined;
+  } | null>(null);
 
   const { data: foldersData, isLoading: foldersLoading } = usePromptFolders();
   const folders = foldersData ?? [];
@@ -407,7 +446,26 @@ export default function PromptsListPage() {
   const handleFolderSelect = useCallback((folder: FolderSelection) => {
     setSelectedFolder(folder);
     setPage(1);
+    setSelectedRowKeys([]);
   }, []);
+
+  const handleMovePrompts = useCallback(
+    async (folderId: number | null) => {
+      if (!pickerState) return;
+      const ids = pickerState.promptIds;
+      try {
+        await Promise.all(
+          ids.map((id) => updatePromptMutation.mutateAsync({ id, data: { folder_id: folderId } })),
+        );
+        toast.success(ids.length > 1 ? `${ids.length} prompt spostati` : 'Prompt spostato');
+        setSelectedRowKeys([]);
+        setPickerState(null);
+      } catch (err) {
+        toast.error(err);
+      }
+    },
+    [pickerState, updatePromptMutation, toast],
+  );
 
   const columns: ColumnsType<Prompt> = useMemo(
     () => [
@@ -419,9 +477,26 @@ export default function PromptsListPage() {
         render: (t: string) => <span style={{ fontWeight: 500, color: token.colorText }}>{t}</span>,
       },
       {
+        title: 'Cartella',
+        key: 'folder',
+        width: 200,
+        render: (_: unknown, record: Prompt) => (
+          <FolderPill
+            folderName={record.folder_name}
+            onClick={() =>
+              setPickerState({
+                open: true,
+                promptIds: [record.id],
+                currentFolderId: record.folder_id,
+              })
+            }
+          />
+        ),
+      },
+      {
         title: 'Pianificazione',
         key: 'schedule',
-        width: 160,
+        width: 150,
         align: 'center' as const,
         render: (_: unknown, record: Prompt) => <ScheduleBadge enabled={record.schedule_enabled} />,
       },
@@ -429,7 +504,7 @@ export default function PromptsListPage() {
         title: 'Ultima esecuzione',
         dataIndex: 'last_run_at',
         key: 'last_run',
-        width: 180,
+        width: 170,
         render: (val: string | null) =>
           val ? (
             <Tooltip title={dayjs(val).format('DD/MM/YYYY HH:mm:ss')}>
@@ -541,6 +616,59 @@ export default function PromptsListPage() {
             }}
           />
 
+          {selectedRowKeys.length > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 14,
+                padding: '10px 14px',
+                background:
+                  'linear-gradient(135deg, rgba(22,119,255,0.08) 0%, rgba(114,46,209,0.08) 100%)',
+                border: `1px solid ${token.colorPrimary}33`,
+                borderRadius: 10,
+              }}
+            >
+              <Space size={10}>
+                <Text strong style={{ color: token.colorPrimary, fontSize: 13 }}>
+                  {selectedRowKeys.length}{' '}
+                  {selectedRowKeys.length === 1 ? 'prompt selezionato' : 'prompt selezionati'}
+                </Text>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<X size={12} />}
+                  onClick={() => setSelectedRowKeys([])}
+                  style={{ fontSize: 12, color: token.colorTextSecondary }}
+                >
+                  Annulla
+                </Button>
+              </Space>
+              <Button
+                type="primary"
+                icon={<FolderInput size={14} />}
+                onClick={() =>
+                  setPickerState({
+                    open: true,
+                    promptIds: selectedRowKeys.map(Number),
+                    currentFolderId: undefined,
+                  })
+                }
+                style={{
+                  height: 34,
+                  borderRadius: 8,
+                  fontWeight: 600,
+                  background: 'linear-gradient(135deg, #1677ff 0%, #722ed1 100%)',
+                  border: 'none',
+                  boxShadow: '0 2px 8px -1px rgba(114,46,209,0.3)',
+                }}
+              >
+                Sposta in cartella
+              </Button>
+            </div>
+          )}
+
           {isEmpty ? (
             <EmptyIllustrated
               variant="prompts"
@@ -560,6 +688,11 @@ export default function PromptsListPage() {
               dataSource={items}
               loading={isLoading}
               pagination={pagination}
+              rowSelection={{
+                selectedRowKeys,
+                onChange: (keys) => setSelectedRowKeys(keys),
+                preserveSelectedRowKeys: true,
+              }}
               onRow={(record) => ({
                 onClick: () => navigate(`/prompts/${record.id}`),
                 style: { cursor: 'pointer' },
@@ -569,7 +702,89 @@ export default function PromptsListPage() {
           )}
         </div>
       </div>
+
+      <FolderPickerModal
+        open={pickerState?.open ?? false}
+        folders={folders}
+        currentFolderId={pickerState?.currentFolderId}
+        loading={updatePromptMutation.isPending}
+        title={
+          pickerState && pickerState.promptIds.length > 1
+            ? `Sposta ${pickerState.promptIds.length} prompt`
+            : 'Sposta prompt in cartella'
+        }
+        onOk={handleMovePrompts}
+        onCancel={() => setPickerState(null)}
+      />
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// FolderPill — pill cliccabile nella colonna "Cartella": mostra il nome della
+// cartella corrente (o "Sposta in..." se unfiled) e apre il picker al click.
+// ---------------------------------------------------------------------------
+
+interface FolderPillProps {
+  folderName: string | null;
+  onClick: () => void;
+}
+
+function FolderPill({ folderName, onClick }: FolderPillProps) {
+  const { token } = antdTheme.useToken();
+  const hasFolder = !!folderName;
+
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      title={hasFolder ? `Cartella: ${folderName}` : 'Sposta in cartella…'}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        maxWidth: 180,
+        padding: '4px 10px',
+        height: 26,
+        borderRadius: 6,
+        fontSize: 12,
+        fontWeight: 500,
+        cursor: 'pointer',
+        color: hasFolder ? token.colorText : token.colorTextTertiary,
+        background: hasFolder ? token.colorFillQuaternary : 'transparent',
+        border: hasFolder
+          ? `1px solid ${token.colorBorderSecondary}`
+          : `1px dashed ${token.colorBorderSecondary}`,
+        transition: 'all 150ms',
+        lineHeight: 1,
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = token.colorPrimary;
+        e.currentTarget.style.color = token.colorPrimary;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = token.colorBorderSecondary;
+        e.currentTarget.style.color = hasFolder ? token.colorText : token.colorTextTertiary;
+      }}
+    >
+      {hasFolder ? (
+        <Folder size={12} strokeWidth={2} aria-hidden="true" />
+      ) : (
+        <FolderX size={12} strokeWidth={2} aria-hidden="true" />
+      )}
+      <span
+        style={{
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {hasFolder ? folderName : 'Sposta in…'}
+      </span>
+    </button>
   );
 }
 
