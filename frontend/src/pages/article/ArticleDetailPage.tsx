@@ -1,52 +1,41 @@
 // ---------------------------------------------------------------------------
-// ArticleDetailPage.tsx  --  Full article detail view
+// ArticleDetailPage — Sprint 7 polish b11 (premium, Lucide, dark-mode aware)
 // ---------------------------------------------------------------------------
-import { useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import {
-  Button,
-  Card,
-  Col,
-  Dropdown,
-  Flex,
-  message,
-  Result,
-  Row,
-  Space,
-  Tag,
-  Typography,
-} from 'antd';
-import {
-  ArrowLeftOutlined,
-  CalendarOutlined,
-  ClockCircleOutlined,
-  EditOutlined,
-  GlobalOutlined,
-  LinkOutlined,
-  SearchOutlined,
-  SwapOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
+import { useCallback, useState } from 'react';
+
+import { Button, Col, Dropdown, Result, Row, Space, Typography, theme as antdTheme } from 'antd';
 import type { MenuProps } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-
-import type { Article } from '@/types';
-import { getArticle, changeStatus } from '@/services/api/articles.api';
-import { queryKeys } from '@/config/queryKeys';
-import { ARTICLE_STATUSES, STATUS_MAP, type ArticleStatus } from '@/config/constants';
-import { buildPromptDetailPath } from '@/config/routes';
+import {
+  ArrowLeft,
+  CalendarDays,
+  ChevronDown,
+  Clock,
+  Globe2,
+  Pencil,
+  Search,
+  User as UserIcon,
+  X,
+} from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import StatusBadge from '@/pages/inbox/components/StatusBadge';
-import ScoreBadge from '@/pages/inbox/components/ScoreBadge';
-
+import ScoreBadge from '@/components/common/ScoreBadge';
+import StatusBadge from '@/components/common/StatusBadge';
+import { ARTICLE_STATUSES, STATUS_MAP } from '@/config/constants';
+import { buildPromptDetailPath } from '@/config/routes';
+import { queryKeys } from '@/config/queryKeys';
+import { useToast } from '@/hooks/useToast';
+import AIScorePanel from '@/pages/article/components/AIScorePanel';
 import ArticleContent from '@/pages/article/components/ArticleContent';
 import ArticleEditor from '@/pages/article/components/ArticleEditor';
 import ArticleMetadata from '@/pages/article/components/ArticleMetadata';
-import AIScorePanel from '@/pages/article/components/AIScorePanel';
 import CommentsThread from '@/pages/article/components/CommentsThread';
 import TagCategoryAssign from '@/pages/article/components/TagCategoryAssign';
+import { changeStatus, getArticle } from '@/services/api/articles.api';
+
+const { Title, Text } = Typography;
 
 // ---------------------------------------------------------------------------
 
@@ -54,6 +43,8 @@ export default function ArticleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { token } = antdTheme.useToken();
+  const toast = useToast();
   const [isEditing, setIsEditing] = useState(false);
 
   const articleId = Number(id);
@@ -69,15 +60,15 @@ export default function ArticleDetailPage() {
     enabled: !isNaN(articleId),
   });
 
-  // ---- Status mutation (force: any status) --------------------------------
+  // Status mutation (force: any status)
   const statusMutation = useMutation({
     mutationFn: (newStatus: string) => changeStatus(articleId, { new_status: newStatus }, true),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.detail(articleId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.articles.all });
-      message.success('Stato aggiornato');
+      toast.success('Stato aggiornato');
     },
-    onError: () => message.error('Impossibile aggiornare lo stato'),
+    onError: (err) => toast.error(err),
   });
 
   const handleEditorSave = useCallback(() => setIsEditing(false), []);
@@ -87,15 +78,25 @@ export default function ArticleDetailPage() {
 
   if (isError || !article) {
     return (
-      <Result
-        status="error"
-        title="Errore nel caricamento"
-        subTitle={(error as Error)?.message ?? "L'articolo non è stato trovato."}
-      />
+      <div style={{ maxWidth: 720, margin: '40px auto' }}>
+        <Result
+          status="error"
+          title="Errore nel caricamento"
+          subTitle={(error as Error)?.message ?? "L'articolo non è stato trovato."}
+          extra={
+            <Button
+              icon={<ArrowLeft size={14} />}
+              onClick={() => navigate(-1)}
+              style={{ borderRadius: 8 }}
+            >
+              Torna indietro
+            </Button>
+          }
+        />
+      </div>
     );
   }
 
-  // ---- Status dropdown (all statuses except current) ----------------------
   const statusMenuItems: MenuProps['items'] = ARTICLE_STATUSES.filter(
     (s) => s !== article.status,
   ).map((s) => {
@@ -103,18 +104,19 @@ export default function ArticleDetailPage() {
     return {
       key: s,
       label: (
-        <Flex align="center" gap={8}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           <span
             style={{
               width: 8,
               height: 8,
               borderRadius: '50%',
-              background: meta?.color ?? '#8c8c8c',
+              background: meta?.color ?? token.colorTextTertiary,
               flexShrink: 0,
             }}
+            aria-hidden="true"
           />
           {meta?.label ?? s}
-        </Flex>
+        </span>
       ),
       onClick: () => statusMutation.mutate(s),
     };
@@ -123,109 +125,208 @@ export default function ArticleDetailPage() {
   // ---- Render -------------------------------------------------------------
   return (
     <div style={{ maxWidth: 1400, margin: '0 auto' }}>
-      {/* ---- Top bar ---- */}
-      <Flex align="center" justify="space-between" style={{ marginBottom: 16 }}>
-        <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
-          Torna indietro
-        </Button>
-
-        <Space>
-          <Dropdown menu={{ items: statusMenuItems }} trigger={['click']}>
-            <Button icon={<SwapOutlined />}>Cambia Stato</Button>
-          </Dropdown>
-          {!isEditing && (
-            <Button icon={<EditOutlined />} onClick={() => setIsEditing(true)}>
-              Modifica
-            </Button>
-          )}
-        </Space>
-      </Flex>
-
-      {/* ---- Header ---- */}
-      <div
+      {/* Back link */}
+      <Button
+        type="text"
+        size="small"
+        icon={<ArrowLeft size={14} />}
+        onClick={() => navigate(-1)}
         style={{
-          background: '#fff',
-          borderRadius: 8,
-          padding: '20px 24px',
-          marginBottom: 24,
-          border: '1px solid #f0f0f0',
+          marginBottom: 12,
+          paddingLeft: 6,
+          paddingRight: 10,
+          height: 28,
+          color: token.colorTextSecondary,
+          fontWeight: 500,
         }}
       >
-        <Flex justify="space-between" align="center" style={{ marginBottom: 12 }}>
-          <Dropdown menu={{ items: statusMenuItems }} trigger={['click']}>
-            <Button size="small" type="text" style={{ padding: '0 4px', height: 'auto' }}>
-              <Flex align="center" gap={4}>
-                <StatusBadge status={article.status} />
-                <SwapOutlined style={{ fontSize: 11, color: '#8c8c8c' }} />
-              </Flex>
-            </Button>
-          </Dropdown>
-          <ScoreBadge score={article.ai_score} />
-        </Flex>
+        Indietro
+      </Button>
 
-        <Typography.Title
+      {/* Hero card */}
+      <div
+        style={{
+          background: token.colorBgContainer,
+          borderRadius: 12,
+          border: `1px solid ${token.colorBorderSecondary}`,
+          boxShadow: 'var(--shadow-sm)',
+          padding: '22px 24px',
+          marginBottom: 20,
+        }}
+      >
+        {/* Row top: status pill (dropdown) + score */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 14,
+            flexWrap: 'wrap',
+            gap: 12,
+          }}
+        >
+          <Dropdown menu={{ items: statusMenuItems }} trigger={['click']}>
+            <button
+              type="button"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '2px 6px',
+                background: 'transparent',
+                border: `1px solid ${token.colorBorderSecondary}`,
+                borderRadius: 8,
+                cursor: 'pointer',
+                transition: 'background 150ms',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = token.colorFillQuaternary)}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              aria-label="Cambia stato"
+            >
+              <StatusBadge status={article.status} />
+              <ChevronDown
+                size={13}
+                color={token.colorTextTertiary}
+                style={{ marginLeft: 2, marginRight: 2 }}
+              />
+            </button>
+          </Dropdown>
+
+          <ScoreBadge score={article.ai_score} variant="pill" size="md" />
+        </div>
+
+        {/* Title */}
+        <Title
           level={3}
-          style={{ margin: '0 0 16px', whiteSpace: 'normal', wordBreak: 'break-word' }}
+          style={{
+            margin: '0 0 14px',
+            fontWeight: 700,
+            letterSpacing: -0.3,
+            lineHeight: 1.3,
+            whiteSpace: 'normal',
+            wordBreak: 'break-word',
+            color: token.colorText,
+          }}
         >
           {article.title}
-        </Typography.Title>
+        </Title>
 
-        <Flex wrap="wrap" gap={16}>
-          <Flex align="center" gap={6} style={{ fontSize: 13, color: '#595959' }}>
-            <GlobalOutlined style={{ color: '#8c8c8c' }} />
-            <a href={article.canonical_url} target="_blank" rel="noopener noreferrer">
+        {/* Meta pills */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
+          <MetaPill icon={<Globe2 size={12} />} tone="link">
+            <a
+              href={article.canonical_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'inherit', textDecoration: 'none' }}
+            >
               {article.source_domain}
             </a>
-            <Tag style={{ fontSize: 11, lineHeight: '18px', padding: '0 6px' }}>
-              {article.language.toUpperCase()}
-            </Tag>
-            {article.country && (
-              <Tag style={{ fontSize: 11, lineHeight: '18px', padding: '0 6px' }}>
-                {article.country}
-              </Tag>
-            )}
-          </Flex>
+          </MetaPill>
 
-          {article.author && (
-            <Flex align="center" gap={6} style={{ fontSize: 13, color: '#595959' }}>
-              <UserOutlined style={{ color: '#8c8c8c' }} />
-              {article.author}
-            </Flex>
+          <MetaPill>{article.language.toUpperCase()}</MetaPill>
+
+          {article.country && <MetaPill>{article.country}</MetaPill>}
+
+          {article.author && <MetaPill icon={<UserIcon size={12} />}>{article.author}</MetaPill>}
+
+          {article.published_at && (
+            <MetaPill icon={<CalendarDays size={12} />}>
+              Pubblicato {dayjs(article.published_at).format('DD/MM/YY')}
+            </MetaPill>
           )}
 
-          <Flex align="center" gap={6} style={{ fontSize: 13, color: '#595959' }}>
-            <CalendarOutlined style={{ color: '#8c8c8c' }} />
-            Pubblicato il{' '}
-            {article.published_at ? dayjs(article.published_at).format('DD/MM/YY') : '—'}
-          </Flex>
+          <MetaPill icon={<Clock size={12} />}>
+            Importato {dayjs(article.created_at).format('DD/MM/YY')}
+          </MetaPill>
+        </div>
 
-          <Flex align="center" gap={6} style={{ fontSize: 13, color: '#595959' }}>
-            <ClockCircleOutlined style={{ color: '#8c8c8c' }} />
-            Importato il {dayjs(article.created_at).format('DD/MM/YY')}
-          </Flex>
-        </Flex>
-
-        {/* ---- Prompt source ---- */}
+        {/* Prompt sources */}
         {article.prompts && article.prompts.length > 0 && (
-          <Flex wrap="wrap" gap={8} style={{ marginTop: 12 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+            <Text
+              type="secondary"
+              style={{
+                fontSize: 11,
+                fontWeight: 500,
+                textTransform: 'uppercase',
+                letterSpacing: 0.8,
+                marginRight: 2,
+                alignSelf: 'center',
+              }}
+            >
+              Prompt sorgente
+            </Text>
             {article.prompts.map((p) => (
-              <Tag
+              <button
                 key={p.id}
-                icon={<SearchOutlined />}
-                color="blue"
-                style={{ cursor: 'pointer' }}
+                type="button"
                 onClick={() => navigate(buildPromptDetailPath(p.id))}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '3px 10px',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  color: token.colorPrimary,
+                  background:
+                    'linear-gradient(135deg, rgba(22,119,255,0.1) 0%, rgba(114,46,209,0.1) 100%)',
+                  border: `1px solid ${token.colorPrimary}33`,
+                  transition: 'all 150ms',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background =
+                    'linear-gradient(135deg, rgba(22,119,255,0.18) 0%, rgba(114,46,209,0.18) 100%)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background =
+                    'linear-gradient(135deg, rgba(22,119,255,0.1) 0%, rgba(114,46,209,0.1) 100%)';
+                }}
               >
+                <Search size={11} strokeWidth={2.4} aria-hidden="true" />
                 {p.title}
-              </Tag>
+              </button>
             ))}
-          </Flex>
+          </div>
         )}
+
+        {/* Actions */}
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+            marginTop: 18,
+            paddingTop: 16,
+            borderTop: `1px solid ${token.colorBorderSecondary}`,
+          }}
+        >
+          <Space size={8}>
+            {!isEditing ? (
+              <Button
+                icon={<Pencil size={14} />}
+                onClick={() => setIsEditing(true)}
+                style={{ borderRadius: 8, height: 36, fontWeight: 500 }}
+              >
+                Modifica
+              </Button>
+            ) : (
+              <Button
+                icon={<X size={14} />}
+                onClick={() => setIsEditing(false)}
+                style={{ borderRadius: 8, height: 36, fontWeight: 500 }}
+              >
+                Annulla modifiche
+              </Button>
+            )}
+          </Space>
+        </div>
       </div>
 
-      {/* ---- Two-column layout ---- */}
+      {/* Two-column layout */}
       <Row gutter={24}>
-        {/* Left column -- main content */}
         <Col xs={24} lg={16}>
           {isEditing ? (
             <ArticleEditor
@@ -240,7 +341,6 @@ export default function ArticleDetailPage() {
           <CommentsThread articleId={article.id} />
         </Col>
 
-        {/* Right column -- sidebar */}
         <Col xs={24} lg={8}>
           <ArticleMetadata article={article} />
           <AIScorePanel article={article} />
@@ -248,5 +348,43 @@ export default function ArticleDetailPage() {
         </Col>
       </Row>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// MetaPill — neutral rounded pill per le meta info nell'hero
+// ---------------------------------------------------------------------------
+
+interface MetaPillProps {
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+  tone?: 'neutral' | 'link';
+}
+
+function MetaPill({ icon, children, tone = 'neutral' }: MetaPillProps) {
+  const { token } = antdTheme.useToken();
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 5,
+        padding: '3px 10px',
+        fontSize: 12,
+        fontWeight: 500,
+        borderRadius: 6,
+        color: tone === 'link' ? token.colorPrimary : token.colorTextSecondary,
+        background: token.colorFillQuaternary,
+        border: `1px solid ${token.colorBorderSecondary}`,
+        lineHeight: 1.6,
+        maxWidth: 280,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {icon && <span style={{ display: 'inline-flex', flexShrink: 0 }}>{icon}</span>}
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{children}</span>
+    </span>
   );
 }
