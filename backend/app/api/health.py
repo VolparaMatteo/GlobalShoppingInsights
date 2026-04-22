@@ -121,17 +121,22 @@ def _check_ollama(base_url: str) -> dict[str, Any]:
 
 @router.get("/health")
 def health_check():
+    from app.services.llm_service import get_ollama_breaker
+
     checks: dict[str, Any] = {
         "database": _check_db(),
         "disk": _check_disk(settings.UPLOAD_DIR, settings.HEALTH_MIN_FREE_DISK_GB),
         "uploads": _check_uploads_writable(settings.UPLOAD_DIR),
         "ollama": _check_ollama(settings.OLLAMA_BASE_URL),
+        "ollama_circuit": get_ollama_breaker().snapshot(),
     }
 
     db_ok = checks["database"]["status"] == "ok"
 
     has_warning = any(
-        c.get("status") in ("warning", "error") for key, c in checks.items() if key != "database"
+        c.get("status") in ("warning", "error")
+        for key, c in checks.items()
+        if key not in ("database", "ollama_circuit")
     )
 
     if not db_ok:

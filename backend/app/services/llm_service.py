@@ -12,6 +12,7 @@ import logging
 import httpx
 
 from app.config import settings
+from app.utils.circuit_breaker import CircuitBreaker
 from app.utils.retry import with_retry
 
 logger = logging.getLogger(__name__)
@@ -20,6 +21,17 @@ logger = logging.getLogger(__name__)
 # Vuoto = LLM disabilitato; la funzione evaluate_relevance restituisce il fallback.
 OLLAMA_MODEL = "qwen2.5:3b"
 OLLAMA_TIMEOUT = 60  # seconds
+
+# Circuit breaker module-level: dopo 3 failure consecutive chiude il circuito
+# per 5 minuti, durante i quali evaluate_relevance ritorna il fallback senza
+# nemmeno provare a contattare Ollama. Lo stato e' esposto via /health perche'
+# il frontend possa mostrare un banner "LLM offline".
+_ollama_breaker = CircuitBreaker(name="ollama", failure_threshold=3, reset_timeout=300.0)
+
+
+def get_ollama_breaker() -> CircuitBreaker:
+    """Access al circuit breaker (per /health endpoint e test)."""
+    return _ollama_breaker
 
 
 def _ollama_base_url() -> str:
@@ -96,6 +108,11 @@ def evaluate_relevance(
         # LLM non configurato: pipeline prosegue con i soli embeddings.
         return fallback
 
+    # Circuit breaker: se OPEN saltiamo subito senza chiamare Ollama.
+    if _ollama_breaker.is_open():
+        logger.info("Ollama circuit breaker OPEN — skipping LLM relevance check")
+        return fallback
+
     prompt = _build_prompt(
         article_title, article_text, prompt_description, prompt_keywords, language
     )
@@ -104,14 +121,18 @@ def evaluate_relevance(
         raw_text = _call_ollama_generate(base_url, prompt)
     except httpx.ConnectError:
         logger.warning("Ollama non raggiungibile — skipping LLM relevance check")
+        _ollama_breaker.record_failure()
         return fallback
     except httpx.TimeoutException:
         logger.warning("Ollama timeout — skipping LLM relevance check")
+        _ollama_breaker.record_failure()
         return fallback
     except httpx.HTTPStatusError as e:
         logger.warning(f"Ollama HTTP {e.response.status_code} — skipping")
+        _ollama_breaker.record_failure()
         return fallback
 
+    _ollama_breaker.record_success()
     return _parse_llm_response(raw_text, fallback)
 
 

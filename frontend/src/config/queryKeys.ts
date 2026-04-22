@@ -114,4 +114,10 @@ export const queryKeys = {
     recentJobs: () => [...queryKeys.dashboard.all, 'recentJobs'] as const,
     alerts: () => [...queryKeys.dashboard.all, 'alerts'] as const,
   },
+
+  // -- Health (deep check, circuit breakers, ecc.) --------------------------
+  health: {
+    all: ['health'] as const,
+    status: () => [...queryKeys.health.all, 'status'] as const,
+  },
 } as const;
