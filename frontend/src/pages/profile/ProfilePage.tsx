@@ -18,11 +18,10 @@ import {
   Space,
   theme as antdTheme,
   Typography,
-  Upload,
 } from 'antd';
-import type { UploadFile, UploadProps } from 'antd';
 import { Camera, Trash2, Lock, Mail, User as UserIcon } from 'lucide-react';
 
+import AvatarCropModal from '@/components/common/AvatarCropModal';
 import PageHeader from '@/components/common/PageHeader';
 import RoleChip from '@/components/common/RoleChip';
 import {
@@ -65,6 +64,11 @@ export default function ProfilePage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
+  // Crop modal state: quando l'utente seleziona un file, lo apriamo nel
+  // cropper invece di caricarlo direttamente.
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [cropOpen, setCropOpen] = useState(false);
+
   const updateMutation = useUpdateMyProfile();
   const uploadAvatarMutation = useUploadMyAvatar();
   const deleteAvatarMutation = useDeleteMyAvatar();
@@ -75,6 +79,7 @@ export default function ProfilePage() {
   const avatarUrl = user.avatar_url ?? null;
 
   // ---- Avatar handlers ----------------------------------------------------
+  // Step 1: user seleziona file → validiamo + apriamo crop modal (non upload).
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = ''; // reset per poter ricaricare stesso file
@@ -89,11 +94,27 @@ export default function ProfilePage() {
       return;
     }
     setUploadError(null);
+    setCropFile(file);
+    setCropOpen(true);
+  };
 
-    uploadAvatarMutation.mutate(file, {
-      onSuccess: () => toast.success('Avatar aggiornato'),
+  // Step 2: il modal ritorna un Blob quadrato — lo upiamo al backend.
+  const handleCropConfirm = (blob: Blob) => {
+    const fileOut = new File([blob], 'avatar.png', { type: 'image/png' });
+    uploadAvatarMutation.mutate(fileOut, {
+      onSuccess: () => {
+        toast.success('Avatar aggiornato');
+        setCropOpen(false);
+        setCropFile(null);
+      },
       onError: (err) => toast.error(err),
     });
+  };
+
+  const handleCropCancel = () => {
+    if (uploadAvatarMutation.isPending) return;
+    setCropOpen(false);
+    setCropFile(null);
   };
 
   const handleDeleteAvatar = () => {
@@ -397,10 +418,15 @@ export default function ProfilePage() {
           </Card>
         </Col>
       </Row>
+
+      {/* ============ Modal crop avatar (simil-WhatsApp) ============ */}
+      <AvatarCropModal
+        open={cropOpen}
+        file={cropFile}
+        onCancel={handleCropCancel}
+        onConfirm={handleCropConfirm}
+        loading={uploadAvatarMutation.isPending}
+      />
     </div>
   );
 }
-
-// NB: silence ESLint sul type UploadFile/UploadProps che importiamo solo
-// per compatibilità futura (drag&drop). Attualmente usiamo <input file>.
-export type { UploadFile, UploadProps };
