@@ -7,6 +7,7 @@ import { LogOut, User as UserIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import { ROLE_LABELS, type Role } from '@/config/constants';
+import { useConfirmLogout } from '@/hooks/useConfirmLogout';
 import { useAuthStore } from '@/stores/authStore';
 
 const { Text } = Typography;
@@ -22,8 +23,8 @@ const AVATAR_GRADIENT = 'linear-gradient(135deg, #1677ff 0%, #722ed1 100%)';
 
 export default function UserMenu() {
   const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
+  const confirmLogout = useConfirmLogout();
 
   const displayName = user?.name ?? 'Utente';
   const avatarUrl = user?.avatar_url ?? null;
@@ -55,7 +56,7 @@ export default function UserMenu() {
       icon: <LogOut size={14} />,
       label: 'Esci',
       danger: true,
-      onClick: logout,
+      onClick: confirmLogout,
     },
   ];
 

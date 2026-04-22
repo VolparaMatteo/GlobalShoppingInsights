@@ -12,7 +12,7 @@
 // ---------------------------------------------------------------------------
 import { useMemo } from 'react';
 
-import { Button, Layout, Space, theme as antdTheme, Tooltip, Typography } from 'antd';
+import { App, Button, Layout, Space, theme as antdTheme, Tooltip, Typography } from 'antd';
 import { LogOut } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
@@ -68,6 +68,21 @@ export default function AppHeader() {
   const location = useLocation();
   const { token } = antdTheme.useToken();
   const logout = useAuthStore((s) => s.logout);
+  const { modal } = App.useApp();
+
+  const handleLogoutClick = () => {
+    modal.confirm({
+      title: 'Confermare uscita?',
+      content:
+        'Sarai disconnesso e riportato alla pagina di login. Le modifiche non salvate andranno perse.',
+      okText: 'Esci',
+      okType: 'danger',
+      cancelText: 'Annulla',
+      centered: true,
+      autoFocusButton: 'cancel',
+      onOk: logout,
+    });
+  };
 
   const meta: RouteMeta = useMemo(() => {
     const path = location.pathname;
@@ -160,7 +175,7 @@ export default function AppHeader() {
             type="text"
             shape="circle"
             icon={<LogOut size={17} />}
-            onClick={logout}
+            onClick={handleLogoutClick}
             aria-label="Esci dall'applicazione"
             style={{ color: token.colorTextSecondary }}
           />

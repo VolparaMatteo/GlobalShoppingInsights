@@ -9,8 +9,9 @@ import type { MenuProps } from 'antd';
 import { LogOut, User as UserIcon, ChevronsUpDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import { useAuthStore } from '@/stores/authStore';
 import { ROLE_LABELS, type Role } from '@/config/constants';
+import { useConfirmLogout } from '@/hooks/useConfirmLogout';
+import { useAuthStore } from '@/stores/authStore';
 
 interface SidebarUserCardProps {
   collapsed?: boolean;
@@ -27,8 +28,8 @@ const AVATAR_GRADIENT = 'linear-gradient(135deg, #1677ff 0%, #722ed1 100%)';
 
 export default function SidebarUserCard({ collapsed = false }: SidebarUserCardProps) {
   const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
+  const confirmLogout = useConfirmLogout();
 
   const displayName = user?.name ?? 'Utente';
   const roleLabel = ROLE_LABELS[(user?.role as Role) ?? 'read_only'] ?? 'Utente';
@@ -48,7 +49,7 @@ export default function SidebarUserCard({ collapsed = false }: SidebarUserCardPr
       icon: <LogOut size={14} />,
       label: 'Esci',
       danger: true,
-      onClick: logout,
+      onClick: confirmLogout,
     },
   ];
 
