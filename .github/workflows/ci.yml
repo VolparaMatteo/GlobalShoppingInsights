@@ -102,7 +102,12 @@ jobs:
         run: pip install pip-audit
 
       - name: Backend dependency audit (pip-audit)
-        run: pip-audit -r backend/requirements.txt --desc
+        # --ignore-vuln PYSEC-2022-252: vulnerability su deep-translator ha
+        # riguardato una release compromessa nel 2022 (account takeover via
+        # phishing). L'autore ha riacquisito il progetto e le release
+        # successive (incluso 1.11.x) sono considerate sicure. Rivedere se
+        # deep-translator cambia owner/maintainer o emerge nuova CVE.
+        run: pip-audit -r backend/requirements.txt --desc --ignore-vuln PYSEC-2022-252
 
       - name: Setup Node
         uses: actions/setup-node@v4
