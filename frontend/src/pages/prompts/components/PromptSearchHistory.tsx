@@ -75,47 +75,40 @@ function ResultsDrawer({ run, open, onClose }: ResultsDrawerProps) {
 
   const resultColumns: ColumnsType<SearchResult> = [
     {
-      title: 'Titolo',
-      dataIndex: 'title',
-      key: 'title',
+      title: 'Articolo',
+      key: 'article',
       ellipsis: true,
-      render: (text: string | null, record: SearchResult) =>
-        text ? (
-          <Link href={record.url} target="_blank" rel="noopener noreferrer">
-            {text}
-          </Link>
-        ) : (
-          <Link href={record.url} target="_blank" rel="noopener noreferrer">
-            {record.url}
-          </Link>
-        ),
-    },
-    {
-      title: 'Provider',
-      dataIndex: 'provider',
-      key: 'provider',
-      width: 100,
+      render: (_: unknown, record: SearchResult) => (
+        <Link
+          href={record.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ fontWeight: 500 }}
+        >
+          {record.title || record.url}
+        </Link>
+      ),
     },
     {
       title: 'Dominio',
       dataIndex: 'domain',
       key: 'domain',
-      width: 160,
+      width: 180,
       ellipsis: true,
+      render: (val: string | null) =>
+        val ? <Text style={{ fontSize: 12 }}>{val}</Text> : <Text type="secondary">—</Text>,
     },
     {
-      title: 'Pubblicato',
-      dataIndex: 'published_at_est',
-      key: 'published_at_est',
-      width: 150,
-      render: (val: string | null) => (val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '--'),
-    },
-    {
-      title: 'Articolo',
-      dataIndex: 'article_id',
-      key: 'article_id',
-      width: 80,
-      render: (val: number | null) => (val ? <Tag color="green">#{val}</Tag> : <Tag>--</Tag>),
+      title: 'Score',
+      dataIndex: 'article_score',
+      key: 'article_score',
+      width: 90,
+      align: 'center' as const,
+      render: (score: number | null) => {
+        if (score == null) return <Text type="secondary">—</Text>;
+        const color = score >= 70 ? 'green' : score >= 40 ? 'orange' : 'red';
+        return <Tag color={color}>{score}</Tag>;
+      },
     },
   ];
 

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.database import get_db
+from app.models.article import Article
 from app.models.search import SearchResult, SearchRun
 from app.models.user import User
 from app.schemas.common import PaginatedResponse
@@ -45,7 +46,22 @@ def get_search_run(
     run = db.query(SearchRun).filter(SearchRun.id == run_id).first()
     if not run:
         raise HTTPException(status_code=404, detail="Search run not found")
-    results = db.query(SearchResult).filter(SearchResult.search_run_id == run_id).all()
+
+    # LEFT JOIN con Article così prendiamo anche l'ai_score in un colpo solo.
+    rows = (
+        db.query(SearchResult, Article.ai_score)
+        .outerjoin(Article, SearchResult.article_id == Article.id)
+        .filter(SearchResult.search_run_id == run_id)
+        .order_by(SearchResult.id.asc())
+        .all()
+    )
+
+    result_responses: list[SearchResultResponse] = []
+    for sr, score in rows:
+        resp = SearchResultResponse.model_validate(sr)
+        resp.article_score = score
+        result_responses.append(resp)
+
     response = SearchRunResponse.model_validate(run)
-    response.results = [SearchResultResponse.model_validate(r) for r in results]
+    response.results = result_responses
     return response
