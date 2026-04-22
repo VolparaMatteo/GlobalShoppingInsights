@@ -80,8 +80,29 @@ class UserResponse(BaseModel):
     name: str
     role: str
     is_active: bool
+    avatar_url: str | None = None
     last_login: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class UserSelfUpdate(BaseModel):
+    """Schema per self-update via PATCH /users/me.
+
+    - name: libero
+    - email: libero (ma controllo unicità nell'endpoint)
+    - current_password: obbligatorio se new_password è presente
+    - new_password: opzionale; se presente, validato con policy standard
+    """
+
+    name: str | None = None
+    email: EmailStr | None = None
+    current_password: str | None = None
+    new_password: str | None = None
+
+    @field_validator("new_password")
+    @classmethod
+    def _check_new_password(cls, v: str | None) -> str | None:
+        return _validate_password(v)

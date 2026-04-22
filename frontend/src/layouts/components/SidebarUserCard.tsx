@@ -7,6 +7,7 @@
 import { Avatar, Dropdown, Tooltip } from 'antd';
 import type { MenuProps } from 'antd';
 import { LogOut, User as UserIcon, ChevronsUpDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 import { useAuthStore } from '@/stores/authStore';
 import { ROLE_LABELS, type Role } from '@/config/constants';
@@ -27,17 +28,19 @@ const AVATAR_GRADIENT = 'linear-gradient(135deg, #1677ff 0%, #722ed1 100%)';
 export default function SidebarUserCard({ collapsed = false }: SidebarUserCardProps) {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const navigate = useNavigate();
 
   const displayName = user?.name ?? 'Utente';
   const roleLabel = ROLE_LABELS[(user?.role as Role) ?? 'read_only'] ?? 'Utente';
   const initials = initialsFromName(user?.name);
+  const avatarUrl = user?.avatar_url ?? null;
 
   const menuItems: MenuProps['items'] = [
     {
       key: 'profile',
       icon: <UserIcon size={14} />,
       label: 'Il mio profilo',
-      disabled: true,
+      onClick: () => navigate('/profile'),
     },
     { type: 'divider' },
     {
@@ -49,7 +52,18 @@ export default function SidebarUserCard({ collapsed = false }: SidebarUserCardPr
     },
   ];
 
-  const avatar = (
+  const avatar = avatarUrl ? (
+    <Avatar
+      size={collapsed ? 34 : 32}
+      src={avatarUrl}
+      alt={displayName}
+      style={{
+        flexShrink: 0,
+        boxShadow: '0 2px 8px rgba(22,119,255,0.25)',
+        border: '1.5px solid rgba(255,255,255,0.15)',
+      }}
+    />
+  ) : (
     <Avatar
       size={collapsed ? 34 : 32}
       style={{

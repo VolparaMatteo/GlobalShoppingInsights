@@ -10,9 +10,18 @@ export interface User {
   name: string;
   role: string;
   is_active: boolean;
+  avatar_url: string | null;
   last_login: string | null; // ISO-8601 datetime
   created_at: string; // ISO-8601 datetime
   updated_at: string; // ISO-8601 datetime
+}
+
+/** PATCH /users/me request body (self-service). */
+export interface UserSelfUpdate {
+  name?: string | null;
+  email?: string | null;
+  current_password?: string | null;
+  new_password?: string | null;
 }
 
 /** POST /users request body. */
