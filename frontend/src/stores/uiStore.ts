@@ -20,13 +20,17 @@ interface UiState {
 /**
  * Stato UI persistito in localStorage:
  * - sidebarCollapsed: preferenza di collapse
- * - themeMode: preferenza light/dark (fallback a prefers-color-scheme al primo avvio)
+ * - themeMode: preferenza light/dark (default LIGHT al primo accesso;
+ *   l'utente puo' passare a dark dal toggle in header e la scelta
+ *   persiste in localStorage 'gsi-ui')
  * - locale: lingua dell'interfaccia
  */
 function detectInitialThemeMode(): ThemeMode {
-  if (typeof window === 'undefined') return 'light';
-  const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
-  return mq?.matches ? 'dark' : 'light';
+  // Scelta di prodotto: sempre LIGHT al primo accesso, indipendentemente
+  // dal prefers-color-scheme del sistema. Rende l'onboarding consistent
+  // (la prima impressione e' sempre la palette brand chiara) — l'utente
+  // puo' comunque passare a dark con il toggle luna/sole o ⌘+Shift+L.
+  return 'light';
 }
 
 export const useUiStore = create<UiState>()(
