@@ -6,6 +6,7 @@ Generazione documentazione completa del progetto in PDF.
 
 from fpdf import FPDF
 import datetime
+import os
 
 
 class GSIDoc(FPDF):
@@ -65,11 +66,12 @@ class GSIDoc(FPDF):
         self.ln(20)
 
         info = [
-            ("Versione", "1.0.0"),
+            ("Versione", "1.0.0-rc1 (preparazione consegna)"),
             ("Data", datetime.datetime.now().strftime("%d/%m/%Y")),
-            ("Stack", "FastAPI + React 18 + TypeScript"),
-            ("Database", "SQLite (WAL mode)"),
-            ("AI Engine", "sentence-transformers (all-MiniLM-L6-v2)"),
+            ("Stack", "FastAPI 0.115 + React 18 + TypeScript 5.6"),
+            ("Database", "PostgreSQL (produzione) / SQLite (sviluppo)"),
+            ("Deploy", "Docker Compose + Traefik v3 + Let's Encrypt"),
+            ("AI Engine", "sentence-transformers (all-MiniLM-L6-v2) + Ollama Qwen 2.5 3B"),
         ]
         for label, value in info:
             self.set_font("Helvetica", "B", 11)
@@ -299,11 +301,20 @@ def build_pdf():
 
     pdf.sub_title("Comunicazione")
     pdf.code_block(
-        "Frontend (React)  <--HTTP/JSON-->  Backend (FastAPI)  <--HTTP-->  WordPress REST API\n"
-        "     :5173                              :8000                       wp-json/wp/v2\n"
-        "                                          |\n"
-        "                                     SQLite (WAL)\n"
-        "                                      gsi.db"
+        "Internet --HTTPS--> Traefik v3 (Let's Encrypt) --> Frontend (nginx, SPA)\n"
+        "                                                        |\n"
+        "                                                        v (proxy /api)\n"
+        "                                                  Backend (FastAPI + gunicorn)\n"
+        "                                                        |\n"
+        "                                         +--------------+--------------+\n"
+        "                                         v                             v\n"
+        "                                   PostgreSQL 16               Ollama (opz.)\n"
+        "                                  (volume: gsi_postgres_data)  Qwen 2.5 3B\n"
+        "                                                               second-opinion\n"
+        "\n"
+        "Backend --HTTP--> WordPress REST API (wp-json/wp/v2)\n"
+        "\n"
+        "In dev locale il DB puo' essere SQLite (file backend/gsi.db) per setup rapido."
     )
 
     # =========================================================
@@ -316,17 +327,26 @@ def build_pdf():
     widths = [45, 50, 75]
     pdf.table_header(headers, widths)
     rows = [
-        ("Framework", "FastAPI", "API REST async, auto-docs Swagger"),
-        ("ORM", "SQLAlchemy 2.0", "DeclarativeBase, async-compatible"),
-        ("Database", "SQLite", "WAL mode, FK enforced, file: gsi.db"),
+        ("Framework", "FastAPI 0.115", "API REST async, auto-docs Swagger"),
+        ("ORM", "SQLAlchemy 2.0", "DeclarativeBase, sync session (async rinviato)"),
+        ("Database (prod)", "PostgreSQL", "psycopg[binary] 3.2, pool 5+10, pre-ping"),
+        ("Database (dev)", "SQLite", "WAL mode, FK enforced, file: backend/gsi.db"),
+        ("Migrazioni", "Alembic", "baseline + autogenerate, gestito da Alembic"),
         ("Validazione", "Pydantic 2.x", "Request/response schemas"),
         ("AI / NLP", "sentence-transformers", "all-MiniLM-L6-v2 (384-dim)"),
         ("Similarita'", "scikit-learn", "cosine_similarity per scoring"),
+        ("LLM 2nd opinion", "Ollama Qwen 2.5 3B", "Locale, richiede ~4GB RAM"),
         ("Ricerca", "ddgs (DuckDuckGo)", "Ricerca web programmatica"),
         ("Scraping", "trafilatura + httpx", "Content extraction + HTTP client"),
-        ("Date Detection", "htmldate", "Fallback per date detection"),
-        ("Scheduling", "APScheduler", "Background jobs ricorrenti"),
-        ("Auth", "PyJWT + bcrypt", "HS256 tokens, password hashing"),
+        ("Date Detection", "htmldate + py3langid", "Fallback date + lang detection"),
+        ("Scheduling", "APScheduler", "Background jobs in-process (ARQ in roadmap)"),
+        ("Auth", "PyJWT + bcrypt", "HS256 tokens, refresh rotation con revoca"),
+        ("Encryption", "cryptography (Fernet)", "Cifratura wp_app_password a riposo"),
+        ("Rate limit", "slowapi", "Sugli endpoint sensibili (login/refresh/publish)"),
+        ("Sanitization", "bleach", "HTML sanitization lato backend"),
+        ("Logging", "structlog", "JSON in prod, console dev, PII masking"),
+        ("Deploy", "Docker + gunicorn", "Multi-stage, non-root, HEALTHCHECK"),
+        ("TLS / Routing", "Traefik v3 + ACME", "Let's Encrypt HTTP-01 automatico"),
     ]
     for i, r in enumerate(rows):
         pdf.table_row(r, widths, fill=i % 2 == 0)
@@ -354,8 +374,10 @@ def build_pdf():
     # =========================================================
     pdf.section_title("4", "Modello Dati (Database)")
     pdf.body_text(
-        "Il database SQLite contiene 14 tabelle principali piu' 2 tabelle di junction (many-to-many). "
-        "Ecco lo schema completo:"
+        "Il database (PostgreSQL in produzione, SQLite in sviluppo) contiene 18 tabelle principali "
+        "piu' 3 tabelle di junction (many-to-many). Le migrazioni sono gestite da Alembic; il baseline "
+        "crea lo schema completo con un singolo 'alembic upgrade head'. Lo schema e' identico tra i due "
+        "engine grazie al dispatch dinamico dei kwargs in app/database.py."
     )
 
     pdf.sub_title("Tabelle Principali")
@@ -364,9 +386,11 @@ def build_pdf():
     pdf.table_header(t_headers, t_widths)
     tables = [
         ("users", "Utenti e ruoli", "email, name, password_hash, role, is_active"),
+        ("refresh_tokens", "JWT refresh token", "jti UNIQUE, user_id, expires_at, revoked_at"),
         ("articles", "Articoli raccolti", "canonical_url, title, content_text, ai_score, status"),
         ("article_revisions", "Storico modifiche", "article_id, version, editor_id, changes"),
-        ("prompts", "Config. ricerca", "title, keywords, excluded_keywords, schedule_*"),
+        ("prompts", "Config. ricerca", "title, keywords, excluded_keywords, schedule_*, folder_id"),
+        ("prompt_folders", "Cartelle prompt", "name, parent_id (gerarchia)"),
         ("search_runs", "Esecuzioni ricerca", "prompt_id, status, articles_created, errors"),
         ("search_results", "Risultati singoli", "search_run_id, url, article_id"),
         ("tags", "Tag tassonomia", "name, slug, wp_id"),
@@ -375,7 +399,7 @@ def build_pdf():
         ("calendar_rules", "Regole pianificaz.", "rule_type, value, is_active"),
         ("comments", "Commenti articoli", "article_id, user_id, body, mentions"),
         ("notifications", "Notifiche utente", "user_id, type, title, is_read"),
-        ("wp_config", "Config WordPress", "wp_url, wp_username, wp_app_password_encrypted"),
+        ("wp_config", "Config WordPress", "wp_url, wp_username, wp_app_password (Fernet)"),
         ("wp_posts", "Post pubblicati", "article_id, wp_post_id, wp_url, wp_status"),
         ("blocked_domains", "Domini bloccati", "domain, reason"),
         ("job_logs", "Log background jobs", "job_type, entity_ref, status, error"),
@@ -860,7 +884,7 @@ def build_pdf():
     pdf.bold_bullet("2. Token:", "Il server restituisce access_token (30 min) + refresh_token (7 giorni)")
     pdf.bold_bullet("3. Richieste:", "Ogni richiesta include Authorization: Bearer <access_token>")
     pdf.bold_bullet("4. Refresh:", "Quando l'access_token scade, POST /api/v1/auth/refresh con il refresh_token")
-    pdf.bold_bullet("5. Logout:", "Il frontend cancella i token da localStorage")
+    pdf.bold_bullet("5. Logout:", "POST /api/v1/auth/logout revoca il refresh_token (revoked_at) e il frontend pulisce localStorage")
 
     pdf.sub_title("Gerarchia Ruoli")
     r_h = ["Ruolo", "Livello", "Permessi Principali"]
@@ -877,10 +901,17 @@ def build_pdf():
         pdf.table_row(r, r_w, fill=i % 2 == 0)
 
     pdf.ln(3)
-    pdf.sub_title("Sicurezza")
-    pdf.bold_bullet("Password:", "Hash con bcrypt + salt")
-    pdf.bold_bullet("Token:", "JWT HS256, payload: {sub: user_id, role, type, exp}")
-    pdf.bold_bullet("CORS:", "Configurabile, default: http://localhost:5173")
+    pdf.sub_title("Sicurezza (Sprint 1 hardening)")
+    pdf.bold_bullet("Password utenti:", "bcrypt con salt; policy minima 12 char + blacklist password comuni sui schema UserCreate/UserUpdate")
+    pdf.bold_bullet("Token JWT:", "HS256, payload {sub: user_id, role, type, exp}; refresh rotation con jti; revoca su logout")
+    pdf.bold_bullet("Config production:", "validator Pydantic rifiuta avvio se SECRET_KEY < 32 char, WP_ENCRYPTION_KEY/ADMIN_PASSWORD ai default, o CORS con localhost in prod")
+    pdf.bold_bullet("CORS:", "Configurabile via CORS_ORIGINS; in production vietato localhost/127.0.0.1")
+    pdf.bold_bullet("Rate limit (slowapi):", "/auth/login 5/min, /auth/refresh 20/min, /publish/{id} 10/min, /prompts/{id}/run 20/min")
+    pdf.bold_bullet("Security headers:", "HSTS (solo prod), CSP, X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy, Permissions-Policy")
+    pdf.bold_bullet("Cifratura a riposo:", "wp_app_password cifrata con cryptography.fernet; migrazione idempotente delle password legacy in chiaro al lifespan")
+    pdf.bold_bullet("Audit log:", "Tabella audit_logs (admin-only via GET /audit-logs): login, login.failed, logout, user.create/update/password_change/role_change/deactivate, wp_config.update")
+    pdf.bold_bullet("Admin seed:", "Se ADMIN_PASSWORD e' al default, seed.py genera secrets.token_urlsafe(18) e la stampa UNA SOLA VOLTA nei log")
+    pdf.bold_bullet("HTML sanitization:", "bleach lato backend + DOMPurify (componente SafeHTML) lato frontend su ogni contenuto proveniente da fonti esterne")
 
     # =========================================================
     # 17. SCHEDULER
@@ -1117,6 +1148,9 @@ def build_pdf():
 
 if __name__ == "__main__":
     pdf = build_pdf()
-    out = "/home/spinotto/GitHub/GlobalShoppingInsights/GlobalShoppingInsights/GSI_Documentazione_Completa.pdf"
+    out = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "GSI_Documentazione_Tecnica.pdf",
+    )
     pdf.output(out)
     print(f"PDF generato: {out}")
