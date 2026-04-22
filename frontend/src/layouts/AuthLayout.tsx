@@ -13,7 +13,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { ConfigProvider, Spin, theme as antdTheme, Typography } from 'antd';
 import itIT from 'antd/locale/it_IT';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Sparkles, Newspaper, ShieldCheck, Workflow, ArrowUpRight } from 'lucide-react';
+import { Sparkles, Newspaper, ShieldCheck, Workflow } from 'lucide-react';
 
 import { themeForMode } from '@/config/theme';
 import { useAuthStore } from '@/stores/authStore';
@@ -299,35 +299,19 @@ export default function AuthLayout() {
               <Outlet />
             </Suspense>
 
-            {/* Footer links */}
+            {/* Footer: messaggio single-line centrato */}
             <div
               style={{
                 marginTop: 32,
                 paddingTop: 20,
                 borderTop: '1px solid #f0f0f0',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
+                textAlign: 'center',
                 fontSize: 12,
                 color: '#8c8c8c',
+                lineHeight: 1.5,
               }}
             >
-              <span>Non hai un account? Contatta il tuo admin.</span>
-              <a
-                href="https://github.com/VolparaMatteo/GlobalShoppingInsights"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 3,
-                  color: '#595959',
-                  textDecoration: 'none',
-                }}
-              >
-                Docs
-                <ArrowUpRight size={12} />
-              </a>
+              Non hai un account? Contatta il tuo amministratore GSI.
             </div>
           </motion.div>
         </main>
