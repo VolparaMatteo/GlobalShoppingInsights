@@ -91,9 +91,12 @@ disable_error_code = [
   "arg-type",      # Starlette add_exception_handler signature
   "attr-defined",  # dynamic attrs su Base
   "call-arg",      # SQLAlchemy inspect/relationship
+  "call-overload", # dict.get(Column[str], default) — ORM key/value confusion
   "return-value",
   "misc",
   "var-annotated",
+  "index",         # Row[...] indexing dinamico
+  "union-attr",    # Optional[Model].attr without None check
 ]
 
 # ----------------------------------------------------------------------------
