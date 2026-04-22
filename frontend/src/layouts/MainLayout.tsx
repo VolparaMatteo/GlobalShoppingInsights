@@ -8,7 +8,7 @@ import { useUiStore } from '@/stores/uiStore';
 const { Content } = Layout;
 
 export default function MainLayout() {
-  const collapsed = useUiStore((s) => s.siderCollapsed);
+  const collapsed = useUiStore((s) => s.sidebarCollapsed);
 
   return (
     <Layout style={{ minHeight: '100vh' }}>

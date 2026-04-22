@@ -14,7 +14,7 @@ import type { ArticleUpdate, StatusChangeRequest } from '@/types';
 export function useArticle(id: string | number) {
   return useQuery({
     queryKey: queryKeys.articles.detail(id),
-    queryFn: () => getArticle(id),
+    queryFn: () => getArticle(Number(id)),
     enabled: !!id,
   });
 }

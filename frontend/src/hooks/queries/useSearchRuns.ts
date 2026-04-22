@@ -18,7 +18,7 @@ export function useSearchRuns(filters: Record<string, unknown> = {}) {
 export function useSearchRun(id: string | number) {
   return useQuery({
     queryKey: queryKeys.searchRuns.detail(id),
-    queryFn: () => getSearchRun(id),
+    queryFn: () => getSearchRun(Number(id)),
     enabled: !!id,
   });
 }

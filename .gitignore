@@ -48,3 +48,5 @@ test.db
 .mypy_cache/
 frontend/coverage/
 frontend/.vite/
+frontend/**/tsconfig.tsbuildinfo
+frontend/tsconfig.tsbuildinfo

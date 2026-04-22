@@ -104,11 +104,12 @@ export default function UserManagement() {
       content: `Are you sure you want to deactivate "${user.name}"? They will no longer be able to log in.`,
       okText: 'Deactivate',
       danger: true,
-      onOk: () =>
-        updateMutation.mutateAsync({
+      onOk: async () => {
+        await updateMutation.mutateAsync({
           id: user.id,
           payload: { is_active: false },
-        }),
+        });
+      },
     });
   }
 

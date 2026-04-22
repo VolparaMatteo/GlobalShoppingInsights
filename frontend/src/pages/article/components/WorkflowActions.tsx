@@ -79,7 +79,9 @@ export default function WorkflowActions({ article, onStatusChange }: WorkflowAct
       content: `Are you sure you want to change the status to "${label}"?`,
       okText: `Change to ${label}`,
       danger: targetStatus === 'rejected',
-      onOk: () => mutation.mutateAsync(targetStatus),
+      onOk: async () => {
+        await mutation.mutateAsync(targetStatus);
+      },
     });
   };
 

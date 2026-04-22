@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Card, message } from 'antd';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 
 import type { Article } from '@/types';
 import { queryKeys } from '@/config/queryKeys';
@@ -104,7 +104,7 @@ export default function InboxPage() {
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.articles.list(queryParams as Record<string, unknown>),
     queryFn: () => getArticles(queryParams),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 
   // Keep pagination total in sync with API response.

@@ -26,7 +26,7 @@ export function usePrompts(filters: Record<string, unknown> = {}) {
 export function usePrompt(id: string | number) {
   return useQuery({
     queryKey: queryKeys.prompts.detail(id),
-    queryFn: () => getPrompt(id),
+    queryFn: () => getPrompt(Number(id)),
     enabled: !!id,
   });
 }

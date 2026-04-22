@@ -23,7 +23,7 @@ export default function AppSider({ collapsed }: AppSiderProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useAuthStore((s) => s.user);
-  const toggleSider = useUiStore((s) => s.toggleSider);
+  const toggleSidebar = useUiStore((s) => s.toggleSidebar);
 
   const isAdmin = user?.role === 'admin';
 
@@ -84,7 +84,7 @@ export default function AppSider({ collapsed }: AppSiderProps) {
     <Sider
       collapsible
       collapsed={collapsed}
-      onCollapse={toggleSider}
+      onCollapse={toggleSidebar}
       style={{
         overflow: 'auto',
         height: '100vh',
