@@ -1,10 +1,17 @@
 // ---------------------------------------------------------------------------
-// PipelineOverview.tsx  --  Visual workflow pipeline bar for the dashboard
+// PipelineOverview.tsx — row di stages pipeline (stile "stepper" visivo)
 // ---------------------------------------------------------------------------
-import { Tooltip, Typography } from 'antd';
-import { RightOutlined } from '@ant-design/icons';
-import { STATUS_MAP, type ArticleStatus } from '@/config/constants';
+// Sprint 7 polish: refresh grafico con tokens dark-mode-aware + icona Lucide
+// ChevronRight + hover subtle animato. Per la visualizzazione dati-dense
+// (funnel con counts), vedi il nuovo componente PipelineFunnel in DashboardPage.
+// ---------------------------------------------------------------------------
 import type { CSSProperties } from 'react';
+
+import { theme as antdTheme, Tooltip, Typography } from 'antd';
+import { ChevronRight } from 'lucide-react';
+
+import StatusBadge from '@/components/common/StatusBadge';
+import { STATUS_MAP, type ArticleStatus } from '@/config/constants';
 
 const { Text } = Typography;
 
@@ -21,75 +28,86 @@ const PIPELINE_STAGES: ArticleStatus[] = [
   'published',
 ];
 
-const containerStyle: CSSProperties = {
-  borderRadius: 12,
-  border: '1px solid rgba(0,0,0,0.06)',
-  background: '#fff',
-  padding: '20px 24px',
-};
-
-const stageStyle = (color: string, bgColor: string, isHovered: boolean): CSSProperties => ({
-  flex: 1,
-  textAlign: 'center',
-  padding: '12px 8px',
-  borderRadius: 8,
-  background: isHovered ? bgColor : 'transparent',
-  transition: 'background 0.2s ease',
-  cursor: 'default',
-});
-
 export default function PipelineOverview({ byStatus }: PipelineOverviewProps) {
+  const { token } = antdTheme.useToken();
+
+  const containerStyle: CSSProperties = {
+    borderRadius: 12,
+    border: `1px solid ${token.colorBorderSecondary}`,
+    background: token.colorBgContainer,
+    padding: '20px 24px',
+    boxShadow: 'var(--shadow-sm)',
+  };
+
   return (
     <div style={containerStyle}>
-      <Text strong style={{ fontSize: 14, color: '#595959', display: 'block', marginBottom: 16 }}>
+      <Text
+        strong
+        style={{
+          fontSize: 14,
+          color: token.colorTextSecondary,
+          display: 'block',
+          marginBottom: 16,
+        }}
+      >
         Pipeline Editoriale
       </Text>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
         {PIPELINE_STAGES.map((status, i) => {
           const meta = STATUS_MAP[status];
           const count = byStatus[status] ?? 0;
           return (
             <div
               key={status}
-              style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                flex: '1 1 120px',
+                minWidth: 120,
+              }}
             >
               <Tooltip title={`${meta.label}: ${count} articoli`}>
                 <div
-                  style={stageStyle(meta.color, meta.bgColor, false)}
+                  style={{
+                    flex: 1,
+                    textAlign: 'center',
+                    padding: '12px 8px',
+                    borderRadius: 8,
+                    cursor: 'default',
+                    transition: 'all var(--transition-fast)',
+                  }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = meta.bgColor;
+                    e.currentTarget.style.background = `${meta.color}14`;
+                    e.currentTarget.style.transform = 'translateY(-1px)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.transform = 'none';
                   }}
                 >
                   <div
                     style={{
-                      fontSize: 22,
+                      fontSize: 26,
                       fontWeight: 700,
                       color: meta.color,
-                      lineHeight: 1.2,
+                      lineHeight: 1.1,
+                      fontVariantNumeric: 'tabular-nums',
                     }}
                   >
                     {count}
                   </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 500,
-                      color: '#8c8c8c',
-                      marginTop: 2,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {meta.label}
+                  <div style={{ marginTop: 8, display: 'flex', justifyContent: 'center' }}>
+                    <StatusBadge status={status} size="sm" />
                   </div>
                 </div>
               </Tooltip>
               {i < PIPELINE_STAGES.length - 1 && (
-                <RightOutlined style={{ color: '#d9d9d9', fontSize: 10, flexShrink: 0 }} />
+                <ChevronRight
+                  size={16}
+                  color={token.colorBorderSecondary}
+                  style={{ flexShrink: 0 }}
+                  aria-hidden="true"
+                />
               )}
             </div>
           );

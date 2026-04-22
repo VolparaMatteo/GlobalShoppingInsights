@@ -2,16 +2,11 @@ import { useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu } from 'antd';
 import type { MenuProps } from 'antd';
-import {
-  DashboardOutlined,
-  SearchOutlined,
-  InboxOutlined,
-  CalendarOutlined,
-  TagsOutlined,
-  SettingOutlined,
-} from '@ant-design/icons';
+import { LayoutDashboard, Search, Inbox, CalendarDays, Tags, Settings, Bell } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
+
+const ICON_SIZE = 18;
 
 const { Sider } = Layout;
 
@@ -31,27 +26,32 @@ export default function AppSider({ collapsed }: AppSiderProps) {
     const items: MenuProps['items'] = [
       {
         key: '/dashboard',
-        icon: <DashboardOutlined />,
+        icon: <LayoutDashboard size={ICON_SIZE} />,
         label: 'Dashboard',
       },
       {
+        key: '/dashboard/alerts',
+        icon: <Bell size={ICON_SIZE} />,
+        label: 'Alert & Job Log',
+      },
+      {
         key: '/prompts',
-        icon: <SearchOutlined />,
+        icon: <Search size={ICON_SIZE} />,
         label: 'Prompt',
       },
       {
         key: '/inbox',
-        icon: <InboxOutlined />,
+        icon: <Inbox size={ICON_SIZE} />,
         label: 'Posta in Arrivo',
       },
       {
         key: '/calendar',
-        icon: <CalendarOutlined />,
+        icon: <CalendarDays size={ICON_SIZE} />,
         label: 'Calendario',
       },
       {
         key: '/taxonomy',
-        icon: <TagsOutlined />,
+        icon: <Tags size={ICON_SIZE} />,
         label: 'Tassonomia',
       },
     ];
@@ -59,7 +59,7 @@ export default function AppSider({ collapsed }: AppSiderProps) {
     if (isAdmin) {
       items.push({
         key: '/settings',
-        icon: <SettingOutlined />,
+        icon: <Settings size={ICON_SIZE} />,
         label: 'Impostazioni',
       });
     }
