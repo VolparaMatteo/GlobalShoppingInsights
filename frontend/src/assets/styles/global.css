@@ -44,6 +44,37 @@ body {
   }
 }
 
+/* Shimmer animato per skeleton loader — gradient scorrevole L→R (2s loop).
+   Usa tokens per adattarsi a light/dark. */
+@keyframes gsi-shimmer-keyframes {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.gsi-shimmer {
+  display: block;
+  border-radius: var(--border-radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--color-border-secondary) 0%,
+    var(--color-bg-layout) 40%,
+    var(--color-border-secondary) 80%
+  );
+  background-size: 200% 100%;
+  animation: gsi-shimmer-keyframes 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gsi-shimmer {
+    animation: none;
+    background: var(--color-border-secondary);
+  }
+}
+
 /* Skip-to-content link (a11y WCAG 2.4.1 Bypass Blocks) — nascosto fino al focus */
 .skip-to-content {
   position: absolute;
