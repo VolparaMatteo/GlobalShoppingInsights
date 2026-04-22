@@ -222,13 +222,34 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              <div style={{ paddingBottom: 12 }}>
-                <Title level={3} style={{ margin: 0, color: token.colorText, lineHeight: 1.2 }}>
+              <div
+                style={{
+                  marginBottom: 12,
+                  padding: '10px 16px',
+                  background: token.colorBgContainer,
+                  border: `1px solid ${token.colorBorderSecondary}`,
+                  borderRadius: 12,
+                  boxShadow: '0 6px 20px rgba(0,0,0,0.08)',
+                  display: 'inline-flex',
+                  flexDirection: 'column',
+                  gap: 6,
+                }}
+              >
+                <Title
+                  level={3}
+                  style={{
+                    margin: 0,
+                    color: token.colorText,
+                    lineHeight: 1.2,
+                    fontWeight: 700,
+                    letterSpacing: -0.3,
+                  }}
+                >
                   {user.name}
                 </Title>
-                <Space size={8} style={{ marginTop: 6 }}>
+                <Space size={10} wrap>
                   <RoleChip role={user.role} size="md" />
-                  <Text type="secondary" style={{ fontSize: 13 }}>
+                  <Text type="secondary" style={{ fontSize: 13, wordBreak: 'break-all' }}>
                     {user.email}
                   </Text>
                 </Space>
