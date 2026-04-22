@@ -43,3 +43,25 @@ export async function getAlerts(): Promise<DashboardAlert[]> {
   const { data } = await client.get<DashboardAlert[]>('/dashboard/alerts');
   return data;
 }
+
+/** Query params accettati da /dashboard/job-logs. */
+export interface JobLogsParams {
+  page?: number;
+  page_size?: number;
+  status?: string;
+  job_type?: string;
+}
+
+/** Risposta paginata di /dashboard/job-logs. */
+export interface JobLogsPage {
+  items: JobLog[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+/** GET /dashboard/job-logs — storico completo job paginato con filtri. */
+export async function getJobLogs(params: JobLogsParams = {}): Promise<JobLogsPage> {
+  const { data } = await client.get<JobLogsPage>('/dashboard/job-logs', { params });
+  return data;
+}
