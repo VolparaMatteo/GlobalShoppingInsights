@@ -3,12 +3,16 @@
 # Avvia l'intero stack tramite Docker Compose.
 #
 # Uso:
-#   .\start.ps1              # avvia tutto (postgres + backend + frontend)
-#   .\start.ps1 -WithLlm     # + servizio ollama (LLM second-opinion)
-#   .\start.ps1 -Stop        # ferma i container (mantiene i volumi)
-#   .\start.ps1 -Clean       # ferma e cancella VOLUMI (DB + uploads + ollama)
-#   .\start.ps1 -Logs        # segue i log di tutti i servizi
-#   .\start.ps1 -Rebuild     # forza rebuild immagini
+#   .\start.ps1                        # avvia tutto (postgres + backend + frontend)
+#   .\start.ps1 -WithLlm               # + servizio ollama (LLM second-opinion)
+#   .\start.ps1 -Stop                  # ferma i container (mantiene i volumi)
+#   .\start.ps1 -Clean                 # ferma e cancella VOLUMI (DB + uploads + ollama)
+#   .\start.ps1 -Logs                  # segue i log di tutti i servizi
+#   .\start.ps1 -Rebuild               # forza rebuild immagini
+#   .\start.ps1 -RefreshFrontendDeps   # ricrea il volume node_modules (usare
+#                                      # dopo aver aggiunto/rimosso dipendenze
+#                                      # in frontend/package.json — evita di
+#                                      # usare node_modules cached nel volume)
 # ============================================================================
 
 [CmdletBinding()]
@@ -17,6 +21,7 @@ param(
     [switch]$Clean,
     [switch]$Logs,
     [switch]$Rebuild,
+    [switch]$RefreshFrontendDeps,
     [switch]$WithLlm
 )
 
@@ -58,6 +63,18 @@ if ($Clean) {
 
 if ($Logs) {
     docker compose @profileArgs logs -f
+    return
+}
+
+if ($RefreshFrontendDeps) {
+    Write-Host "Refresh node_modules frontend (dopo cambio package.json)..." -ForegroundColor Cyan
+    docker compose @profileArgs stop frontend 2>&1 | Out-Null
+    docker compose @profileArgs rm -f frontend 2>&1 | Out-Null
+    docker volume rm gsi-dev_frontend_node_modules 2>&1 | Out-Null
+    Write-Host "Volume node_modules rimosso. Rebuild immagine frontend..." -ForegroundColor Cyan
+    docker compose @profileArgs build frontend
+    docker compose @profileArgs up -d
+    Write-Host "Fatto. Frontend ripartito con dipendenze aggiornate su http://localhost:5173" -ForegroundColor Green
     return
 }
 
