@@ -14,6 +14,9 @@ import { initReactI18next } from 'react-i18next';
 import en from './locales/en';
 import it from './locales/it';
 
+// Scelta di prodotto: GSI e' consegnato in italiano. L'infrastruttura i18n
+// (locale en.ts, LanguageDetector) resta in codice per riabilitazione
+// futura, ma al momento forziamo lingua IT e nessun detection automatico.
 void i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -22,14 +25,15 @@ void i18n
       it: { translation: it },
       en: { translation: en },
     },
+    lng: 'it', // forzata
     fallbackLng: 'it',
-    supportedLngs: ['it', 'en'],
+    supportedLngs: ['it'],
     interpolation: {
       escapeValue: false, // React già escape
     },
     detection: {
-      order: ['localStorage', 'navigator', 'htmlTag'],
-      caches: ['localStorage'],
+      order: ['localStorage'],
+      caches: [],
       lookupLocalStorage: 'gsi-lang',
     },
   });

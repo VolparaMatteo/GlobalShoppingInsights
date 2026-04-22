@@ -15,7 +15,6 @@ import { useMemo } from 'react';
 import { Layout, Space, theme as antdTheme, Typography } from 'antd';
 import { useLocation } from 'react-router-dom';
 
-import LocaleSwitcher from '@/components/common/LocaleSwitcher';
 import ThemeToggle from '@/components/common/ThemeToggle';
 import HeaderAvatar from '@/layouts/components/HeaderAvatar';
 import HeaderSearchButton from '@/layouts/components/HeaderSearchButton';
@@ -141,7 +140,6 @@ export default function AppHeader() {
 
       {/* ---- Right: controls ---- */}
       <Space size={6} align="center">
-        <LocaleSwitcher />
         <ThemeToggle />
         <NotificationBell />
         <span
