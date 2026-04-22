@@ -60,12 +60,15 @@ export default defineConfig({
       interval: 300,
     },
     proxy: {
+      // BACKEND_URL letta da docker-compose.yml env (http://backend:8000)
+      // quando giriamo in container — altrimenti fallback a localhost:8000
+      // per chi lancia `npm run dev` nativo.
       '/api': {
-        target: 'http://localhost:8000',
+        target: process.env.BACKEND_URL ?? 'http://localhost:8000',
         changeOrigin: true,
       },
       '/uploads': {
-        target: 'http://localhost:8000',
+        target: process.env.BACKEND_URL ?? 'http://localhost:8000',
         changeOrigin: true,
       },
     },
