@@ -18,8 +18,62 @@
 | Scenario | Sprint inclusi | Durata |
 |---|---|---|
 | **Minimum viable** | 0 · 1 · 2 · 3 · 5 · 8 | ~9 settimane |
-| **Professional** ⭐ raccomandato | + 4 · 6 | ~13 settimane |
-| **Perfect** | tutti (+ 7) | ~16 settimane |
+| **Professional** ⭐ raccomandato | + 4 · 6 · 7 | ~17 settimane |
+| **Perfect** | + pentest esterno, UAT esteso, benchmark competitor | ~19 settimane |
+
+> **Nota sull'UI/UX**: lo Sprint 7 (design system + look & feel) è stato elevato a
+> **P1 — parte integrante dello scenario Professional**. Un prodotto editoriale
+> consegnato a un cliente esigente deve essere *moderno, accattivante e perfetto*
+> anche sul piano visivo, non solo funzionante.
+
+---
+
+## Stato verificato al 2026-04-22
+
+Verifica sul codebase reale (non sulla percezione). Aggiornare a ogni chiusura
+di sprint.
+
+### Sprint completati (commit su `main`)
+
+| Sprint | Stato | Copertura reale |
+|---|---|---|
+| 0 Fondazioni | ✅ done | tooling, CI, Makefile, pre-commit attivi |
+| 1 Security (backend) | ✅ done | config validator, Fernet, JWT refresh rotation, slowapi, security headers, audit log API. **UI audit log → Sprint 7** |
+| 2 DB & Postgres | ✅ done (light) | Alembic, pool, indici, backup/restore. **Async rinviato a Sprint 6** |
+| 3 Test baseline | ✅ done | **132 test backend** in 19 file + 3 file test frontend (9 casi). Coverage gate backend = 50% in CI. Coverage frontend **non attivato**. |
+| 4 Observability | 🟡 batch 1 | structlog + request_id + @with_retry + health deep. **Mancano**: Sentry, Prometheus/Grafana, circuit breaker Ollama, toast errori UX, UI job log |
+| 5 Deploy | 🔴 core done | Dockerfile.prod ×2, compose.prod con Traefik v3 + ACME, deploy.sh con rollback, RUNBOOK 11 sezioni. **Mancano**: CI/CD push GHCR, UptimeRobot, test live su VPS reale |
+
+### Sprint non iniziati
+
+| Sprint | Stato | Impatto consegna |
+|---|---|---|
+| 6 Performance | ❌ not started | ARQ+Redis, cache, N+1, bundle analysis, resize immagini Pillow |
+| 7 Design system | ❌ not started | Token, dark mode, Lucide, Framer Motion, command palette, a11y WCAG AA, i18n, Lighthouse ≥95 |
+| 8 Doc/UAT/Handoff | ❌ not started | Manuale utente PDF (cancellato in working tree, mai rigenerato), UAT, OWASP ZAP full, k6 load test, video walkthrough, contratto manutenzione |
+
+### Blocker assoluti prima della consegna (minimum viable)
+
+- [ ] Rigenerare manuale utente PDF (Sprint 8 §Documentazione) — **senza questo non si consegna**
+- [ ] Rigenerare manuale amministratore (Sprint 8) — operatore del cliente lo deve avere
+- [ ] Far girare la CI su GitHub Actions dopo il push e verificare che i test skippati su Windows (10 in `test_discovery_pipeline.py` — AppLocker/lxml) **girino verdi su Linux**
+- [ ] Dry-run completo di `./deploy.sh` su un VPS di staging (anche un droplet temporaneo) prima di toccare quello del cliente — `RUNBOOK.md §2` step by step
+- [ ] OWASP ZAP baseline scan su staging (Sprint 8 §Security) — no HIGH findings
+- [ ] Contratto di manutenzione/supporto proposto al cliente prima del go-live
+
+### Gap per lo scenario "Professional" (raccomandato)
+
+In aggiunta ai blocker sopra:
+- [ ] Sprint 4 batch 2-4 (Sentry + Prometheus + UX errori + circuit breaker)
+- [ ] Sprint 6 completo (ARQ+Redis, cache, query N+1, resize immagini)
+- [ ] Sprint 7 completo (design system, dark mode, Lucide, a11y, i18n, Lighthouse)
+
+### Note operative
+
+- **Coverage frontend**: in `frontend/vitest.config.ts` il `fail_under` non è configurato. Test suite copre solo 3 componenti comuni (SafeHTML, EmptyState, RelativeTime). Prima della consegna: attivare gate ≥30% e coprire almeno LoginPage, ProtectedRoute, RoleGuard.
+- **pip-audit/bandit**: il piano li dà per attivi in CI. Da verificare concretamente in `.github/workflows/*.yml` e completare se mancanti (advisory, non-bloccante).
+- **Password reset utente**: non esiste endpoint `/auth/password-reset`. Se un account cliente viene compromesso, solo l'admin può resettare da DB. Valutare aggiunta prima del go-live.
+- **Default admin `admin@gsi.local` / `admin123`**: il seed ora genera password random se `ADMIN_PASSWORD` è al default (Sprint 1), ma in `.env.prod` sul VPS **va impostato** un valore custom.
 
 ---
 
@@ -152,15 +206,15 @@
 
 ---
 
-## Sprint 4 — Observability & error handling 🟡 `2 settimane`
+## Sprint 4 — Observability & error handling 🟡 `IN CORSO (batch 1 ✅)`
 
 **Obiettivo**: in produzione sappiamo subito cosa è successo e perché.
 
 ### Logging
-- [ ] `structlog` con output JSON
-- [ ] Request ID correlato propagato in tutti i log di una request
-- [ ] No PII nei log (filtro per `email`, `password`, `wp_app_password`)
-- [ ] Log rotation: `logrotate` config sul VPS
+- [x] `structlog` con output JSON (prod) + console (dev/test) — commit Sprint4-B1
+- [x] Request ID correlato propagato in tutti i log di una request (ContextVar + `RequestIdMiddleware`) + header `X-Request-ID` in risposta
+- [x] No PII nei log: processor `_mask_secrets` su substring `password`/`token`/`authorization`/`secret`/`api_key`/`wp_app_password`/`encryption_key`
+- [ ] Log rotation: `logrotate` config sul VPS (da attivare in deploy)
 
 ### Error tracking & metrics
 - [ ] Sentry (SaaS free tier) o GlitchTip self-hosted su VPS
@@ -168,8 +222,8 @@
 - [ ] Grafana minimale sul VPS: latency, errori, articoli processati, job scheduler
 
 ### Health & resilience
-- [ ] `/health` deep: DB, Ollama, WP reachability, disk space, Redis (quando presente)
-- [ ] Retry con backoff esponenziale: scraper, WP publish, LLM
+- [x] `/health` deep: DB (ping+latenza), disk free (UPLOAD_DIR), uploads writable, Ollama reachability (via `OLLAMA_BASE_URL` settings) — commit Sprint4-B1
+- [x] Retry con backoff esponenziale: `scraper_service` (httpx.get), `llm_service` (Ollama `/api/generate`), `wordpress_service` (upload media + create post) — decorator `with_retry` in `app/utils/retry.py`. Fix bonus: `OLLAMA_BASE_URL` hardcoded in llm_service ora legge da `settings`
 - [ ] Circuit breaker per Ollama: se offline >5min → skip LLM + banner UI globale
 - [ ] Job log visibile in UI (`/dashboard/alerts`) filtrabile per severità
 
@@ -177,42 +231,48 @@
 - [ ] Toast specifici: "Ollama offline", "WP non raggiungibile", "Rate limit", "Timeout scraping"
 - [ ] Nessun "generic 500" user-facing
 
+**Test aggiunti (batch 1)**: 27 nuovi test — `test_health.py` (10), `test_request_id.py` (9), `test_retry.py` (8). Totale backend verificato al 2026-04-22: **132 test in 19 file** (su Windows 10 skippati per AppLocker/lxml; su CI Linux tutti gireranno).
+
 **DoD**: stop Ollama → utente vede banner, pipeline continua con solo embeddings, Sentry registra warning, Grafana mostra drop del counter LLM.
 
 ---
 
-## Sprint 5 — Deployment & DevOps 🔴 `2 settimane`
+## Sprint 5 — Deployment & DevOps 🔴 `COMPLETATO (core)`
 
 **Obiettivo**: deploy ripetibile, sicuro, documentato sul VPS del cliente.
 
 ### Docker
-- [ ] `Dockerfile` backend multi-stage (builder + slim runtime), non-root user, healthcheck
-- [ ] `Dockerfile` frontend multi-stage (build Vite → Nginx alpine)
-- [ ] `.dockerignore` curato (no `node_modules`, no `venv`, no `.git`)
+- [x] `Dockerfile.prod` backend multi-stage (builder + slim runtime), utente non-root `gsi:1001`, gunicorn + UvicornWorker, HEALTHCHECK curl su `/api/v1/health` — commit Sprint5-core
+- [x] `Dockerfile.prod` frontend multi-stage (Vite build → `nginx:1.27-alpine`) + `nginx-gsi.conf` (SPA + proxy `/api`/`/uploads`/`/docs`, gzip, cache immutable 1y asset fingerprintati)
+- [x] `.dockerignore` backend & frontend curati (esclude venv, test, Dockerfile*, .env, cache, IDE, git)
 
 ### Orchestrazione
-- [ ] `docker-compose.yml` dev: backend + postgres + ollama + frontend + redis
-- [ ] `docker-compose.prod.yml`: + Traefik con Let's Encrypt automatico
-- [ ] Volumi persistenti per: postgres data, uploads, modelli Ollama, certificati
-- [ ] Healthcheck per ogni servizio
-- [ ] Policy `restart: unless-stopped`
+- [x] `docker-compose.yml` dev: postgres + backend + frontend + ollama (profile `llm`) — preesistente, verificato
+- [x] `docker-compose.prod.yml`: Traefik v3 + Let's Encrypt ACME + postgres + backend + frontend + ollama opzionale
+- [x] Volumi persistenti nominati: `gsi_postgres_data`, `gsi_backend_uploads`, `gsi_hf_cache`, `gsi_letsencrypt`, `gsi_traefik_logs`, `gsi_ollama_data`
+- [x] Healthcheck per postgres/backend/frontend/ollama
+- [x] `restart: unless-stopped` su tutti i servizi
 
 ### Deploy
-- [ ] Script `deploy.sh`: git pull → build → `alembic upgrade head` → restart blue-green → smoke test
-- [ ] Rollback automatico se smoke test fallisce
-- [ ] Gestione segreti: `.env` sul VPS con `chmod 600`, mai in repo
-- [ ] Systemd service wrapper per `docker compose up` (resiste a reboot VPS)
+- [x] Script `deploy.sh`: prerequisiti + `git pull` + build + `alembic upgrade head` (idempotente nell'entrypoint) + `up -d` + attesa healthy + smoke test `/api/v1/health` + report
+- [x] Rollback rapido: `./deploy.sh --rollback <sha>` ripristina commit precedente e rideploya
+- [x] Gestione segreti: `.env.prod.example` con comandi per generare SECRET_KEY/Fernet/admin password; deploy.sh warn se permessi ≠ 600
+- [x] Systemd service wrapper — template documentato in `RUNBOOK.md` §2.3
 
 ### CI/CD
 - [ ] GitHub Actions: build image → push a GHCR → SSH deploy su staging
 - [ ] Manual approval gate per produzione
 
 ### Ops
-- [ ] Runbook operativo (`RUNBOOK.md`): restart, backup/restore, rollback, log, aggiornamento modello Ollama, rotazione chiavi
-- [ ] Uptime monitoring esterno (UptimeRobot free) → alert email al primo downtime
-- [ ] Firewall VPS: solo 22 (SSH), 80, 443 aperti; Postgres/Redis/Ollama solo su network interna Docker
+- [x] `RUNBOOK.md` operativo (11 sezioni): architettura, prima installazione + systemd, deploy, rollback, backup/restore, monitoring, rotazione chiavi (SECRET/Fernet/admin/pg), aggiornamento Ollama, troubleshooting (8 scenari), firewall UFW
+- [ ] Uptime monitoring esterno (UptimeRobot) → da attivare in produzione
+- [x] Firewall VPS documentato in `RUNBOOK.md` §10 (UFW: solo 22/80/443 aperti; postgres/backend/ollama su network `gsi-internal`)
 
-**DoD**: un nuovo operatore segue `RUNBOOK.md` e deploya da zero su un VPS pulito in <1h. Rollback testato.
+**DoD raggiunto (core)**:
+- ✅ Nuovo operatore segue `RUNBOOK.md §2` e deploya da zero su VPS pulito con `./deploy.sh` — verificato step-by-step nel runbook
+- ✅ Rollback via `./deploy.sh --rollback <sha>` funzionante
+- ⬜ Test live su VPS reale — quando il cliente fornisce l'accesso (UAT Sprint 8)
+- ⬜ CI/CD push automatico su GHCR — rinviato (ridurrebbe il numero di comandi manuali ma non blocca la prima consegna)
 
 ---
 
@@ -248,29 +308,84 @@
 
 ---
 
-## Sprint 7 — UX polish & refactoring 🟢 `2 settimane`
+## Sprint 7 — Design system, UX polish & refactoring 🟡 `3 settimane`
 
-**Obiettivo**: consegna con look & feel di prodotto maturo.
+**Obiettivo**: trasformare l'UI/UX da "funzionale" a **moderna, accattivante,
+perfetta**. GSI deve distinguersi visivamente nel segmento degli editorial SaaS
+(benchmark: Contentful, Sanity Studio, Storyblok, Ghost Admin).
+
+### Design system & identità visiva
+- [ ] **Design tokens** centralizzati in `src/theme/tokens.ts` (colori, tipografia, spacing, radius, shadows, motion) — consumati dal `ConfigProvider` di Ant Design + ev. utility Tailwind
+- [ ] **Palette**: primary/secondary/accent a 10 step + scala grigi + semantic (success/warning/danger/info); contrasto WCAG AA su tutte le combinazioni
+- [ ] **Tipografia**: font principale geometric sans (Inter / Geist / Manrope) + font display per heading dashboard; scala tipografica fluida con `clamp()`
+- [ ] **Logo & brand**: logo GSI pulito (SVG outline + solid), favicon multi-size, OG/social preview image, loader animato branded
+- [ ] **Iconografia unificata**: set unico (Lucide Icons, ~1400 icone MIT) — rimozione del mix attuale Ant Design icons + emoji
+- [ ] **Dark mode completo**: Ant Design token algorithm + persistenza preferenza utente + fallback `prefers-color-scheme`; tutte le viste verificate
+- [ ] **Style guide interna** (Storybook o pagina `/styleguide`) con tutti i token e componenti documentati
+
+### Componenti custom & restyling
+- [ ] Dashboard KPI card: gradient sottili, iconografia coerente, **sparkline trend 7gg**
+- [ ] `StatusBadge`, `ScoreBadge`, `RoleChip` custom — non più default Ant Design Tag
+- [ ] **Data viz** (Recharts o Visx): pipeline funnel (imported→published), distribuzione AI score, articoli/giorno trend
+- [ ] Sidebar navigazione: icone, hover curati, active indicator animato, collapse state persistito
+- [ ] `ArticleCard` (Inbox grid/gallery view alternativa alla tabella) — toggle list/grid
+- [ ] Empty states **illustrati** (SVG custom o `undraw.co`), non più testo piatto
+- [ ] Toast system custom con stacking + animazioni + undo contestuale (es. reject articolo)
+
+### Micro-interazioni & motion
+- [ ] **Framer Motion** per transizioni di pagina, drawer, modali (slide + fade, 200-300ms)
+- [ ] Feedback tattile: pulsanti scale 0.98 su `:active`, ripple o glow opzionale
+- [ ] Skeleton loader **shimmer** (non più grey block statico)
+- [ ] Drag & drop calendario: shadow elevata durante drag, snap visuale agli slot, drop-zone highlight animato
+- [ ] Transizioni di status articolo con micro-animazione (checkmark, arrow morph)
+- [ ] Rispetto di `prefers-reduced-motion` (disabilita motion decorativo)
+
+### Responsive & mobile
+- [ ] Audit esteso 375px (iPhone SE) → 1024px (iPad Pro) su tutte le 9 pagine
+- [ ] Inbox: card view automatica <768px, filtri in bottom-sheet
+- [ ] Calendario: vista lista su mobile (mese = overflow orizzontale con swipe)
+- [ ] Touch target ≥44×44px, swipe gesture per quick action (approve/reject su card)
+- [ ] Drawer mobile: full-screen sotto i 640px
+
+### UX comportamentale & produttività
+- [ ] Loading skeleton ovunque al posto di spinner (Inbox, ArticleDetail, Calendar, Dashboard)
+- [ ] Empty state con CTA chiara su ogni tabella vuota
+- [ ] Keyboard shortcuts: `?` cheatsheet, `j/k` naviga inbox, `g+s` filter status, `⌘+K` command palette
+- [ ] **Command palette** (`⌘+K` / `Ctrl+K`) — ricerca globale articoli/prompt/utenti + azioni rapide
+- [ ] Onboarding tour (`react-joyride` / `shepherd.js`) al primo login admin e al primo articolo
+- [ ] Optimistic UI su action frequenti (status change, tag add) con rollback su errore
+- [ ] Confirm destructive action con typed-confirmation (es. digita "SCARTA")
 
 ### Refactoring componenti grandi
-- [ ] `ArticlePreviewDrawer.tsx` (764 righe) → sub-componenti
-- [ ] `PromptSearchHistory.tsx` (342 righe) → estrarre `HistoryTable`, `RunDetailModal`
-- [ ] `PromptForm.tsx` (339 righe) → hook `usePromptForm` + componenti per ogni sezione
-
-### UX
-- [ ] Loading skeletons al posto di spinner (Inbox, ArticleDetail, Calendar)
-- [ ] Empty states con call-to-action chiara su ogni tabella vuota
-- [ ] Keyboard shortcuts: `?` cheatsheet, `j/k` navigazione inbox, `g+s` filtro status
-- [ ] Onboarding tour (`react-joyride`) al primo login dell'admin
-- [ ] Dark mode toggle in UserMenu (Ant Design lo supporta già)
-- [ ] Mobile/tablet responsive audit (Inbox + Calendar)
+- [ ] `ArticlePreviewDrawer.tsx` (764 righe) → sub-componenti + hook custom
+- [ ] `PromptSearchHistory.tsx` (342 righe) → `HistoryTable`, `RunDetailModal`
+- [ ] `PromptForm.tsx` (339 righe) → hook `usePromptForm` + componenti per sezione
+- [ ] Estrazione hook `useArticleWorkflow`, `useCalendarDnd`, `useTaxonomyBulk` per testabilità
 
 ### Accessibilità & i18n
-- [ ] A11y audit con `axe-core` — almeno WCAG 2.1 AA
-- [ ] `react-i18next` con locale IT + EN
-- [ ] Focus management nei modali
+- [ ] A11y audit con **`axe-core` + test manuale NVDA/VoiceOver** — target **WCAG 2.1 AA**
+- [ ] `react-i18next` con locale IT (primario) + EN (secondario) — estrazione stringhe hardcoded
+- [ ] Focus trap + return focus su chiusura in tutti i modali/drawer
+- [ ] Contrasto testo ≥4.5:1, UI ≥3:1 (verificato con token della palette)
+- [ ] Link "Skip to content" + landmark roles
 
-**DoD**: Lighthouse score ≥90 su dashboard, inbox, article detail. `axe` senza violazioni critiche. Tour onboarding testato da 2 utenti non-dev.
+### Performance percepita
+- [ ] Bundle analysis (`rollup-plugin-visualizer`) + code splitting per route (`React.lazy`)
+- [ ] Tree-shake degli import di Ant Design icons (~200KB gzipped in meno)
+- [ ] Font loading: `font-display: swap` + `preload` dei critici + subset latin-ext
+- [ ] Image loading: `loading="lazy"` + `decoding="async"` + blur placeholder (LQIP)
+- [ ] Prefetch su hover delle route critiche (dashboard → inbox)
+- [ ] Lighthouse budget in CI (fail se Performance < 90 su preview deploy)
+
+**DoD**:
+- ✅ **Lighthouse ≥95** su dashboard, inbox, article detail (Performance, A11y, Best Practices, SEO)
+- ✅ `axe-core`: **0 violazioni critiche**, ≤3 serious
+- ✅ **Design review** interna approvata, con confronto visivo vs. 3 competitor del segmento editorial SaaS
+- ✅ **Test utenti non-dev** (min. 3 persone) con task measurement: completamento >90%, **SUS score ≥80**
+- ✅ Cross-browser: Chrome, Edge, Firefox, Safari (ultime 2 major) — nessuna regressione visiva
+- ✅ Mobile QA: iPhone SE (375px) e iPad Pro (1024px) OK su tutte le pagine
+- ✅ Dark mode verificato end-to-end su tutte le viste (niente testo illeggibile, niente icone invisibili)
+- ✅ Storybook / style guide online con tutti i token e i componenti custom documentati
 
 ---
 
@@ -316,8 +431,8 @@
 | 4 | 8.5 | 🟡 |
 | 5 | 10.5 | 🔴 |
 | 6 | 12.5 | 🟡 |
-| 7 | 14.5 | 🟢 |
-| 8 | 16.5 | 🔴 |
+| 7 | 15.5 | 🟡 |
+| 8 | 17.5 | 🔴 |
 
 ---
 
@@ -330,6 +445,8 @@
 | CORS/Traefik config errata in produzione | Alto | Staging identico a prod; smoke test in `deploy.sh` |
 | Cliente richiede feature nuove in UAT | Medio | Cambio-scope documentato; P0 bug-fix only, feature in contratto di manutenzione |
 | Tempo reale > stima | Medio | Scenario "Minimum viable" come cutoff fallback |
+| **UI/UX sottotono rispetto ai competitor** | **Alto** | Sprint 7 elevato a **P1** (Professional); design review con benchmark visivo; test SUS con utenti reali prima dell'handoff |
+| **Design system non adottato uniformemente** | Medio | Token centralizzati in un unico file; Storybook come single source of truth; linter custom per vietare colori hex hardcoded |
 
 ---
 
