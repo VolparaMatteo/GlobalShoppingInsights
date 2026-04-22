@@ -72,6 +72,11 @@ services:
     container_name: gsi-frontend
     environment:
       VITE_API_BASE_URL: http://localhost:8000/api/v1
+      # Dev proxy Vite (/api, /uploads) → target backend. In Docker compose
+      # il servizio backend e' raggiungibile via DNS "backend:8000";
+      # in dev nativo (npm run dev fuori Docker) il default localhost:8000
+      # del vite.config.ts va bene.
+      BACKEND_URL: http://backend:8000
     volumes:
       - ./frontend:/app
       # Volume NOMINATO (non anonimo): cosi' possiamo rimuoverlo con nome
