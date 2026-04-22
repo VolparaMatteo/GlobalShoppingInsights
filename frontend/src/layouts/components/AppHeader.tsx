@@ -4,6 +4,7 @@ import { Layout, Typography, Space, theme as antdTheme } from 'antd';
 import NotificationBell from '@/layouts/components/NotificationBell';
 import UserMenu from '@/layouts/components/UserMenu';
 import ThemeToggle from '@/components/common/ThemeToggle';
+import LocaleSwitcher from '@/components/common/LocaleSwitcher';
 
 const { Header } = Layout;
 const { Title } = Typography;
@@ -56,6 +57,7 @@ export default function AppHeader() {
       </Title>
 
       <Space size="small">
+        <LocaleSwitcher />
         <ThemeToggle />
         <NotificationBell />
         <UserMenu />
