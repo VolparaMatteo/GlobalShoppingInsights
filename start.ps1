@@ -68,13 +68,33 @@ if ($Logs) {
 
 if ($RefreshFrontendDeps) {
     Write-Host "Refresh node_modules frontend (dopo cambio package.json)..." -ForegroundColor Cyan
-    docker compose @profileArgs stop frontend 2>&1 | Out-Null
-    docker compose @profileArgs rm -f frontend 2>&1 | Out-Null
-    docker volume rm gsi-dev_frontend_node_modules 2>&1 | Out-Null
-    Write-Host "Volume node_modules rimosso. Rebuild immagine frontend..." -ForegroundColor Cyan
+
+    # I comandi di cleanup possono "fallire" legittimamente (container non
+    # esistente, volume non esistente, ecc.). Li eseguiamo con
+    # ErrorActionPreference rilassato per non stoppare lo script.
+    # In Windows PowerShell 5.1 ogni output native su stderr diventa un
+    # NativeCommandError — per evitarlo redirigiamo stderr su file null.
+    $previousEAP = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+
+    Write-Host "  Stop + rimozione container frontend..." -ForegroundColor Gray
+    docker compose @profileArgs stop frontend 2>$null | Out-Null
+    docker compose @profileArgs rm -f frontend 2>$null | Out-Null
+
+    Write-Host "  Rimozione volume node_modules..." -ForegroundColor Gray
+    docker volume rm gsi-dev_frontend_node_modules 2>$null | Out-Null
+
+    $ErrorActionPreference = $previousEAP
+
+    Write-Host "  Rebuild immagine frontend (npm ci)..." -ForegroundColor Cyan
     docker compose @profileArgs build frontend
+
+    Write-Host "  Avvio stack..." -ForegroundColor Cyan
     docker compose @profileArgs up -d
+
+    Write-Host ""
     Write-Host "Fatto. Frontend ripartito con dipendenze aggiornate su http://localhost:5173" -ForegroundColor Green
+    Write-Host "Tip: 'docker compose logs -f frontend' per vedere i log di Vite." -ForegroundColor Gray
     return
 }
 
