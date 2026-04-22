@@ -5,7 +5,6 @@ import AppSider from '@/layouts/components/AppSider';
 import AppHeader from '@/layouts/components/AppHeader';
 import LLMStatusBanner from '@/components/common/LLMStatusBanner';
 import PageTransition from '@/components/common/PageTransition';
-import CommandPalette from '@/components/common/CommandPalette';
 import ShortcutsCheatsheet from '@/components/common/ShortcutsCheatsheet';
 import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 import { useUiStore } from '@/stores/uiStore';
@@ -15,11 +14,10 @@ const { Content } = Layout;
 export default function MainLayout() {
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggleTheme = useUiStore((s) => s.toggleThemeMode);
-  const [cmdOpen, setCmdOpen] = useState(false);
   const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
 
-  // Global shortcuts
-  useKeyboardShortcut('mod+k', () => setCmdOpen((v) => !v), { allowInInput: true });
+  // Global shortcuts (il mod+k per command palette e' gestito da
+  // HeaderSearchButton, che possiede lo stato + il mount del modal).
   useKeyboardShortcut('?', () => setCheatsheetOpen(true));
   useKeyboardShortcut('mod+shift+l', () => toggleTheme());
 
@@ -44,7 +42,6 @@ export default function MainLayout() {
             </PageTransition>
           </Suspense>
 
-          <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
           <ShortcutsCheatsheet open={cheatsheetOpen} onClose={() => setCheatsheetOpen(false)} />
         </Content>
       </Layout>
