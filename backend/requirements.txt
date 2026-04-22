@@ -27,3 +27,4 @@ deep-translator>=1.11.0
 structlog>=24.4.0
 sentry-sdk[fastapi]>=2.17.0
 prometheus-fastapi-instrumentator>=7.0.0
+cachetools>=5.5.0
