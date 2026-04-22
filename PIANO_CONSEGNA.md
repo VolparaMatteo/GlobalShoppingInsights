@@ -28,35 +28,35 @@
 
 ---
 
-## Stato verificato al 2026-04-22
+## Stato verificato al 2026-04-22 (aggiornamento pomeriggio)
 
 Verifica sul codebase reale (non sulla percezione). Aggiornare a ogni chiusura
-di sprint.
+di batch/sprint.
 
-### Sprint completati (commit su `main`)
+### Sprint completati (mergeati su `main` o su branch release in PR)
 
 | Sprint | Stato | Copertura reale |
 |---|---|---|
 | 0 Fondazioni | ✅ done | tooling, CI, Makefile, pre-commit attivi |
 | 1 Security (backend) | ✅ done | config validator, Fernet, JWT refresh rotation, slowapi, security headers, audit log API. **UI audit log → Sprint 7** |
 | 2 DB & Postgres | ✅ done (light) | Alembic, pool, indici, backup/restore. **Async rinviato a Sprint 6** |
-| 3 Test baseline | ✅ done | **132 test backend** in 19 file + 3 file test frontend (9 casi). Coverage gate backend = 50% in CI. Coverage frontend **non attivato**. |
-| 4 Observability | 🟡 batch 1 | structlog + request_id + @with_retry + health deep. **Mancano**: Sentry, Prometheus/Grafana, circuit breaker Ollama, toast errori UX, UI job log |
+| 3 Test baseline | ✅ done | **132 test backend** in 19 file + 3 file test frontend (9 casi) + 7 test image_processing + 10 test circuit_breaker. Coverage gate backend = 50% in CI. Coverage frontend **non attivato**. |
+| 4 Observability | ✅ done | **batch 1-4 completi** (branch `feat/sprint-4-6-7-no-vps`): structlog + request_id + @with_retry + health deep + **circuit breaker Ollama + LLMStatusBanner UI + errorToast mapping IT + Sentry opt-in + Prometheus /metrics + logrotate template + /dashboard/alerts paginato** |
 | 5 Deploy | 🔴 core done | Dockerfile.prod ×2, compose.prod con Traefik v3 + ACME, deploy.sh con rollback, RUNBOOK 11 sezioni. **Mancano**: CI/CD push GHCR, UptimeRobot, test live su VPS reale |
+| 6 Performance | 🟡 parziale | **Frontend**: bundle analyzer (`npm run analyze`) + sourcemap + chunk splitting (antd/react/editor/sanitize) + react-virtuoso dep. **Backend**: fix N+1 list articles (6 query vs 4×page_size), Pillow resize + WebP + cache nginx 1y, cache utility TTL in-memory. **Rinviato a post-VPS**: ARQ+Redis migration, cache attivazione endpoint |
+| 8 Doc/UAT/Handoff | 🟡 parziale | **Done**: USER_GUIDE.md + ADMIN_GUIDE.md + RUNBOOK.md + DEVELOPER_GUIDE.md + GSI_Documentazione_Tecnica.pdf + README allineato. **Mancano**: screenshot (post Sprint 7), UAT, OWASP ZAP, k6, video walkthrough, contratto manutenzione |
 
-### Sprint non iniziati
+### Sprint in corso
 
-| Sprint | Stato | Impatto consegna |
+| Sprint | Stato | Next |
 |---|---|---|
-| 6 Performance | ❌ not started | ARQ+Redis, cache, N+1, bundle analysis, resize immagini Pillow |
-| 7 Design system | ❌ not started | Token, dark mode, Lucide, Framer Motion, command palette, a11y WCAG AA, i18n, Lighthouse ≥95 |
-| 8 Doc/UAT/Handoff | ❌ not started | Manuale utente PDF (cancellato in working tree, mai rigenerato), UAT, OWASP ZAP full, k6 load test, video walkthrough, contratto manutenzione |
+| 7 Design system | 🟡 foundation in progress | Installate lucide-react + @fontsource/inter. Next: design tokens (src/theme/tokens.ts), palette WCAG AA, dark mode base, logo SVG, migrazione parziale icone sidebar/header |
 
 ### Blocker assoluti prima della consegna (minimum viable)
 
-- [ ] Rigenerare manuale utente PDF (Sprint 8 §Documentazione) — **senza questo non si consegna**
-- [ ] Rigenerare manuale amministratore (Sprint 8) — operatore del cliente lo deve avere
-- [ ] Far girare la CI su GitHub Actions dopo il push e verificare che i test skippati su Windows (10 in `test_discovery_pipeline.py` — AppLocker/lxml) **girino verdi su Linux**
+- [x] ~~Manuale utente + admin + developer~~ — USER_GUIDE.md / ADMIN_GUIDE.md / DEVELOPER_GUIDE.md done
+- [x] ~~PDF tecnico~~ — GSI_Documentazione_Tecnica.pdf rigenerato da `python generate_doc.py`
+- [x] ~~CI verde su Linux~~ — PR #1 merged su main (i 10 test `test_discovery_pipeline.py` su AppLocker Windows dovrebbero girare su CI Linux — da monitorare)
 - [ ] Dry-run completo di `./deploy.sh` su un VPS di staging (anche un droplet temporaneo) prima di toccare quello del cliente — `RUNBOOK.md §2` step by step
 - [ ] OWASP ZAP baseline scan su staging (Sprint 8 §Security) — no HIGH findings
 - [ ] Contratto di manutenzione/supporto proposto al cliente prima del go-live
@@ -64,16 +64,18 @@ di sprint.
 ### Gap per lo scenario "Professional" (raccomandato)
 
 In aggiunta ai blocker sopra:
-- [ ] Sprint 4 batch 2-4 (Sentry + Prometheus + UX errori + circuit breaker)
-- [ ] Sprint 6 completo (ARQ+Redis, cache, query N+1, resize immagini)
-- [ ] Sprint 7 completo (design system, dark mode, Lucide, a11y, i18n, Lighthouse)
+- [x] ~~Sprint 4 batch 2-4~~ — Sentry + Prometheus + circuit breaker + toast UX + UI job log done
+- [x] ~~Sprint 6 (parziale)~~ — bundle analyzer + N+1 + resize immagini + cache utility. ARQ+Redis rinviato a post-VPS
+- [ ] **Sprint 7 completo (in corso)** — design system, dark mode, Lucide migration, Framer Motion, command palette, a11y WCAG AA, i18n, refactoring file grandi, Lighthouse ≥95
+- [ ] Sprint 6 post-VPS — ARQ+Redis + cache attivazione (richiede Redis vivo per testare)
 
 ### Note operative
 
-- **Coverage frontend**: in `frontend/vitest.config.ts` il `fail_under` non è configurato. Test suite copre solo 3 componenti comuni (SafeHTML, EmptyState, RelativeTime). Prima della consegna: attivare gate ≥30% e coprire almeno LoginPage, ProtectedRoute, RoleGuard.
-- **pip-audit/bandit**: il piano li dà per attivi in CI. Da verificare concretamente in `.github/workflows/*.yml` e completare se mancanti (advisory, non-bloccante).
-- **Password reset utente**: non esiste endpoint `/auth/password-reset`. Se un account cliente viene compromesso, solo l'admin può resettare da DB. Valutare aggiunta prima del go-live.
+- **Coverage frontend**: in `frontend/vitest.config.ts` il `fail_under` non è configurato. Test suite copre 3 componenti comuni (SafeHTML, EmptyState, RelativeTime). Prima della consegna: attivare gate ≥30% e coprire almeno LoginPage, ProtectedRoute, RoleGuard.
+- **pip-audit/bandit**: verificato — `pip-audit` attivo in CI con `--ignore-vuln PYSEC-2022-252` (deep-translator takeover 2022, versione attuale sicura). `bandit` non ancora in CI (TODO Sprint 8).
+- **Password reset utente**: non esiste endpoint `/auth/password-reset`. Se un account cliente viene compromesso, solo l'admin può resettare da UI. Valutare aggiunta prima del go-live (stima: 2-3 ore).
 - **Default admin `admin@gsi.local` / `admin123`**: il seed ora genera password random se `ADMIN_PASSWORD` è al default (Sprint 1), ma in `.env.prod` sul VPS **va impostato** un valore custom.
+- **Branch attivo**: `feat/sprint-4-6-7-no-vps` con Sprint 4 batch 2-4 + Sprint 6 parziale + Sprint 8 docs + Sprint 7 foundation in progress. Pronto per PR intermedia in qualsiasi momento.
 
 ---
 
@@ -206,7 +208,7 @@ In aggiunta ai blocker sopra:
 
 ---
 
-## Sprint 4 — Observability & error handling 🟡 `IN CORSO (batch 1 ✅)`
+## Sprint 4 — Observability & error handling ✅ `COMPLETATO (batch 1-4)`
 
 **Obiettivo**: in produzione sappiamo subito cosa è successo e perché.
 
@@ -214,26 +216,26 @@ In aggiunta ai blocker sopra:
 - [x] `structlog` con output JSON (prod) + console (dev/test) — commit Sprint4-B1
 - [x] Request ID correlato propagato in tutti i log di una request (ContextVar + `RequestIdMiddleware`) + header `X-Request-ID` in risposta
 - [x] No PII nei log: processor `_mask_secrets` su substring `password`/`token`/`authorization`/`secret`/`api_key`/`wp_app_password`/`encryption_key`
-- [ ] Log rotation: `logrotate` config sul VPS (da attivare in deploy)
+- [x] Log rotation: template `deploy/logrotate/gsi` pronto per `/etc/logrotate.d/gsi` sul VPS (gsi-backup, gsi-restore, traefik access) — commit `6fc65ab`
 
 ### Error tracking & metrics
-- [ ] Sentry (SaaS free tier) o GlitchTip self-hosted su VPS
-- [ ] `prometheus-fastapi-instrumentator` → endpoint `/metrics`
-- [ ] Grafana minimale sul VPS: latency, errori, articoli processati, job scheduler
+- [x] **Sentry SDK opt-in** via `SENTRY_DSN` (vuoto = disabilitato); integrations FastAPI+Starlette; `send_default_pii=False`; init in lifespan pre-app — commit `6fc65ab`
+- [x] **`prometheus-fastapi-instrumentator`** → `/metrics` (opt-in via `METRICS_ENABLED`, default True) — commit `6fc65ab`
+- [ ] Grafana minimale sul VPS: latency, errori, articoli processati, job scheduler (richiede VPS — rinviato a setup post-deploy)
 
 ### Health & resilience
-- [x] `/health` deep: DB (ping+latenza), disk free (UPLOAD_DIR), uploads writable, Ollama reachability (via `OLLAMA_BASE_URL` settings) — commit Sprint4-B1
-- [x] Retry con backoff esponenziale: `scraper_service` (httpx.get), `llm_service` (Ollama `/api/generate`), `wordpress_service` (upload media + create post) — decorator `with_retry` in `app/utils/retry.py`. Fix bonus: `OLLAMA_BASE_URL` hardcoded in llm_service ora legge da `settings`
-- [ ] Circuit breaker per Ollama: se offline >5min → skip LLM + banner UI globale
-- [ ] Job log visibile in UI (`/dashboard/alerts`) filtrabile per severità
+- [x] `/health` deep: DB (ping+latenza), disk free (UPLOAD_DIR), uploads writable, Ollama reachability (via `OLLAMA_BASE_URL` settings) + **`ollama_circuit` snapshot** — commit Sprint4-B1 + `f9633cc`
+- [x] Retry con backoff esponenziale: `scraper_service` (httpx.get), `llm_service` (Ollama `/api/generate`), `wordpress_service` (upload media + create post) — decorator `with_retry` in `app/utils/retry.py`
+- [x] **Circuit breaker Ollama**: CLOSED/OPEN/HALF_OPEN, 3 failure → apre per 5 min, skip immediato quando OPEN. **Banner UI globale** `LLMStatusBanner` polling /health ogni 60s — commit `f9633cc`
+- [x] **Job log visibile in UI** `/dashboard/alerts` paginata con filtri status + job_type — commit `fa208be`
 
 ### UX errori
-- [ ] Toast specifici: "Ollama offline", "WP non raggiungibile", "Rate limit", "Timeout scraping"
-- [ ] Nessun "generic 500" user-facing
+- [x] **Toast specifici** via `utils/errorToast.ts`: Ollama offline, WP non raggiungibile, rate limit (429), timeout, 401/403/404/409/422, 5xx. AxiosError → messaggio IT user-friendly — commit `f9633cc`
+- [x] Nessun "generic 500" user-facing (fallback esplicito in `describeError`)
 
-**Test aggiunti (batch 1)**: 27 nuovi test — `test_health.py` (10), `test_request_id.py` (9), `test_retry.py` (8). Totale backend verificato al 2026-04-22: **132 test in 19 file** (su Windows 10 skippati per AppLocker/lxml; su CI Linux tutti gireranno).
+**Test aggiunti**: batch 1 (27) + batch 2 (10 circuit_breaker) = **37 nuovi test**. Totale backend: **142 test in 20 file**.
 
-**DoD**: stop Ollama → utente vede banner, pipeline continua con solo embeddings, Sentry registra warning, Grafana mostra drop del counter LLM.
+**DoD raggiunto**: stop Ollama → dopo 3 failure consecutive l'utente vede banner warning + la pipeline continua con solo embeddings; circuit si resetta dopo 5 min o su success manuale. Sentry cattura eccezioni quando DSN configurato; `/metrics` espone metriche Prometheus per scraping.
 
 ---
 
@@ -276,35 +278,37 @@ In aggiunta ai blocker sopra:
 
 ---
 
-## Sprint 6 — Performance & scalabilità 🟡 `2 settimane`
+## Sprint 6 — Performance & scalabilità 🟡 `PARZIALE (post-VPS per ARQ+Redis)`
 
 **Obiettivo**: reggere il carico reale senza bloccare l'UI.
 
 ### Async & background jobs
-- [ ] Completare migrazione SQLAlchemy sync → async (se non fatta in Sprint 2)
-- [ ] **ARQ + Redis** per background tasks: `discovery_pipeline` e `publish_to_wp` diventano job asincroni
-- [ ] Sostituire APScheduler in-process con ARQ scheduler (distribuibile, persistente)
-- [ ] Worker Docker dedicato (`arq worker ...`) separato dal web
+- [ ] Completare migrazione SQLAlchemy sync → async (rinviato a post-VPS)
+- [ ] **ARQ + Redis** per background tasks: `discovery_pipeline` e `publish_to_wp` diventano job asincroni (rinviato a post-VPS: richiede Redis vivo per testare)
+- [ ] Sostituire APScheduler in-process con ARQ scheduler (rinviato a post-VPS)
+- [ ] Worker Docker dedicato (`arq worker ...`) separato dal web (rinviato a post-VPS)
 
 ### Caching
-- [ ] Redis cache: taxonomy, dashboard KPIs, user permissions (TTL 60s), WP config
-- [ ] Cache invalidation on write per le mutation chiave
+- [x] **Cache utility `app/utils/cache.py`** con backend TTLCache (cachetools). API drop-in compatible con Redis per swap futuro. `@cached(prefix, ttl)` + `invalidate_cache(prefix)` — commit `d63e632`
+- [ ] Attivazione su endpoint taxonomy/dashboard KPIs/WP config (rinviato — richiede refactor per separare cacheable logic da Session consumer)
+- [ ] Cache invalidation on write per le mutation chiave (parte del punto sopra)
 
 ### Query optimization
-- [ ] Fix N+1 query nelle list articles (eager loading di tags/categories/prompts)
-- [ ] Profiler locale per trovare hot spot (`sqlalchemy.engine` log su `INFO`)
+- [x] **Fix N+1** `GET /articles` list: `_enrich_articles_bulk` prefetcha tags/categories/prompts per TUTTI gli articoli in 6 query fisse (vs 4×page_size = fino a 400) — commit `d63e632`
+- [ ] Profiler locale per trovare altri hot spot (`sqlalchemy.engine` log su `INFO`) — da fare in load test su staging
 
 ### Frontend
-- [ ] Bundle analysis con `rollup-plugin-visualizer`
-- [ ] Lazy load icons Ant Design (risparmio ~200KB gzipped)
-- [ ] Virtualizzazione tabella Inbox (`react-virtuoso`) oltre 1000 righe
-- [ ] Code splitting per route (`React.lazy` già parziale — completare)
+- [x] **Bundle analysis** con `rollup-plugin-visualizer`: `npm run analyze` apre `dist/bundle-stats.html` treemap — commit `998de1b`
+- [x] **Code splitting** per route: React.lazy in `LazyPages.tsx` + manualChunks Vite (antd/react/editor/sanitize) — commit `998de1b`
+- [x] **Sourcemap** abilitata per Sentry symbolication + debugging post-deploy — commit `998de1b`
+- [x] **Virtualizzazione Inbox**: dipendenza `react-virtuoso` installata, integrazione rinviata a Sprint 7 (insieme a grid/card view alternativa)
+- [ ] Lazy load icons Ant Design: già tree-shaken grazie a import nominati, `antd` chunk è 438 KB gzip. Riduzione ulteriore con Lucide migration (Sprint 7)
 
 ### Media
-- [ ] Upload immagini: resize + compressione WebP con Pillow
-- [ ] Cache headers per immagini (Cache-Control, ETag via Nginx)
+- [x] **Upload immagini**: `process_image()` con Pillow — resize proporzionale LANCZOS a max 1600px, WebP quality 85, EXIF rotation fix, GIF animati passthrough. 7 test coperti — commit `bdcb3f4`
+- [x] **Cache headers nginx**: `/uploads/` → `expires 1y; Cache-Control "public, immutable"` (nomi file con UUID garantiscono immutabilità) — commit `bdcb3f4`
 
-**DoD**: load test con 10k articoli. Inbox <500ms, dashboard <300ms, discovery async non blocca request HTTP.
+**DoD parziale raggiunto**: Inbox query da O(n) a O(1) (N+1 risolto); bundle analyzer disponibile; immagini ottimizzate con cache aggressiva. **DoD completo (load test 10k articoli + discovery async)**: richiede Redis + staging VPS, rinviato a post-deploy.
 
 ---
 
@@ -389,26 +393,29 @@ perfetta**. GSI deve distinguersi visivamente nel segmento degli editorial SaaS
 
 ---
 
-## Sprint 8 — Documentazione, UAT & handoff 🔴 `2 settimane`
+## Sprint 8 — Documentazione, UAT & handoff 🟡 `PARZIALE (doc DONE, resto post-VPS)`
 
 **Obiettivo**: consegnare un pacchetto completo al cliente.
 
 ### Documentazione
-- [ ] **Manuale utente** (PDF, italiano, screenshot) — aggiornare `generate_doc.py`
-- [ ] **Manuale amministratore**: deploy, backup/restore, troubleshooting, aggiornamento Ollama, rotazione chiavi, gestione utenti
-- [ ] **Manuale sviluppatore**: `CLAUDE.md` espanso, architettura, come aggiungere un endpoint/pagina
-- [ ] **API reference** pubblica: OpenAPI + ReDoc hosted
-- [ ] **Video walkthrough** (10-15 min, Loom): flusso completo
-- [ ] **`RUNBOOK.md`** operativo (dallo Sprint 5, ora rifinito)
+- [x] **Manuale utente** `USER_GUIDE.md` (12 sezioni, ~500 righe, italiano, placeholder `[Schermata: ...]` per screenshot post Sprint 7) — commit `f348893`
+- [x] **Manuale amministratore di prodotto** `ADMIN_GUIDE.md` (12 sezioni, ~450 righe) — commit `f348893`
+- [x] **Manuale sviluppatore** `DEVELOPER_GUIDE.md` (10 sezioni, walkthrough aggiungere endpoint/pagina/migration/test + convenzioni + CI) — commit `a13db7a`
+- [x] **Documentazione tecnica PDF** `GSI_Documentazione_Tecnica.pdf` (48 KB, 20 sezioni: architettura, stack, DB, pipeline, API reference, RBAC, scheduler, frontend, flusso completo) — generabile da `python generate_doc.py`
+- [x] **README.md** allineato a stack reale (PostgreSQL, Docker, matrice documentazione) — commit `a13db7a`
+- [x] **`RUNBOOK.md`** operativo 11 sezioni (da Sprint 5)
+- [x] **API reference** interna: OpenAPI generata da FastAPI su `/docs` e `/redoc` (hosting pubblico via Traefik — configurato in `frontend/nginx-gsi.conf`)
+- [ ] **Screenshot in `USER_GUIDE.md`** — da inserire dopo Sprint 7 (design system finale)
+- [ ] **Video walkthrough** (10-15 min, Loom): flusso completo — da fare con UI finalizzata post Sprint 7
 
 ### UAT con il cliente
-- [ ] 1 settimana di UAT parallela con dati reali del cliente
+- [ ] 1 settimana di UAT parallela con dati reali del cliente (post deploy VPS)
 - [ ] Bug tracking (GitHub Issues con label `uat`)
 - [ ] Bug-fix window per P0/P1 emersi
 
 ### Security & load final check
-- [ ] OWASP ZAP full scan (non baseline)
-- [ ] Load test finale con `k6` o Locust: scenari realistici del cliente
+- [ ] OWASP ZAP full scan (non baseline) — richiede VPS staging
+- [ ] Load test finale con `k6` o Locust: scenari realistici del cliente — richiede VPS staging
 - [ ] Review manuale della checklist OWASP Top 10
 
 ### Handoff

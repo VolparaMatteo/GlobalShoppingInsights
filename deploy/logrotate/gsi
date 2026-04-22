@@ -1,0 +1,50 @@
+# logrotate config per GSI — copia in /etc/logrotate.d/gsi sul VPS.
+#
+# I log del backend vengono scritti su stdout dal container Docker e
+# raccolti dal journal di systemd (journalctl -u docker). Docker Engine
+# gestisce gia' la rotazione dei log dei container via driver json-file
+# o journald (vedi /etc/docker/daemon.json — raccomandato:
+#   { "log-driver": "json-file", "log-opts": { "max-size": "50m", "max-file": "10" } }
+# ).
+#
+# Questo file copre invece:
+#  - log Traefik (se configurato per file-based access log in docker-compose.prod.yml)
+#  - log applicativi persistiti su filesystem host (se mai migreremo da stdout)
+#  - log di backup/restore (scripts/backup.sh redirige a /var/log/gsi-backup.log)
+#
+# Installa con:
+#   sudo cp deploy/logrotate/gsi /etc/logrotate.d/gsi
+#   sudo logrotate -d /etc/logrotate.d/gsi   # dry-run
+#   sudo logrotate -f /etc/logrotate.d/gsi   # force run (una volta per testare)
+
+/var/log/gsi-backup.log
+/var/log/gsi-restore.log {
+    daily
+    rotate 30
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 root root
+    sharedscripts
+}
+
+# Traefik access log — se abilitato nel compose con
+#   volumes:
+#     - traefik_logs:/var/log/traefik
+# e il volume e' bind-mounted su /var/log/traefik dell'host.
+/var/log/traefik/*.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 root root
+    sharedscripts
+    postrotate
+        # Forza traefik a riaprire i file descriptor (USR1).
+        docker compose --env-file /opt/gsi/app/.env.prod \
+            -f /opt/gsi/app/docker-compose.prod.yml kill -s USR1 traefik 2>/dev/null || true
+    endscript
+}

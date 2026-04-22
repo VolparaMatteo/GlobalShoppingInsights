@@ -18,3 +18,4 @@ types-python-jose
 types-bleach
 types-beautifulsoup4
 types-Pillow
+types-cachetools

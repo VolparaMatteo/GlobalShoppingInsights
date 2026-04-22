@@ -7,6 +7,7 @@ import ProtectedRoute from '@/router/ProtectedRoute';
 import {
   LoginPage,
   DashboardPage,
+  AlertsPage,
   PromptsListPage,
   PromptDetailPage,
   InboxPage,
@@ -47,6 +48,10 @@ const routes: RouteObject[] = [
           {
             path: '/dashboard',
             element: suspense(DashboardPage),
+          },
+          {
+            path: '/dashboard/alerts',
+            element: suspense(AlertsPage),
           },
           {
             path: '/prompts',

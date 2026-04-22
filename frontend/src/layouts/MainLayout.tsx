@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { Layout, Spin } from 'antd';
 import AppSider from '@/layouts/components/AppSider';
 import AppHeader from '@/layouts/components/AppHeader';
+import LLMStatusBanner from '@/components/common/LLMStatusBanner';
 import { useUiStore } from '@/stores/uiStore';
 
 const { Content } = Layout;
@@ -22,6 +23,7 @@ export default function MainLayout() {
             overflow: 'auto',
           }}
         >
+          <LLMStatusBanner />
           <Suspense
             fallback={<Spin size="large" style={{ display: 'block', margin: '20% auto' }} />}
           >

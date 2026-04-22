@@ -31,10 +31,15 @@ from app.config import settings
 from app.middleware.request_id import RequestIdMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.utils.logging import configure_logging
+from app.utils.observability import init_sentry, setup_prometheus
 from app.utils.rate_limit import limiter
 
 # Configurazione logging (structlog): JSON in produzione, console in dev/test.
 configure_logging()
+
+# Sentry (opt-in): se SENTRY_DSN configurato, cattura anche errori in lifespan.
+# Deve essere chiamato PRIMA di istanziare l'app.
+init_sentry()
 
 _log = logging.getLogger(__name__)
 
@@ -83,6 +88,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# Prometheus /metrics (opt-in via METRICS_ENABLED, default True).
+setup_prometheus(app)
 
 # Rate limiter (slowapi). In ENV=test è disabilitato (vedi app.utils.rate_limit).
 app.state.limiter = limiter

@@ -107,6 +107,84 @@ def get_recent_jobs(
     ]
 
 
+@router.get("/job-logs")
+def list_job_logs(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    status: str | None = Query(None, description="filtro: pending/running/completed/failed"),
+    job_type: str | None = Query(None, description="es. discovery, publish"),
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(get_current_user),
+):
+    """Lista paginata dei job_logs con filtri per status e job_type.
+
+    Usata da /dashboard/alerts nel frontend per mostrare lo storico completo
+    degli alert/job eseguiti dallo scheduler.
+    """
+    q = db.query(JobLog)
+    if status:
+        q = q.filter(JobLog.status == status)
+    if job_type:
+        q = q.filter(JobLog.job_type == job_type)
+
+    total = q.count()
+    jobs = (
+        q.order_by(JobLog.started_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+    )
+
+    # Resolve entity_ref agli stessi titoli usati da /recent-jobs (DRY leggera).
+    prompt_ids: set[int] = set()
+    article_ids: set[int] = set()
+    for j in jobs:
+        if j.entity_ref:
+            kind, _, ref_id = j.entity_ref.partition(":")
+            if kind == "prompt" and ref_id.isdigit():
+                prompt_ids.add(int(ref_id))
+            elif kind == "article" and ref_id.isdigit():
+                article_ids.add(int(ref_id))
+
+    prompt_titles: dict[int, str] = {}
+    if prompt_ids:
+        rows = db.query(Prompt.id, Prompt.title).filter(Prompt.id.in_(prompt_ids)).all()
+        prompt_titles = {r.id: r.title for r in rows}
+
+    article_titles: dict[int, str] = {}
+    if article_ids:
+        rows = db.query(Article.id, Article.title).filter(Article.id.in_(article_ids)).all()
+        article_titles = {r.id: r.title for r in rows}
+
+    def resolve_ref(entity_ref: str | None) -> str | None:
+        if not entity_ref:
+            return None
+        kind, _, ref_id = entity_ref.partition(":")
+        if ref_id.isdigit():
+            rid = int(ref_id)
+            if kind == "prompt":
+                return prompt_titles.get(rid, entity_ref)
+            if kind == "article":
+                return article_titles.get(rid, entity_ref)
+        return entity_ref
+
+    return {
+        "items": [
+            {
+                "id": j.id,
+                "job_type": j.job_type,
+                "entity_ref": resolve_ref(j.entity_ref),
+                "status": j.status,
+                "started_at": str(j.started_at) if j.started_at else None,
+                "ended_at": str(j.ended_at) if j.ended_at else None,
+                "error": j.error,
+                "progress": j.progress,
+            }
+            for j in jobs
+        ],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
+
+
 @router.get("/alerts")
 def get_alerts(
     db: Session = Depends(get_db),

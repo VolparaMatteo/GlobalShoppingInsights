@@ -1,23 +1,16 @@
 // ---------------------------------------------------------------------------
-// ScoreBadge  --  Colour-coded badge showing an AI relevance score
+// DEPRECATED wrapper — usa @/components/common/ScoreBadge direttamente.
+// Backward-compat in attesa del rename degli import esistenti (Sprint 7
+// refactoring batch).
+// Il componente nuovo accetta prop `variant` ('circle'|'pill') e `size`.
+// Default = circle, size md. Legacy API `score: number|null` rispettata.
 // ---------------------------------------------------------------------------
-import { Tag } from 'antd';
+import CommonScoreBadge from '@/components/common/ScoreBadge';
 
 interface ScoreBadgeProps {
   score: number | null;
 }
 
-function getColor(score: number): string {
-  if (score <= 30) return 'red';
-  if (score <= 60) return 'orange';
-  if (score <= 80) return 'blue';
-  return 'green';
-}
-
 export default function ScoreBadge({ score }: ScoreBadgeProps) {
-  if (score === null || score === undefined) {
-    return <Tag>N/A</Tag>;
-  }
-
-  return <Tag color={getColor(score)}>{score}</Tag>;
+  return <CommonScoreBadge score={score} variant="pill" size="md" />;
 }

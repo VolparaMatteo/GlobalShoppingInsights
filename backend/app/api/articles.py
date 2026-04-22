@@ -32,7 +32,11 @@ router = APIRouter(prefix="/articles", tags=["articles"])
 
 
 def _enrich_article(a: Article, db: Session) -> ArticleResponse:
-    """Build an ArticleResponse with tags, categories and prompts."""
+    """Build an ArticleResponse with tags, categories and prompts.
+
+    Singolo-articolo: 4 query M:M (accettabile per get_article endpoint).
+    Per le liste usare _enrich_articles_bulk() che batcha le query.
+    """
     resp = ArticleResponse.model_validate(a)
     tags = db.execute(article_tags.select().where(article_tags.c.article_id == a.id)).fetchall()
     cats = db.execute(
@@ -55,6 +59,79 @@ def _enrich_article(a: Article, db: Session) -> ArticleResponse:
         )
         resp.prompts = [PromptSummary.model_validate(p) for p in prompt_objs]
     return resp
+
+
+def _enrich_articles_bulk(articles: list[Article], db: Session) -> list[ArticleResponse]:
+    """Versione batched di _enrich_article: fix N+1 per /articles list.
+
+    Usa al massimo 6 query (articles già caricati + tags + articles→tags link
+    + categories + articles→categories link + prompts + articles→prompts link)
+    indipendentemente dal numero di articoli nella pagina.
+    """
+    if not articles:
+        return []
+
+    article_ids = [a.id for a in articles]
+
+    # -------- Tags ---------------------------------------------------------
+    tag_links = db.execute(
+        article_tags.select().where(article_tags.c.article_id.in_(article_ids))
+    ).fetchall()
+    tag_ids = {link.tag_id for link in tag_links}
+    tag_by_id = (
+        {t.id: t for t in db.query(Tag).filter(Tag.id.in_(tag_ids)).all()} if tag_ids else {}
+    )
+    tags_by_article: dict[int, list[dict]] = {aid: [] for aid in article_ids}
+    for link in tag_links:
+        tag = tag_by_id.get(link.tag_id)
+        if tag:
+            tags_by_article[link.article_id].append(
+                {"id": tag.id, "name": tag.name, "slug": tag.slug}
+            )
+
+    # -------- Categories ---------------------------------------------------
+    cat_links = db.execute(
+        article_categories.select().where(article_categories.c.article_id.in_(article_ids))
+    ).fetchall()
+    cat_ids = {link.category_id for link in cat_links}
+    cat_by_id = (
+        {c.id: c for c in db.query(Category).filter(Category.id.in_(cat_ids)).all()}
+        if cat_ids
+        else {}
+    )
+    cats_by_article: dict[int, list[dict]] = {aid: [] for aid in article_ids}
+    for link in cat_links:
+        cat = cat_by_id.get(link.category_id)
+        if cat:
+            cats_by_article[link.article_id].append(
+                {"id": cat.id, "name": cat.name, "slug": cat.slug}
+            )
+
+    # -------- Prompts ------------------------------------------------------
+    prompt_links = db.execute(
+        article_prompts.select().where(article_prompts.c.article_id.in_(article_ids))
+    ).fetchall()
+    prompt_ids = {link.prompt_id for link in prompt_links}
+    prompt_by_id = (
+        {p.id: p for p in db.query(Prompt).filter(Prompt.id.in_(prompt_ids)).all()}
+        if prompt_ids
+        else {}
+    )
+    prompts_by_article: dict[int, list[PromptSummary]] = {aid: [] for aid in article_ids}
+    for link in prompt_links:
+        prompt = prompt_by_id.get(link.prompt_id)
+        if prompt:
+            prompts_by_article[link.article_id].append(PromptSummary.model_validate(prompt))
+
+    # -------- Assemble -----------------------------------------------------
+    out: list[ArticleResponse] = []
+    for a in articles:
+        resp = ArticleResponse.model_validate(a)
+        resp.tags = tags_by_article.get(a.id, [])
+        resp.categories = cats_by_article.get(a.id, [])
+        resp.prompts = prompts_by_article.get(a.id, [])
+        out.append(resp)
+    return out
 
 
 WORKFLOW_TRANSITIONS = {
@@ -124,7 +201,8 @@ def list_articles(
     total = query.count()
     articles = query.offset((page - 1) * page_size).limit(page_size).all()
 
-    items = [_enrich_article(a, db) for a in articles]
+    # Bulk enrich: 6 query totali indipendentemente da page_size (fix N+1).
+    items = _enrich_articles_bulk(articles, db)
 
     return paginate(items, total, page, page_size)
 
@@ -354,16 +432,22 @@ def upload_article_image(
     if len(contents) > MAX_IMAGE_SIZE:
         raise HTTPException(status_code=400, detail="Il file supera la dimensione massima di 5 MB.")
 
-    ext = (
-        file.filename.rsplit(".", 1)[-1].lower()
-        if file.filename and "." in file.filename
-        else "jpg"
-    )
-    filename = f"{article_id}_{uuid.uuid4().hex}.{ext}"
+    # Resize + conversione WebP (GIF animati: passthrough). Il file salvato
+    # avra' sempre estensione coerente con l'output (webp o gif).
+    from PIL import UnidentifiedImageError
+
+    from app.utils.image_processing import process_image
+
+    try:
+        processed = process_image(contents)
+    except UnidentifiedImageError as exc:
+        raise HTTPException(status_code=400, detail="Immagine non valida o corrotta.") from exc
+
+    filename = f"{article_id}_{uuid.uuid4().hex}.{processed.extension}"
     filepath = os.path.join(settings.UPLOAD_DIR, filename)
 
     with open(filepath, "wb") as f:
-        f.write(contents)
+        f.write(processed.data)
 
     # Delete old local image if present
     old_url = article.featured_image_url
