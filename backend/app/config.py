@@ -48,6 +48,23 @@ class Settings(BaseSettings):
     HEALTH_MIN_FREE_DISK_GB: float = 1.0
 
     # ------------------------------------------------------------------
+    # Observability (Sprint 4 batch 3) — tutti opt-in
+    # ------------------------------------------------------------------
+    # Sentry DSN per tracking eccezioni in produzione. Vuoto = disabilitato.
+    # Formato: https://<key>@o<org>.ingest.sentry.io/<project>
+    SENTRY_DSN: str = ""
+    # Environment tag inviato a Sentry (default = ENV). Utile per distinguere
+    # staging da production nello stesso progetto Sentry.
+    SENTRY_ENVIRONMENT: str = ""
+    # Sampling rate dei trace (0.0-1.0). 0 = tracing disabilitato.
+    SENTRY_TRACES_SAMPLE_RATE: float = 0.0
+
+    # Prometheus `/metrics` endpoint. True = esposto (default), False = disabled.
+    # In produzione, proteggere l'endpoint via Traefik middleware se non si vuole
+    # esporlo pubblicamente (vedi RUNBOOK).
+    METRICS_ENABLED: bool = True
+
+    # ------------------------------------------------------------------
     # Derived helpers
     # ------------------------------------------------------------------
     @property
