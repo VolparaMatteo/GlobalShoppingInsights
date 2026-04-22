@@ -102,7 +102,7 @@ export default function AuthLayout() {
             height: '100%',
           }}
         >
-          {/* Logo + nome prodotto */}
+          {/* Logo + nome prodotto (top) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <img
               src="/favicon.svg"
@@ -119,14 +119,15 @@ export default function AuthLayout() {
             </span>
           </div>
 
-          {/* Hero headline + mockup floating */}
+          {/* Centro verticale: hero headline + subtitle + feature pills */}
           <div
             style={{
-              marginTop: 'auto',
-              marginBottom: 32,
+              flex: 1,
               display: 'flex',
               flexDirection: 'column',
+              justifyContent: 'center',
               gap: 28,
+              paddingBlock: 40,
             }}
           >
             <motion.h1
@@ -166,46 +167,47 @@ export default function AuthLayout() {
               Scopri, valuta, approva e pubblica. GSI fa viaggiare le tue notizie dalla ricerca al
               post WordPress senza cambio di contesto.
             </motion.p>
-          </div>
 
-          {/* Feature pills compatte */}
-          <motion.div
-            initial={reduce ? {} : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.45, delay: 0.3 }}
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 8,
-            }}
-          >
-            {[
-              { icon: Sparkles, label: 'Discovery AI' },
-              { icon: Workflow, label: 'Workflow RBAC' },
-              { icon: Newspaper, label: 'WordPress direct' },
-              { icon: ShieldCheck, label: 'JWT + Fernet' },
-            ].map((f) => (
-              <span
-                key={f.label}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '6px 12px',
-                  borderRadius: 999,
-                  fontSize: 12,
-                  fontWeight: 500,
-                  color: 'rgba(255,255,255,0.85)',
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  backdropFilter: 'blur(6px)',
-                }}
-              >
-                <f.icon size={13} strokeWidth={2.2} aria-hidden="true" />
-                {f.label}
-              </span>
-            ))}
-          </motion.div>
+            {/* Feature pills compatte */}
+            <motion.div
+              initial={reduce ? {} : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.45, delay: 0.3 }}
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 8,
+                marginTop: 4,
+              }}
+            >
+              {[
+                { icon: Sparkles, label: 'Discovery AI' },
+                { icon: Workflow, label: 'Workflow RBAC' },
+                { icon: Newspaper, label: 'WordPress direct' },
+                { icon: ShieldCheck, label: 'JWT + Fernet' },
+              ].map((f) => (
+                <span
+                  key={f.label}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 12px',
+                    borderRadius: 999,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    color: 'rgba(255,255,255,0.85)',
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    backdropFilter: 'blur(6px)',
+                  }}
+                >
+                  <f.icon size={13} strokeWidth={2.2} aria-hidden="true" />
+                  {f.label}
+                </span>
+              ))}
+            </motion.div>
+          </div>
 
           {/* Footer */}
           <div
