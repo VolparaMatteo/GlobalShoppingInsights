@@ -68,6 +68,16 @@ body {
   animation: gsi-shimmer-keyframes 1.6s ease-in-out infinite;
 }
 
+/* Loader spin — usato in badge/pill di job "in corso". */
+@keyframes gsi-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .gsi-shimmer {
     animation: none;
