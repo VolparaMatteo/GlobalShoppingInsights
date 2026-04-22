@@ -13,6 +13,9 @@
 #                                      # dopo aver aggiunto/rimosso dipendenze
 #                                      # in frontend/package.json — evita di
 #                                      # usare node_modules cached nel volume)
+#   .\start.ps1 -RefreshBackendDeps    # rebuild immagine backend (usare
+#                                      # dopo aver aggiunto/rimosso dipendenze
+#                                      # in backend/requirements.txt)
 # ============================================================================
 
 [CmdletBinding()]
@@ -22,6 +25,7 @@ param(
     [switch]$Logs,
     [switch]$Rebuild,
     [switch]$RefreshFrontendDeps,
+    [switch]$RefreshBackendDeps,
     [switch]$WithLlm
 )
 
@@ -95,6 +99,27 @@ if ($RefreshFrontendDeps) {
     Write-Host ""
     Write-Host "Fatto. Frontend ripartito con dipendenze aggiornate su http://localhost:5173" -ForegroundColor Green
     Write-Host "Tip: 'docker compose logs -f frontend' per vedere i log di Vite." -ForegroundColor Gray
+    return
+}
+
+if ($RefreshBackendDeps) {
+    Write-Host "Rebuild immagine backend (dopo cambio requirements.txt)..." -ForegroundColor Cyan
+
+    $previousEAP = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    Write-Host "  Stop container backend..." -ForegroundColor Gray
+    docker compose @profileArgs stop backend 2>$null | Out-Null
+    $ErrorActionPreference = $previousEAP
+
+    Write-Host "  Rebuild immagine backend (pip install)..." -ForegroundColor Cyan
+    docker compose @profileArgs build backend
+
+    Write-Host "  Avvio stack..." -ForegroundColor Cyan
+    docker compose @profileArgs up -d
+
+    Write-Host ""
+    Write-Host "Fatto. Backend ripartito con dipendenze aggiornate su http://localhost:8000" -ForegroundColor Green
+    Write-Host "Tip: 'docker compose logs -f backend' per vedere i log di uvicorn." -ForegroundColor Gray
     return
 }
 
