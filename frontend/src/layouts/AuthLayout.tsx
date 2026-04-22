@@ -181,10 +181,10 @@ export default function AuthLayout() {
               }}
             >
               {[
-                { icon: Sparkles, label: 'Discovery AI' },
-                { icon: Workflow, label: 'Workflow RBAC' },
-                { icon: Newspaper, label: 'WordPress direct' },
-                { icon: ShieldCheck, label: 'JWT + Fernet' },
+                { icon: Sparkles, label: 'Scoperta smart' },
+                { icon: Workflow, label: 'Flusso editoriale' },
+                { icon: Newspaper, label: 'Pubblicazione diretta' },
+                { icon: ShieldCheck, label: 'Tracciabilità completa' },
               ].map((f) => (
                 <span
                   key={f.label}
