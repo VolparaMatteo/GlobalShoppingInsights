@@ -1,6 +1,37 @@
+# Node modules (reinstallati dentro lo stage builder)
 node_modules/
+
+# Build artefacts locali
 dist/
 .vite/
+
+# Coverage e test artefacts
 coverage/
+.nyc_output/
+
+# Secrets
 .env
-.env.local
+.env.*
+!.env.example
+
+# IDE / editor / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docker / compose
+Dockerfile
+Dockerfile.*
+.dockerignore
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

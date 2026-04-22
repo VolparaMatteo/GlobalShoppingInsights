@@ -1,0 +1,198 @@
+# ============================================================================
+# GSI — ambiente di PRODUZIONE.
+#
+# Servizi esposti all'esterno: solo Traefik (80 → redirect → 443).
+# Tutti gli altri (postgres, backend, frontend, ollama) vivono su network
+# interne e non sono raggiungibili dall'host.
+#
+# Prerequisiti sul VPS:
+#   1) cp .env.prod.example .env.prod && chmod 600 .env.prod
+#   2) Compila i segreti (vedi commenti in .env.prod.example)
+#   3) DNS: record A/AAAA di ${DOMAIN} → IP del VPS
+#   4) Firewall: 22 (SSH), 80, 443 aperti
+#
+# Avvio:
+#   docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+#
+# Con Ollama LLM second-opinion (facoltativo, richiede ≥8GB RAM):
+#   docker compose --env-file .env.prod -f docker-compose.prod.yml \
+#          --profile llm up -d --build
+# ============================================================================
+
+name: gsi-prod
+
+networks:
+  # Solo traefik e frontend: espone ${DOMAIN} al pubblico via 80/443.
+  public:
+    name: gsi-public
+  # postgres, backend, frontend (interno), ollama: nessuna esposizione sull'host.
+  internal:
+    name: gsi-internal
+
+volumes:
+  postgres_data:
+    name: gsi_postgres_data
+  backend_uploads:
+    name: gsi_backend_uploads
+  hf_cache:
+    name: gsi_hf_cache
+  letsencrypt:
+    name: gsi_letsencrypt
+  traefik_logs:
+    name: gsi_traefik_logs
+  ollama_data:
+    name: gsi_ollama_data
+
+services:
+  # -----------------------------------------------------------------------
+  # Traefik v3 — reverse proxy + Let's Encrypt ACME
+  # -----------------------------------------------------------------------
+  traefik:
+    image: traefik:v3.1
+    container_name: gsi-traefik
+    restart: unless-stopped
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=gsi-public"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # Redirect globale HTTP → HTTPS
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      # Let's Encrypt — HTTP-01 challenge
+      - "--certificatesresolvers.le.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.le.acme.httpchallenge=true"
+      - "--certificatesresolvers.le.acme.httpchallenge.entrypoint=web"
+      # Log
+      - "--log.level=INFO"
+      - "--log.filepath=/var/log/traefik/traefik.log"
+      - "--accesslog=true"
+      - "--accesslog.filepath=/var/log/traefik/access.log"
+      # Dashboard disattivata (api.insecure=false di default).
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
+      - traefik_logs:/var/log/traefik
+    networks:
+      - public
+
+  # -----------------------------------------------------------------------
+  # PostgreSQL 16
+  # -----------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: gsi-postgres-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  # -----------------------------------------------------------------------
+  # Backend FastAPI (gunicorn + UvicornWorker)
+  # -----------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    image: gsi-backend:prod
+    container_name: gsi-backend-prod
+    restart: unless-stopped
+    environment:
+      ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      SECRET_KEY: ${SECRET_KEY}
+      WP_ENCRYPTION_KEY: ${WP_ENCRYPTION_KEY}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      UPLOAD_DIR: /app/uploads
+      UNSPLASH_ACCESS_KEY: ${UNSPLASH_ACCESS_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-1}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-60}
+      # Cache HuggingFace persistente per evitare ri-download del modello ~90MB
+      HF_HOME: /app/.cache/huggingface
+    volumes:
+      - backend_uploads:/app/uploads
+      - hf_cache:/app/.cache/huggingface
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+
+  # -----------------------------------------------------------------------
+  # Frontend Nginx (SPA + reverse proxy verso backend)
+  # -----------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        # Stessa origine: Nginx fa proxy di /api/* verso backend:8000
+        VITE_API_BASE_URL: /api/v1
+    image: gsi-frontend:prod
+    container_name: gsi-frontend-prod
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - internal
+      - public
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "gsi-public"
+      # Router HTTPS principale
+      traefik.http.routers.gsi.rule: "Host(`${DOMAIN}`)"
+      traefik.http.routers.gsi.entrypoints: "websecure"
+      traefik.http.routers.gsi.tls: "true"
+      traefik.http.routers.gsi.tls.certresolver: "le"
+      traefik.http.services.gsi.loadbalancer.server.port: "80"
+      # Security headers (HSTS + framing + nosniff) a livello Traefik.
+      # Il backend li aggiunge anche a /api, questo è defense-in-depth sulla SPA.
+      traefik.http.middlewares.gsi-sec.headers.stsSeconds: "31536000"
+      traefik.http.middlewares.gsi-sec.headers.stsIncludeSubdomains: "true"
+      traefik.http.middlewares.gsi-sec.headers.stsPreload: "true"
+      traefik.http.middlewares.gsi-sec.headers.contentTypeNosniff: "true"
+      traefik.http.middlewares.gsi-sec.headers.browserXssFilter: "true"
+      traefik.http.middlewares.gsi-sec.headers.referrerPolicy: "strict-origin-when-cross-origin"
+      traefik.http.middlewares.gsi-sec.headers.frameDeny: "true"
+      traefik.http.routers.gsi.middlewares: "gsi-sec"
+
+  # -----------------------------------------------------------------------
+  # Ollama (opzionale) — LLM second-opinion via `--profile llm`
+  # -----------------------------------------------------------------------
+  ollama:
+    profiles: ["llm"]
+    image: ollama/ollama:latest
+    container_name: gsi-ollama-prod
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
