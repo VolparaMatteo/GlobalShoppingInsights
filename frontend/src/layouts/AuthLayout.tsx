@@ -166,53 +166,6 @@ export default function AuthLayout() {
               Scopri, valuta, approva e pubblica. GSI fa viaggiare le tue notizie dalla ricerca al
               post WordPress senza cambio di contesto.
             </motion.p>
-
-            {/* Stats row */}
-            <motion.div
-              initial={reduce ? {} : { opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, delay: 0.2 }}
-              style={{
-                display: 'flex',
-                gap: 32,
-                paddingTop: 12,
-                borderTop: '1px solid rgba(255,255,255,0.1)',
-              }}
-            >
-              {[
-                { value: '8×', label: 'più veloce dello screening manuale' },
-                { value: '5', label: 'ruoli editoriali tracciati' },
-                { value: '0', label: 'click per pubblicare su WP' },
-              ].map((s) => (
-                <div key={s.label}>
-                  <div
-                    style={{
-                      fontSize: 28,
-                      fontWeight: 700,
-                      letterSpacing: -0.5,
-                      lineHeight: 1,
-                      background: 'linear-gradient(180deg, #ffffff 0%, #b6c3ff 100%)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      backgroundClip: 'text',
-                    }}
-                  >
-                    {s.value}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: 'rgba(255,255,255,0.6)',
-                      marginTop: 6,
-                      maxWidth: 130,
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    {s.label}
-                  </div>
-                </div>
-              ))}
-            </motion.div>
           </div>
 
           {/* Feature pills compatte */}
