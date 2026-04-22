@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -18,9 +16,9 @@ router = APIRouter(prefix="/audit-logs", tags=["audit"])
 def list_audit_logs(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
-    action: Optional[str] = None,
-    entity: Optional[str] = None,
-    user_id: Optional[int] = None,
+    action: str | None = None,
+    entity: str | None = None,
+    user_id: int | None = None,
     db: Session = Depends(get_db),
     _current_user: User = Depends(require_min_role("admin")),
 ):

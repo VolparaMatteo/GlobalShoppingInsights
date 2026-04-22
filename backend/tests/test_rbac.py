@@ -24,49 +24,65 @@ ALL_ROLES = ["admin", "editor", "reviewer", "contributor", "read_only"]
 RBAC_MATRIX = [
     # --- Users (solo admin) ---
     ("GET", "/api/v1/users", None, {"admin"}),
-    ("POST", "/api/v1/users", {
-        "email": "x@x.com", "name": "X", "password": "strong-password-1234",
-    }, {"admin"}),
+    (
+        "POST",
+        "/api/v1/users",
+        {
+            "email": "x@x.com",
+            "name": "X",
+            "password": "strong-password-1234",
+        },
+        {"admin"},
+    ),
     ("GET", "/api/v1/users/999", None, {"admin"}),
     ("PATCH", "/api/v1/users/999", {"name": "Y"}, {"admin"}),
     ("DELETE", "/api/v1/users/999", None, {"admin"}),
-
     # --- Prompts ---
     # create: contributor+
-    ("POST", "/api/v1/prompts", {
-        "title": "P", "keywords": ["x"], "language": "en",
-    }, {"contributor", "editor", "reviewer", "admin"}),
+    (
+        "POST",
+        "/api/v1/prompts",
+        {
+            "title": "P",
+            "keywords": ["x"],
+            "language": "en",
+        },
+        {"contributor", "editor", "reviewer", "admin"},
+    ),
     # patch: contributor+
-    ("PATCH", "/api/v1/prompts/999", {"title": "Z"},
-     {"contributor", "editor", "reviewer", "admin"}),
+    (
+        "PATCH",
+        "/api/v1/prompts/999",
+        {"title": "Z"},
+        {"contributor", "editor", "reviewer", "admin"},
+    ),
     # delete: editor+
     ("DELETE", "/api/v1/prompts/999", None, {"editor", "reviewer", "admin"}),
     # run: contributor+
-    ("POST", "/api/v1/prompts/999/run", None,
-     {"contributor", "editor", "reviewer", "admin"}),
-
+    ("POST", "/api/v1/prompts/999/run", None, {"contributor", "editor", "reviewer", "admin"}),
     # --- Articles ---
     # update: editor+
-    ("PATCH", "/api/v1/articles/999", {"title": "T"},
-     {"editor", "reviewer", "admin"}),
+    ("PATCH", "/api/v1/articles/999", {"title": "T"}, {"editor", "reviewer", "admin"}),
     # batch: editor+
-    ("POST", "/api/v1/articles/batch", {
-        "action": "discard", "article_ids": [999],
-    }, {"editor", "reviewer", "admin"}),
-
+    (
+        "POST",
+        "/api/v1/articles/batch",
+        {
+            "action": "discard",
+            "article_ids": [999],
+        },
+        {"editor", "reviewer", "admin"},
+    ),
     # --- Publish (editor+) ---
     ("POST", "/api/v1/publish/999", None, {"editor", "reviewer", "admin"}),
     ("POST", "/api/v1/publish/999/retry", None, {"editor", "reviewer", "admin"}),
-
     # --- Settings (admin) ---
     ("GET", "/api/v1/settings/wordpress", None, {"admin"}),
     ("PATCH", "/api/v1/settings/wordpress", {"wp_url": "x"}, {"admin"}),
     ("GET", "/api/v1/settings/blacklist", None, {"admin"}),
     ("POST", "/api/v1/settings/blacklist", {"domain": "x.com"}, {"admin"}),
-
     # --- Audit logs (admin) ---
     ("GET", "/api/v1/audit-logs", None, {"admin"}),
-
     # --- Taxonomy (admin-only per sync/delete? verifichiamo CRUD) ---
     # Il codice attuale di taxonomy.py userà require_min_role — verifichiamo con tutti
     # e calibriamo: per ora assumiamo editor+ per write, tutti-loggati per read.

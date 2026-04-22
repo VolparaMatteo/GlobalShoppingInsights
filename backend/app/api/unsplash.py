@@ -1,11 +1,11 @@
 # ---------------------------------------------------------------------------
 # api/unsplash.py  --  Proxy for Unsplash image search
 # ---------------------------------------------------------------------------
-from fastapi import APIRouter, Depends, HTTPException, Query
 import httpx
+from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.config import settings
 from app.api.deps import get_current_user
+from app.config import settings
 from app.models.user import User
 
 router = APIRouter(prefix="/unsplash", tags=["unsplash"])
@@ -70,5 +70,7 @@ async def track_download(
             headers=_headers(),
         )
         if resp.status_code != 200:
-            raise HTTPException(status_code=resp.status_code, detail="Unsplash download tracking failed")
+            raise HTTPException(
+                status_code=resp.status_code, detail="Unsplash download tracking failed"
+            )
     return {"ok": True}

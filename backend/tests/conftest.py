@@ -141,7 +141,7 @@ def article_factory(db):
     """Factory per creare `Article` con default ragionevoli + override."""
     from app.models.article import Article
 
-    def _make(status: str = "imported", **overrides) -> "Article":
+    def _make(status: str = "imported", **overrides) -> Article:
         defaults: dict = {
             "canonical_url": f"https://example.com/article-{uuid.uuid4().hex[:8]}",
             "source_domain": "example.com",

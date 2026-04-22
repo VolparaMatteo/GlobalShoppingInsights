@@ -27,7 +27,7 @@ def _engine_kwargs(url: str) -> dict[str, Any]:
         "pool_size": 5,
         "max_overflow": 10,
         "pool_pre_ping": True,  # verifica la connessione prima di usarla
-        "pool_recycle": 3600,   # ricicla connessioni ogni ora (anti-stale)
+        "pool_recycle": 3600,  # ricicla connessioni ogni ora (anti-stale)
         "echo": False,
     }
 

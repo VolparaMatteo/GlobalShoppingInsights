@@ -8,11 +8,6 @@ from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from app.config import settings
-from app.middleware.request_id import RequestIdMiddleware
-from app.middleware.security_headers import SecurityHeadersMiddleware
-from app.utils.logging import configure_logging
-from app.utils.rate_limit import limiter
 from app.api import (
     articles,
     audit_logs,
@@ -32,6 +27,11 @@ from app.api import (
     unsplash,
     users,
 )
+from app.config import settings
+from app.middleware.request_id import RequestIdMiddleware
+from app.middleware.security_headers import SecurityHeadersMiddleware
+from app.utils.logging import configure_logging
+from app.utils.rate_limit import limiter
 
 # Configurazione logging (structlog): JSON in produzione, console in dev/test.
 configure_logging()

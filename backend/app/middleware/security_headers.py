@@ -41,7 +41,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers.setdefault("Permissions-Policy", _PERMISSIONS_POLICY)
 
         path = request.url.path
-        if not (path.startswith("/docs") or path.startswith("/redoc") or path.startswith("/openapi")):
+        if not (
+            path.startswith("/docs") or path.startswith("/redoc") or path.startswith("/openapi")
+        ):
             response.headers.setdefault("Content-Security-Policy", _CSP_API)
 
         if settings.is_production:

@@ -1,35 +1,36 @@
 from datetime import datetime
-from typing import Optional, List, Any
+from typing import Any
+
 from pydantic import BaseModel
 
 
 class ArticleUpdate(BaseModel):
-    title: Optional[str] = None
-    content_html: Optional[str] = None
-    content_text: Optional[str] = None
-    author: Optional[str] = None
-    language: Optional[str] = None
-    country: Optional[str] = None
-    featured_image_url: Optional[str] = None
+    title: str | None = None
+    content_html: str | None = None
+    content_text: str | None = None
+    author: str | None = None
+    language: str | None = None
+    country: str | None = None
+    featured_image_url: str | None = None
 
 
 class StatusChangeRequest(BaseModel):
     new_status: str
-    comment: Optional[str] = None
+    comment: str | None = None
 
 
 class BatchActionRequest(BaseModel):
-    article_ids: List[int]
+    article_ids: list[int]
     action: str  # tag, status, discard
-    tag_ids: Optional[List[int]] = None
-    category_ids: Optional[List[int]] = None
-    new_status: Optional[str] = None
+    tag_ids: list[int] | None = None
+    category_ids: list[int] | None = None
+    new_status: str | None = None
 
 
 class PromptSummary(BaseModel):
     id: int
     title: str
-    keywords: List[str] = []
+    keywords: list[str] = []
 
     model_config = {"from_attributes": True}
 
@@ -39,27 +40,27 @@ class ArticleResponse(BaseModel):
     canonical_url: str
     source_domain: str
     title: str
-    author: Optional[str] = None
-    published_at: Optional[datetime] = None
+    author: str | None = None
+    published_at: datetime | None = None
     language: str
-    country: Optional[str] = None
-    content_html: Optional[str] = None
-    content_text: Optional[str] = None
+    country: str | None = None
+    content_html: str | None = None
+    content_text: str | None = None
     status: str
-    featured_image_url: Optional[str] = None
-    images: List[str] = []
+    featured_image_url: str | None = None
+    images: list[str] = []
     is_paywalled: bool
-    ai_score: Optional[int] = None
-    ai_score_explanation: Optional[List[str]] = None
-    ai_suggested_tags: Optional[List[str]] = None
-    ai_suggested_category: Optional[str] = None
-    ai_relevance_comment: Optional[str] = None
-    duplicate_of_id: Optional[int] = None
+    ai_score: int | None = None
+    ai_score_explanation: list[str] | None = None
+    ai_suggested_tags: list[str] | None = None
+    ai_suggested_category: str | None = None
+    ai_relevance_comment: str | None = None
+    duplicate_of_id: int | None = None
     created_at: datetime
     updated_at: datetime
-    tags: List[Any] = []
-    categories: List[Any] = []
-    prompts: List[PromptSummary] = []
+    tags: list[Any] = []
+    categories: list[Any] = []
+    prompts: list[PromptSummary] = []
 
     model_config = {"from_attributes": True}
 
@@ -69,7 +70,7 @@ class RevisionResponse(BaseModel):
     article_id: int
     version: int
     editor_id: int
-    changes: List[dict]
+    changes: list[dict]
     created_at: datetime
 
     model_config = {"from_attributes": True}

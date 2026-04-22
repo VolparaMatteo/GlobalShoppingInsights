@@ -1,17 +1,18 @@
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
+
 from app.database import SessionLocal
-from app.models.prompt import Prompt
-from app.models.search import SearchRun, SearchResult
 from app.models.article import Article, article_prompts
 from app.models.blacklist import BlockedDomain
 from app.models.logs import JobLog
-from app.utils.url_utils import normalize_url, extract_domain
-from app.utils.text_utils import compute_content_hash
-from app.utils.html_utils import sanitize_html
+from app.models.prompt import Prompt
+from app.models.search import SearchResult, SearchRun
+from app.services.ai_service import MIN_RELEVANCE_SCORE, score_article
+from app.services.llm_service import OLLAMA_MODEL, evaluate_relevance
 from app.services.scraper_service import scrape_url
-from app.services.ai_service import score_article, MIN_RELEVANCE_SCORE
-from app.services.llm_service import evaluate_relevance, OLLAMA_MODEL
+from app.utils.html_utils import sanitize_html
+from app.utils.text_utils import compute_content_hash
+from app.utils.url_utils import extract_domain, normalize_url
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +87,7 @@ def _is_within_time_depth(published_at: datetime | None, time_depth: str | None)
 # Main pipeline
 # ---------------------------------------------------------------------------
 
+
 def run_discovery_pipeline(prompt_id: int, user_id: int | None = None):
     db = SessionLocal()
     try:
@@ -150,7 +152,9 @@ def run_discovery_pipeline(prompt_id: int, user_id: int | None = None):
                 if existing:
                     search_result.article_id = existing.id
                     db.execute(
-                        article_prompts.insert().values(article_id=existing.id, prompt_id=prompt_id).prefix_with("OR IGNORE")
+                        article_prompts.insert()
+                        .values(article_id=existing.id, prompt_id=prompt_id)
+                        .prefix_with("OR IGNORE")
                     )
                     duplicates_skipped += 1
                     continue
@@ -161,7 +165,9 @@ def run_discovery_pipeline(prompt_id: int, user_id: int | None = None):
                     continue
 
                 content_hash = compute_content_hash(scraped["text"])
-                hash_duplicate = db.query(Article).filter(Article.content_hash == content_hash).first()
+                hash_duplicate = (
+                    db.query(Article).filter(Article.content_hash == content_hash).first()
+                )
                 if hash_duplicate:
                     duplicates_skipped += 1
                     continue
@@ -169,7 +175,9 @@ def run_discovery_pipeline(prompt_id: int, user_id: int | None = None):
                 # --- Language filter (post-scraping) ---
                 detected_lang = scraped.get("language")
                 if prompt.language and detected_lang and detected_lang != prompt.language:
-                    logger.info(f"Language filter: skipping {url} (detected={detected_lang}, expected={prompt.language})")
+                    logger.info(
+                        f"Language filter: skipping {url} (detected={detected_lang}, expected={prompt.language})"
+                    )
                     language_filtered += 1
                     continue
 
@@ -184,7 +192,9 @@ def run_discovery_pipeline(prompt_id: int, user_id: int | None = None):
 
                 date_check = _is_within_time_depth(published_at, prompt.time_depth)
                 if date_check is False:
-                    logger.info(f"Date filter: skipping {url} (published_at={published_at}, time_depth={prompt.time_depth})")
+                    logger.info(
+                        f"Date filter: skipping {url} (published_at={published_at}, time_depth={prompt.time_depth})"
+                    )
                     date_filtered += 1
                     continue
 
@@ -196,12 +206,20 @@ def run_discovery_pipeline(prompt_id: int, user_id: int | None = None):
                     ai_result = score_article(scraped["text"], prompt_text, prompt.keywords)
                 except Exception as e:
                     logger.warning(f"AI scoring failed for {url}: {e}")
-                    ai_result = {"score": 0, "explanation": [f"Scoring error: {e}"], "tags": [], "category": None, "model_version": "error"}
+                    ai_result = {
+                        "score": 0,
+                        "explanation": [f"Scoring error: {e}"],
+                        "tags": [],
+                        "category": None,
+                        "model_version": "error",
+                    }
 
                 ai_score = ai_result.get("score", 0)
 
                 if ai_score < MIN_RELEVANCE_SCORE:
-                    logger.info(f"Relevance filter: skipping {url} (score={ai_score}, min={MIN_RELEVANCE_SCORE})")
+                    logger.info(
+                        f"Relevance filter: skipping {url} (score={ai_score}, min={MIN_RELEVANCE_SCORE})"
+                    )
                     relevance_filtered += 1
                     continue
 
@@ -252,7 +270,9 @@ def run_discovery_pipeline(prompt_id: int, user_id: int | None = None):
                     ai_score_explanation=ai_result.get("explanation", []),
                     ai_suggested_tags=ai_result.get("tags", []),
                     ai_suggested_category=ai_result.get("category"),
-                    ai_model_version=f"llm:{OLLAMA_MODEL}" if llm_score is not None else ai_result.get("model_version"),
+                    ai_model_version=f"llm:{OLLAMA_MODEL}"
+                    if llm_score is not None
+                    else ai_result.get("model_version"),
                     ai_relevance_comment=llm_comment,
                 )
                 db.add(article)
@@ -313,6 +333,7 @@ def run_discovery_pipeline(prompt_id: int, user_id: int | None = None):
 # DuckDuckGo search: news() primary + text() fallback
 # ---------------------------------------------------------------------------
 
+
 def _search_duckduckgo(prompt: Prompt) -> list:
     from ddgs import DDGS
 
@@ -320,12 +341,21 @@ def _search_duckduckgo(prompt: Prompt) -> list:
 
     region = None
     if prompt.countries:
-        country_region_map = {"IT": "it-it", "US": "us-en", "UK": "uk-en", "FR": "fr-fr", "DE": "de-de", "ES": "es-es"}
+        country_region_map = {
+            "IT": "it-it",
+            "US": "us-en",
+            "UK": "uk-en",
+            "FR": "fr-fr",
+            "DE": "de-de",
+            "ES": "es-es",
+        }
         region = country_region_map.get(prompt.countries[0])
 
     max_results = prompt.max_results
     timelimit = time_map.get(prompt.time_depth, "w")
-    exclusions = " ".join(f"-{kw}" for kw in prompt.excluded_keywords) if prompt.excluded_keywords else ""
+    exclusions = (
+        " ".join(f"-{kw}" for kw in prompt.excluded_keywords) if prompt.excluded_keywords else ""
+    )
 
     # Build multiple queries for broader coverage
     queries = []
@@ -360,38 +390,46 @@ def _search_duckduckgo(prompt: Prompt) -> list:
     for query in unique_queries:
         # news() — primary source
         try:
-            news_results = list(DDGS().news(
-                query,
-                region=region or "wt-wt",
-                timelimit=timelimit,
-                max_results=per_query,
-            ))
+            news_results = list(
+                DDGS().news(
+                    query,
+                    region=region or "wt-wt",
+                    timelimit=timelimit,
+                    max_results=per_query,
+                )
+            )
             for r in news_results:
-                results.append({
-                    "url": r.get("url", ""),
-                    "title": r.get("title"),
-                    "body": r.get("body"),
-                    "image": r.get("image"),
-                    "source": r.get("source"),
-                })
+                results.append(
+                    {
+                        "url": r.get("url", ""),
+                        "title": r.get("title"),
+                        "body": r.get("body"),
+                        "image": r.get("image"),
+                        "source": r.get("source"),
+                    }
+                )
             logger.info(f"  news('{query[:60]}...') → {len(news_results)} results")
         except Exception as e:
             logger.warning(f"  news('{query[:60]}...') failed: {e}")
 
         # text() — secondary source
         try:
-            text_results = list(DDGS().text(
-                query,
-                region=region or "wt-wt",
-                timelimit=timelimit,
-                max_results=per_query,
-            ))
+            text_results = list(
+                DDGS().text(
+                    query,
+                    region=region or "wt-wt",
+                    timelimit=timelimit,
+                    max_results=per_query,
+                )
+            )
             for r in text_results:
-                results.append({
-                    "url": r.get("href", r.get("url", "")),
-                    "title": r.get("title"),
-                    "body": r.get("body"),
-                })
+                results.append(
+                    {
+                        "url": r.get("href", r.get("url", "")),
+                        "title": r.get("title"),
+                        "body": r.get("body"),
+                    }
+                )
             logger.info(f"  text('{query[:60]}...') → {len(text_results)} results")
         except Exception as e:
             logger.warning(f"  text('{query[:60]}...') failed: {e}")
@@ -407,8 +445,8 @@ def _search_duckduckgo(prompt: Prompt) -> list:
             seen_urls.add(url)
             unique_results.append(r)
 
-    logger.info(f"DuckDuckGo unique results after dedup: {len(unique_results)} for prompt {prompt.id}")
+    logger.info(
+        f"DuckDuckGo unique results after dedup: {len(unique_results)} for prompt {prompt.id}"
+    )
 
     return unique_results
-
-

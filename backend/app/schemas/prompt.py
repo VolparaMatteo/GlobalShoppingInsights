@@ -1,58 +1,58 @@
 from datetime import datetime
-from typing import Optional, List
+
 from pydantic import BaseModel
 
 
 class PromptCreate(BaseModel):
     title: str
-    description: Optional[str] = None
-    keywords: List[str] = []
-    excluded_keywords: List[str] = []
-    language: Optional[str] = None
-    countries: List[str] = []
+    description: str | None = None
+    keywords: list[str] = []
+    excluded_keywords: list[str] = []
+    language: str | None = None
+    countries: list[str] = []
     time_depth: str = "7d"
     max_results: int = 20
     schedule_enabled: bool = False
-    schedule_frequency_hours: Optional[int] = None
-    schedule_specific_times: Optional[List[str]] = None
-    folder_id: Optional[int] = None
+    schedule_frequency_hours: int | None = None
+    schedule_specific_times: list[str] | None = None
+    folder_id: int | None = None
 
 
 class PromptUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    keywords: Optional[List[str]] = None
-    excluded_keywords: Optional[List[str]] = None
-    language: Optional[str] = None
-    countries: Optional[List[str]] = None
-    time_depth: Optional[str] = None
-    max_results: Optional[int] = None
-    schedule_enabled: Optional[bool] = None
-    schedule_frequency_hours: Optional[int] = None
-    schedule_specific_times: Optional[List[str]] = None
-    is_active: Optional[bool] = None
-    folder_id: Optional[int] = None
+    title: str | None = None
+    description: str | None = None
+    keywords: list[str] | None = None
+    excluded_keywords: list[str] | None = None
+    language: str | None = None
+    countries: list[str] | None = None
+    time_depth: str | None = None
+    max_results: int | None = None
+    schedule_enabled: bool | None = None
+    schedule_frequency_hours: int | None = None
+    schedule_specific_times: list[str] | None = None
+    is_active: bool | None = None
+    folder_id: int | None = None
 
 
 class PromptResponse(BaseModel):
     id: int
     title: str
-    description: Optional[str] = None
-    keywords: List[str]
-    excluded_keywords: List[str]
-    language: Optional[str] = None
-    countries: List[str]
+    description: str | None = None
+    keywords: list[str]
+    excluded_keywords: list[str]
+    language: str | None = None
+    countries: list[str]
     time_depth: str
     max_results: int
     schedule_enabled: bool
-    schedule_frequency_hours: Optional[int] = None
-    schedule_specific_times: Optional[List[str]] = None
-    schedule_next_run_at: Optional[datetime] = None
-    last_run_at: Optional[datetime] = None
+    schedule_frequency_hours: int | None = None
+    schedule_specific_times: list[str] | None = None
+    schedule_next_run_at: datetime | None = None
+    last_run_at: datetime | None = None
     is_active: bool
-    folder_id: Optional[int] = None
-    folder_name: Optional[str] = None
-    created_by: Optional[int] = None
+    folder_id: int | None = None
+    folder_name: str | None = None
+    created_by: int | None = None
     created_at: datetime
     updated_at: datetime
 

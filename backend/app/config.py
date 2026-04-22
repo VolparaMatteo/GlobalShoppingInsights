@@ -62,28 +62,32 @@ class Settings(BaseSettings):
     # Production hardening — rifiuto dell'avvio con config insicura
     # ------------------------------------------------------------------
     @model_validator(mode="after")
-    def _enforce_production_secrets(self) -> "Settings":
+    def _enforce_production_secrets(self) -> Settings:
         if self.ENV != "production":
             return self
 
         problems: list[str] = []
 
         if self.SECRET_KEY == _DEFAULT_SECRET_KEY:
-            problems.append("SECRET_KEY è al valore di default — rigenera con `secrets.token_urlsafe(64)`")
+            problems.append(
+                "SECRET_KEY è al valore di default — rigenera con `secrets.token_urlsafe(64)`"
+            )
         elif len(self.SECRET_KEY) < 32:
             problems.append("SECRET_KEY troppo corta (<32 caratteri)")
 
         if self.WP_ENCRYPTION_KEY == _DEFAULT_WP_ENCRYPTION_KEY:
-            problems.append("WP_ENCRYPTION_KEY è al valore di default — rigenera con `Fernet.generate_key()`")
+            problems.append(
+                "WP_ENCRYPTION_KEY è al valore di default — rigenera con `Fernet.generate_key()`"
+            )
 
         if self.ADMIN_PASSWORD == _DEFAULT_ADMIN_PASSWORD:
-            problems.append("ADMIN_PASSWORD è al valore di default (`admin123`) — impostane una robusta")
+            problems.append(
+                "ADMIN_PASSWORD è al valore di default (`admin123`) — impostane una robusta"
+            )
 
         for origin in self.cors_origins_list:
             if "localhost" in origin or "127.0.0.1" in origin:
-                problems.append(
-                    f"CORS_ORIGINS contiene `{origin}` — non ammesso in produzione"
-                )
+                problems.append(f"CORS_ORIGINS contiene `{origin}` — non ammesso in produzione")
                 break
 
         if problems:

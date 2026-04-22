@@ -14,7 +14,6 @@ from __future__ import annotations
 
 from app.api.articles import TRANSITION_ROLES, WORKFLOW_TRANSITIONS
 
-
 # ======================================================================
 # Sanity check sulle mappe
 # ======================================================================
@@ -33,7 +32,7 @@ def test_every_workflow_transition_has_role_entry() -> None:
 def test_every_role_entry_has_workflow_transition() -> None:
     """Ogni chiave (from, to) in TRANSITION_ROLES deve esistere in WORKFLOW_TRANSITIONS."""
     orphans = []
-    for (source, target) in TRANSITION_ROLES:
+    for source, target in TRANSITION_ROLES:
         if source not in WORKFLOW_TRANSITIONS or target not in WORKFLOW_TRANSITIONS[source]:
             orphans.append((source, target))
     assert not orphans, f"TRANSITION_ROLES con transizioni non definite: {orphans}"
@@ -44,7 +43,9 @@ def test_every_role_entry_has_workflow_transition() -> None:
 # ======================================================================
 
 
-def test_admin_can_walk_the_full_workflow(client, user_factory, headers_for, article_factory) -> None:
+def test_admin_can_walk_the_full_workflow(
+    client, user_factory, headers_for, article_factory
+) -> None:
     user_factory(role="admin", email="adm@test.com")
     h = headers_for("adm@test.com")
     a = article_factory(status="imported")
@@ -65,7 +66,9 @@ def test_admin_can_walk_the_full_workflow(client, user_factory, headers_for, art
 # ======================================================================
 
 
-def test_contributor_can_screen_imported(client, user_factory, headers_for, article_factory) -> None:
+def test_contributor_can_screen_imported(
+    client, user_factory, headers_for, article_factory
+) -> None:
     user_factory(role="contributor", email="con@test.com")
     h = headers_for("con@test.com")
     a = article_factory(status="imported")
@@ -104,7 +107,9 @@ def test_reviewer_can_approve(client, user_factory, headers_for, article_factory
     assert r.status_code == 200
 
 
-def test_only_admin_can_trigger_publishing(client, user_factory, headers_for, article_factory) -> None:
+def test_only_admin_can_trigger_publishing(
+    client, user_factory, headers_for, article_factory
+) -> None:
     """scheduled → publishing è admin-only."""
     user_factory(role="editor", email="ed@test.com")
     user_factory(role="reviewer", email="rev@test.com")
@@ -118,7 +123,9 @@ def test_only_admin_can_trigger_publishing(client, user_factory, headers_for, ar
         assert r.status_code == 403, f"{email} NON dovrebbe poter pubblicare"
 
 
-def test_readonly_cannot_change_status_at_all(client, user_factory, headers_for, article_factory) -> None:
+def test_readonly_cannot_change_status_at_all(
+    client, user_factory, headers_for, article_factory
+) -> None:
     """Un read_only non è in nessun TRANSITION_ROLES."""
     user_factory(role="read_only", email="ro@test.com")
     h = headers_for("ro@test.com")
@@ -144,7 +151,9 @@ def test_cannot_skip_workflow_directly(client, user_factory, headers_for, articl
     assert "Cannot transition" in r.json()["detail"]
 
 
-def test_cannot_go_backwards_from_published(client, user_factory, headers_for, article_factory) -> None:
+def test_cannot_go_backwards_from_published(
+    client, user_factory, headers_for, article_factory
+) -> None:
     """Dopo published non c'è nessuna transizione definita (stato terminale)."""
     user_factory(role="admin", email="adm@test.com")
     h = headers_for("adm@test.com")
@@ -220,7 +229,10 @@ def test_transitions_admin_sees_all(client, user_factory, headers_for, article_f
 
 
 def test_transitions_contributor_sees_empty_when_out_of_scope(
-    client, user_factory, headers_for, article_factory,
+    client,
+    user_factory,
+    headers_for,
+    article_factory,
 ) -> None:
     """Contributor su in_review: nessuna transizione disponibile per quel ruolo."""
     user_factory(role="contributor", email="con@test.com")
@@ -233,7 +245,10 @@ def test_transitions_contributor_sees_empty_when_out_of_scope(
 
 
 def test_transitions_contributor_sees_screened_when_imported(
-    client, user_factory, headers_for, article_factory,
+    client,
+    user_factory,
+    headers_for,
+    article_factory,
 ) -> None:
     user_factory(role="contributor", email="con@test.com")
     h = headers_for("con@test.com")
@@ -251,7 +266,11 @@ def test_transitions_contributor_sees_screened_when_imported(
 
 
 def test_status_change_persists_in_db(
-    client, user_factory, headers_for, article_factory, db,
+    client,
+    user_factory,
+    headers_for,
+    article_factory,
+    db,
 ) -> None:
     from app.models.article import Article
 
@@ -260,9 +279,7 @@ def test_status_change_persists_in_db(
     a = article_factory(status="imported")
     article_id = a.id
 
-    client.post(
-        f"/api/v1/articles/{article_id}/status", headers=h, json={"new_status": "screened"}
-    )
+    client.post(f"/api/v1/articles/{article_id}/status", headers=h, json={"new_status": "screened"})
 
     db.expire_all()
     refreshed = db.query(Article).filter(Article.id == article_id).first()

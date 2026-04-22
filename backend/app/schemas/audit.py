@@ -1,19 +1,19 @@
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class AuditLogResponse(BaseModel):
     id: int
-    user_id: Optional[int] = None
+    user_id: int | None = None
     action: str
     entity: str
-    entity_id: Optional[int] = None
+    entity_id: int | None = None
     timestamp: datetime
     # Il modello ORM espone `metadata_` (il nome `metadata` è riservato da
     # SQLAlchemy DeclarativeBase). Lo rinominiamo in output.
-    audit_metadata: Optional[dict[str, Any]] = Field(
+    audit_metadata: dict[str, Any] | None = Field(
         default=None,
         validation_alias="metadata_",
     )

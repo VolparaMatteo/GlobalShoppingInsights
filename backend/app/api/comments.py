@@ -1,17 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+
+from app.api.deps import get_current_user
 from app.database import get_db
-from app.models.user import User
 from app.models.article import Article
 from app.models.comment import Comment
+from app.models.user import User
 from app.schemas.comment import CommentCreate, CommentResponse
-from app.api.deps import get_current_user
 
 router = APIRouter(prefix="/articles/{article_id}/comments", tags=["comments"])
 
 
-@router.get("", response_model=List[CommentResponse])
+@router.get("", response_model=list[CommentResponse])
 def list_comments(
     article_id: int,
     db: Session = Depends(get_db),
@@ -20,7 +20,12 @@ def list_comments(
     article = db.query(Article).filter(Article.id == article_id).first()
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
-    comments = db.query(Comment).filter(Comment.article_id == article_id).order_by(Comment.created_at.asc()).all()
+    comments = (
+        db.query(Comment)
+        .filter(Comment.article_id == article_id)
+        .order_by(Comment.created_at.asc())
+        .all()
+    )
     result = []
     for c in comments:
         resp = CommentResponse.model_validate(c)

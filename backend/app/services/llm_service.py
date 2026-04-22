@@ -8,7 +8,6 @@ human-readable comment in the article's language.
 
 import json
 import logging
-from typing import Optional
 
 import httpx
 

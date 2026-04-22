@@ -1,11 +1,10 @@
 import logging
 from datetime import datetime, timezone
-from typing import Optional
 
 import httpx
 from sqlalchemy.orm import Session
 
-from app.models.taxonomy import Tag, Category
+from app.models.taxonomy import Category, Tag
 from app.models.wordpress import WPConfig
 
 logger = logging.getLogger(__name__)
@@ -95,9 +94,7 @@ def sync_from_wordpress(db: Session) -> dict:
         # 3) Remove: local tags with wp_id that no longer exist on WP
         if wp_tag_ids:  # only if we successfully fetched WP tags
             orphan_tags = (
-                db.query(Tag)
-                .filter(Tag.wp_id.isnot(None), Tag.wp_id.notin_(wp_tag_ids))
-                .all()
+                db.query(Tag).filter(Tag.wp_id.isnot(None), Tag.wp_id.notin_(wp_tag_ids)).all()
             )
             for tag in orphan_tags:
                 logger.info(f"Removing orphan tag '{tag.name}' (wp_id={tag.wp_id})")
@@ -250,7 +247,7 @@ def delete_category_from_wordpress(db: Session, category: Category) -> None:
         resp.raise_for_status()
 
 
-def push_tag_to_wordpress(db: Session, tag: Tag) -> Optional[int]:
+def push_tag_to_wordpress(db: Session, tag: Tag) -> int | None:
     """Create or update a tag on WordPress. Returns the WP tag ID."""
     config = _get_wp_config(db)
     with _wp_client(config) as client:
@@ -268,7 +265,7 @@ def push_tag_to_wordpress(db: Session, tag: Tag) -> Optional[int]:
         return tag.wp_id
 
 
-def push_category_to_wordpress(db: Session, category: Category) -> Optional[int]:
+def push_category_to_wordpress(db: Session, category: Category) -> int | None:
     """Create or update a category on WordPress. Returns the WP category ID."""
     config = _get_wp_config(db)
     with _wp_client(config) as client:

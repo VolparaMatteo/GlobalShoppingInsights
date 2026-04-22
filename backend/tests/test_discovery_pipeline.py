@@ -273,7 +273,9 @@ def test_llm_rejects_high_confidence(db, patch_discovery_session, mock_discovery
 
 
 def test_llm_rejects_but_low_confidence_creates_anyway(
-    db, patch_discovery_session, mock_discovery,
+    db,
+    patch_discovery_session,
+    mock_discovery,
 ) -> None:
     """Se LLM dice no ma con confidence <= 0.85, l'articolo è comunque creato."""
     from app.models.search import SearchRun
@@ -297,7 +299,9 @@ def test_llm_rejects_but_low_confidence_creates_anyway(
 
 
 def test_llm_exception_falls_back_to_embedding(
-    db, patch_discovery_session, mock_discovery,
+    db,
+    patch_discovery_session,
+    mock_discovery,
 ) -> None:
     """Se evaluate_relevance raises, la pipeline prosegue con solo l'embedding score."""
     from app.models.article import Article
@@ -350,7 +354,9 @@ def test_blacklisted_domain_not_processed(db, patch_discovery_session, mock_disc
 
 
 def test_search_failure_completes_run_with_zero(
-    db, patch_discovery_session, mock_discovery,
+    db,
+    patch_discovery_session,
+    mock_discovery,
 ) -> None:
     from app.models.search import SearchRun
     from app.services.discovery_service import run_discovery_pipeline

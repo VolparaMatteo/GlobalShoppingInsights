@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, EmailStr, field_validator
 
@@ -36,7 +35,7 @@ _WEAK_PASSWORDS = {
 }
 
 
-def _validate_password(value: Optional[str]) -> Optional[str]:
+def _validate_password(value: str | None) -> str | None:
     if value is None:
         return value
     if len(value) < MIN_PASSWORD_LENGTH:
@@ -63,15 +62,15 @@ class UserCreate(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    email: Optional[EmailStr] = None
-    name: Optional[str] = None
-    password: Optional[str] = None
-    role: Optional[str] = None
-    is_active: Optional[bool] = None
+    email: EmailStr | None = None
+    name: str | None = None
+    password: str | None = None
+    role: str | None = None
+    is_active: bool | None = None
 
     @field_validator("password")
     @classmethod
-    def _check_password(cls, v: Optional[str]) -> Optional[str]:
+    def _check_password(cls, v: str | None) -> str | None:
         return _validate_password(v)
 
 
@@ -81,7 +80,7 @@ class UserResponse(BaseModel):
     name: str
     role: str
     is_active: bool
-    last_login: Optional[datetime] = None
+    last_login: datetime | None = None
     created_at: datetime
     updated_at: datetime
 

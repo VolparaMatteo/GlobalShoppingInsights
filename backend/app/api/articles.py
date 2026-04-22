@@ -1,17 +1,31 @@
 import os
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
-from typing import Optional, List
+
+from app.api.deps import get_current_user, require_min_role
 from app.config import settings
 from app.database import get_db
-from app.models.user import User
-from app.models.article import Article, ArticleRevision, article_tags, article_categories, article_prompts
-from app.models.taxonomy import Tag, Category
+from app.models.article import (
+    Article,
+    ArticleRevision,
+    article_categories,
+    article_prompts,
+    article_tags,
+)
 from app.models.prompt import Prompt
-from app.schemas.article import ArticleUpdate, StatusChangeRequest, BatchActionRequest, ArticleResponse, PromptSummary, RevisionResponse
-from app.schemas.common import PaginatedResponse, MessageResponse
-from app.api.deps import get_current_user, require_min_role
+from app.models.taxonomy import Category, Tag
+from app.models.user import User
+from app.schemas.article import (
+    ArticleResponse,
+    ArticleUpdate,
+    BatchActionRequest,
+    PromptSummary,
+    RevisionResponse,
+    StatusChangeRequest,
+)
+from app.schemas.common import MessageResponse, PaginatedResponse
 from app.utils.pagination import paginate
 
 router = APIRouter(prefix="/articles", tags=["articles"])
@@ -21,16 +35,27 @@ def _enrich_article(a: Article, db: Session) -> ArticleResponse:
     """Build an ArticleResponse with tags, categories and prompts."""
     resp = ArticleResponse.model_validate(a)
     tags = db.execute(article_tags.select().where(article_tags.c.article_id == a.id)).fetchall()
-    cats = db.execute(article_categories.select().where(article_categories.c.article_id == a.id)).fetchall()
+    cats = db.execute(
+        article_categories.select().where(article_categories.c.article_id == a.id)
+    ).fetchall()
     tag_objs = db.query(Tag).filter(Tag.id.in_([t.tag_id for t in tags])).all() if tags else []
-    cat_objs = db.query(Category).filter(Category.id.in_([c.category_id for c in cats])).all() if cats else []
+    cat_objs = (
+        db.query(Category).filter(Category.id.in_([c.category_id for c in cats])).all()
+        if cats
+        else []
+    )
     resp.tags = [{"id": t.id, "name": t.name, "slug": t.slug} for t in tag_objs]
     resp.categories = [{"id": c.id, "name": c.name, "slug": c.slug} for c in cat_objs]
-    prompt_links = db.execute(article_prompts.select().where(article_prompts.c.article_id == a.id)).fetchall()
+    prompt_links = db.execute(
+        article_prompts.select().where(article_prompts.c.article_id == a.id)
+    ).fetchall()
     if prompt_links:
-        prompt_objs = db.query(Prompt).filter(Prompt.id.in_([p.prompt_id for p in prompt_links])).all()
+        prompt_objs = (
+            db.query(Prompt).filter(Prompt.id.in_([p.prompt_id for p in prompt_links])).all()
+        )
         resp.prompts = [PromptSummary.model_validate(p) for p in prompt_objs]
     return resp
+
 
 WORKFLOW_TRANSITIONS = {
     "imported": {"screened", "rejected"},
@@ -65,13 +90,13 @@ TRANSITION_ROLES = {
 def list_articles(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    status_filter: Optional[str] = Query(None, alias="status"),
-    language: Optional[str] = None,
-    country: Optional[str] = None,
-    domain: Optional[str] = None,
-    search: Optional[str] = None,
-    min_score: Optional[int] = None,
-    max_score: Optional[int] = None,
+    status_filter: str | None = Query(None, alias="status"),
+    language: str | None = None,
+    country: str | None = None,
+    domain: str | None = None,
+    search: str | None = None,
+    min_score: int | None = None,
+    max_score: int | None = None,
     sort_by: str = "created_at",
     sort_order: str = "desc",
     db: Session = Depends(get_db),
@@ -132,13 +157,15 @@ def update_article(
     for key, value in update_data.items():
         old_value = getattr(article, key)
         if old_value != value:
-            changes.append({"field": key, "old": str(old_value) if old_value else None, "new": str(value)})
+            changes.append(
+                {"field": key, "old": str(old_value) if old_value else None, "new": str(value)}
+            )
             setattr(article, key, value)
 
     if changes:
-        max_version = db.query(ArticleRevision).filter(
-            ArticleRevision.article_id == article_id
-        ).count()
+        max_version = (
+            db.query(ArticleRevision).filter(ArticleRevision.article_id == article_id).count()
+        )
         revision = ArticleRevision(
             article_id=article_id,
             version=max_version + 1,
@@ -167,19 +194,25 @@ def change_status(
     if force:
         # Force mode: editors and above can set any valid status
         if current_user.role not in ("editor", "reviewer", "admin"):
-            raise HTTPException(status_code=403, detail="Force status change requires editor role or above")
+            raise HTTPException(
+                status_code=403, detail="Force status change requires editor role or above"
+            )
         all_statuses = set(WORKFLOW_TRANSITIONS.keys()) | {"published"}
         if body.new_status not in all_statuses:
             raise HTTPException(status_code=400, detail=f"Invalid status: {body.new_status}")
     else:
         allowed = WORKFLOW_TRANSITIONS.get(article.status, set())
         if body.new_status not in allowed:
-            raise HTTPException(status_code=400, detail=f"Cannot transition from {article.status} to {body.new_status}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot transition from {article.status} to {body.new_status}",
+            )
         required_roles = TRANSITION_ROLES.get((article.status, body.new_status), [])
         if current_user.role not in required_roles:
-            raise HTTPException(status_code=403, detail="Insufficient permissions for this transition")
+            raise HTTPException(
+                status_code=403, detail="Insufficient permissions for this transition"
+            )
 
-    old_status = article.status
     article.status = body.new_status
     db.commit()
     db.refresh(article)
@@ -204,15 +237,18 @@ def get_transitions(
     return {"from": article.status, "allowed": available}
 
 
-@router.get("/{article_id}/revisions", response_model=List[RevisionResponse])
+@router.get("/{article_id}/revisions", response_model=list[RevisionResponse])
 def get_revisions(
     article_id: int,
     db: Session = Depends(get_db),
     _current_user: User = Depends(get_current_user),
 ):
-    revisions = db.query(ArticleRevision).filter(
-        ArticleRevision.article_id == article_id
-    ).order_by(ArticleRevision.version.desc()).all()
+    revisions = (
+        db.query(ArticleRevision)
+        .filter(ArticleRevision.article_id == article_id)
+        .order_by(ArticleRevision.version.desc())
+        .all()
+    )
     return revisions
 
 
@@ -225,15 +261,17 @@ def get_duplicates(
     article = db.query(Article).filter(Article.id == article_id).first()
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
-    duplicates = db.query(Article).filter(
-        Article.duplicate_of_id == article_id
-    ).all()
+    duplicates = db.query(Article).filter(Article.duplicate_of_id == article_id).all()
     same_hash = []
     if article.content_hash:
-        same_hash = db.query(Article).filter(
-            Article.content_hash == article.content_hash,
-            Article.id != article_id,
-        ).all()
+        same_hash = (
+            db.query(Article)
+            .filter(
+                Article.content_hash == article.content_hash,
+                Article.id != article_id,
+            )
+            .all()
+        )
     all_dupes = {a.id: ArticleResponse.model_validate(a) for a in duplicates + same_hash}
     return list(all_dupes.values())
 
@@ -260,7 +298,8 @@ def batch_action(
             for tag_id in body.tag_ids:
                 existing = db.execute(
                     article_tags.select().where(
-                        (article_tags.c.article_id == article.id) & (article_tags.c.tag_id == tag_id)
+                        (article_tags.c.article_id == article.id)
+                        & (article_tags.c.tag_id == tag_id)
                     )
                 ).first()
                 if not existing:
@@ -270,18 +309,25 @@ def batch_action(
             for cat_id in body.category_ids:
                 existing = db.execute(
                     article_categories.select().where(
-                        (article_categories.c.article_id == article.id) & (article_categories.c.category_id == cat_id)
+                        (article_categories.c.article_id == article.id)
+                        & (article_categories.c.category_id == cat_id)
                     )
                 ).first()
                 if not existing:
-                    db.execute(article_categories.insert().values(article_id=article.id, category_id=cat_id))
+                    db.execute(
+                        article_categories.insert().values(
+                            article_id=article.id, category_id=cat_id
+                        )
+                    )
     elif body.action == "discard":
         for article in articles:
             if article.status in ("imported", "screened"):
                 article.status = "rejected"
 
     db.commit()
-    return MessageResponse(message=f"Batch action '{body.action}' applied to {len(articles)} articles")
+    return MessageResponse(
+        message=f"Batch action '{body.action}' applied to {len(articles)} articles"
+    )
 
 
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
@@ -300,13 +346,19 @@ def upload_article_image(
         raise HTTPException(status_code=404, detail="Article not found")
 
     if file.content_type not in ALLOWED_IMAGE_TYPES:
-        raise HTTPException(status_code=400, detail="Tipo file non supportato. Usa JPEG, PNG, WebP o GIF.")
+        raise HTTPException(
+            status_code=400, detail="Tipo file non supportato. Usa JPEG, PNG, WebP o GIF."
+        )
 
     contents = file.file.read()
     if len(contents) > MAX_IMAGE_SIZE:
         raise HTTPException(status_code=400, detail="Il file supera la dimensione massima di 5 MB.")
 
-    ext = file.filename.rsplit(".", 1)[-1].lower() if file.filename and "." in file.filename else "jpg"
+    ext = (
+        file.filename.rsplit(".", 1)[-1].lower()
+        if file.filename and "." in file.filename
+        else "jpg"
+    )
     filename = f"{article_id}_{uuid.uuid4().hex}.{ext}"
     filepath = os.path.join(settings.UPLOAD_DIR, filename)
 

@@ -1,26 +1,30 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from typing import Optional
 from slugify import slugify
-from app.database import get_db
-from app.models.user import User
-from app.models.taxonomy import Tag, Category
-from app.schemas.taxonomy import (
-    TagCreate, TagUpdate, TagResponse,
-    CategoryCreate, CategoryUpdate, CategoryResponse,
-)
-from app.schemas.common import PaginatedResponse, MessageResponse
+from sqlalchemy.orm import Session
+
 from app.api.deps import get_current_user, require_min_role
-from app.utils.pagination import paginate
-from app.services.taxonomy_sync_service import (
-    sync_from_wordpress,
-    push_tag_to_wordpress,
-    push_category_to_wordpress,
-    delete_tag_from_wordpress,
-    delete_category_from_wordpress,
+from app.database import get_db
+from app.models.taxonomy import Category, Tag
+from app.models.user import User
+from app.schemas.common import MessageResponse, PaginatedResponse
+from app.schemas.taxonomy import (
+    CategoryCreate,
+    CategoryResponse,
+    CategoryUpdate,
+    TagCreate,
+    TagResponse,
+    TagUpdate,
 )
+from app.services.taxonomy_sync_service import (
+    delete_category_from_wordpress,
+    delete_tag_from_wordpress,
+    push_category_to_wordpress,
+    push_tag_to_wordpress,
+    sync_from_wordpress,
+)
+from app.utils.pagination import paginate
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +36,7 @@ router = APIRouter(tags=["taxonomy"])
 def list_tags(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    search: Optional[str] = Query(None),
+    search: str | None = Query(None),
     db: Session = Depends(get_db),
     _current_user: User = Depends(get_current_user),
 ):
@@ -71,7 +75,7 @@ def create_tag(
         raise HTTPException(
             status_code=502,
             detail=f"Impossibile creare il tag su WordPress: {e}",
-        )
+        ) from e
 
     return tag
 
@@ -104,7 +108,7 @@ def update_tag(
             raise HTTPException(
                 status_code=502,
                 detail=f"Impossibile aggiornare il tag su WordPress: {e}",
-            )
+            ) from e
 
     db.commit()
     db.refresh(tag)
@@ -130,7 +134,7 @@ def delete_tag(
             raise HTTPException(
                 status_code=502,
                 detail=f"Impossibile eliminare il tag da WordPress: {e}",
-            )
+            ) from e
 
     db.delete(tag)
     db.commit()
@@ -142,8 +146,8 @@ def delete_tag(
 def list_categories(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=500),
-    search: Optional[str] = Query(None),
-    parent_id: Optional[int] = Query(None),
+    search: str | None = Query(None),
+    parent_id: int | None = Query(None),
     db: Session = Depends(get_db),
     _current_user: User = Depends(get_current_user),
 ):
@@ -184,7 +188,7 @@ def create_category(
         raise HTTPException(
             status_code=502,
             detail=f"Impossibile creare la categoria su WordPress: {e}",
-        )
+        ) from e
 
     return cat
 
@@ -219,7 +223,7 @@ def update_category(
             raise HTTPException(
                 status_code=502,
                 detail=f"Impossibile aggiornare la categoria su WordPress: {e}",
-            )
+            ) from e
 
     db.commit()
     db.refresh(cat)
@@ -245,7 +249,7 @@ def delete_category(
             raise HTTPException(
                 status_code=502,
                 detail=f"Impossibile eliminare la categoria da WordPress: {e}",
-            )
+            ) from e
 
     db.delete(cat)
     db.commit()
@@ -268,7 +272,7 @@ def sync_wp_taxonomy(
         )
         return MessageResponse(message=message)
     except RuntimeError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logger.error(f"WP taxonomy sync failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Sync failed: {e}")
+        logger.exception("WP taxonomy sync failed")
+        raise HTTPException(status_code=500, detail=f"Sync failed: {e}") from e

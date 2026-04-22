@@ -32,8 +32,7 @@ def _check_schema_ready() -> None:
     inspector = inspect(engine)
     if "alembic_version" not in inspector.get_table_names():
         sys.stderr.write(
-            "ERROR: schema DB non inizializzato.\n"
-            "Esegui prima:  alembic upgrade head\n",
+            "ERROR: schema DB non inizializzato.\nEsegui prima:  alembic upgrade head\n",
         )
         sys.exit(1)
 

@@ -31,12 +31,27 @@ ignore = [
   "E501",    # line-too-long (formatter handles)
   "B008",    # function call in default arg — pattern FastAPI Depends()
   "PLR0913", # too many args — tipico degli endpoint FastAPI
+  "PLR0912", # too many branches — complexity metric, non bloccante
+  "PLR0915", # too many statements — complexity metric, non bloccante
   "PLR2004", # magic values — accettabili in config/test
+  "PLW0603", # global statement — uso legittimo (cache, ContextVar)
+  "PLW0108", # unnecessary lambda — stile
+  "PLW2901", # redefined loop name — stile
+  "PLC0415", # import outside top-level — usato per lazy import / cicli
   "N818",    # exception naming — meno rigido
+  "C416",    # unnecessary comprehension — micro-ottimizzazione
+  "PT028",   # pytest parameter default — stile
+  "RET504",  # unnecessary assign before return — stile (leggibilità)
+  "A002",    # builtin arg shadowing — FastAPI usa 'id', 'type' come param
+  "SIM105",  # suppressible exception — a volte voluto
+  "SIM118",  # in-dict-keys — stile
+  "E741",    # ambiguous variable name — spesso deliberato (es. 'l' in listcomp)
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*" = ["S101", "PLR", "ARG"]
+# I test hanno import locali legittimi (es. isolamento fixture / evitare cicli)
+# e uso frequente di assert / varargs non usati — silenzi mirati.
+"tests/**/*" = ["S101", "PLR", "ARG", "PLC0415", "PT028", "PT006", "PT019", "F841"]
 "alembic/env.py" = ["E402"]
 "seed.py" = ["T201"]
 

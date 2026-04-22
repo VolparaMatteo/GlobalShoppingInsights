@@ -131,9 +131,7 @@ def health_check():
     db_ok = checks["database"]["status"] == "ok"
 
     has_warning = any(
-        c.get("status") in ("warning", "error")
-        for key, c in checks.items()
-        if key != "database"
+        c.get("status") in ("warning", "error") for key, c in checks.items() if key != "database"
     )
 
     if not db_ok:

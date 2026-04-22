@@ -1,16 +1,16 @@
 import logging
-from typing import Optional
+
 import httpx
+import py3langid as langid
 import trafilatura
 from htmldate import find_date
-import py3langid as langid
 
 from app.utils.retry import with_retry
 
 logger = logging.getLogger(__name__)
 
 
-def detect_language(text: str) -> Optional[str]:
+def detect_language(text: str) -> str | None:
     """Detect language using py3langid. Returns ISO 639-1 code or None."""
     if not text or len(text.strip()) < 50:
         return None
@@ -20,6 +20,7 @@ def detect_language(text: str) -> Optional[str]:
     except Exception as e:
         logger.warning(f"Language detection failed: {e}")
         return None
+
 
 DEFAULT_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -40,7 +41,7 @@ def _fetch_html(url: str, timeout: int) -> httpx.Response:
     return response
 
 
-def scrape_url(url: str, timeout: int = 30) -> Optional[dict]:
+def scrape_url(url: str, timeout: int = 30) -> dict | None:
     try:
         response = _fetch_html(url, timeout)
         html = response.text

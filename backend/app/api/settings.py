@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+
+from app.api.deps import require_role
 from app.database import get_db
+from app.models.blacklist import BlockedDomain
 from app.models.user import User
 from app.models.wordpress import WPConfig
-from app.models.blacklist import BlockedDomain
-from app.schemas.wordpress import WPConfigUpdate, WPConfigResponse
-from app.schemas.settings import BlacklistCreate, BlacklistResponse, ScrapingSettings, DedupSettings
 from app.schemas.common import MessageResponse
-from app.api.deps import require_role
+from app.schemas.settings import BlacklistCreate, BlacklistResponse, DedupSettings, ScrapingSettings
+from app.schemas.wordpress import WPConfigResponse, WPConfigUpdate
 from app.utils import audit
 from app.utils.encryption import encrypt
 
@@ -81,7 +81,7 @@ def update_wp_config(
 @router.post("/wordpress/test", response_model=MessageResponse)
 def test_wp_connection(
     db: Session = Depends(get_db),
-    _current_user: User = Depends(require_role(["admin"])),
+    _current_user: User = Depends(require_role(["admin"])),  # noqa: PT019
 ):
     config = db.query(WPConfig).filter(WPConfig.id == 1).first()
     if not config or not config.wp_url:
@@ -90,7 +90,7 @@ def test_wp_connection(
 
 
 # --- Blacklist ---
-@router.get("/blacklist", response_model=List[BlacklistResponse])
+@router.get("/blacklist", response_model=list[BlacklistResponse])
 def list_blacklist(
     db: Session = Depends(get_db),
     _current_user: User = Depends(require_role(["admin"])),

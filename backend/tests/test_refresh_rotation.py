@@ -8,7 +8,6 @@ from jose import jwt
 
 from app.config import settings
 
-
 LOGIN_PAYLOAD = {"email": "admin@test.com", "password": "testpass123"}
 
 

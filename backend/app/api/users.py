@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
@@ -19,20 +17,16 @@ router = APIRouter(prefix="/users", tags=["users"])
 def list_users(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    search: Optional[str] = None,
+    search: str | None = None,
     db: Session = Depends(get_db),
     _current_user: User = Depends(require_role(["admin"])),
 ):
     query = db.query(User)
     if search:
-        query = query.filter(
-            User.name.ilike(f"%{search}%") | User.email.ilike(f"%{search}%")
-        )
+        query = query.filter(User.name.ilike(f"%{search}%") | User.email.ilike(f"%{search}%"))
     total = query.count()
     users = query.offset((page - 1) * page_size).limit(page_size).all()
-    return paginate(
-        [UserResponse.model_validate(u) for u in users], total, page, page_size
-    )
+    return paginate([UserResponse.model_validate(u) for u in users], total, page, page_size)
 
 
 @router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)

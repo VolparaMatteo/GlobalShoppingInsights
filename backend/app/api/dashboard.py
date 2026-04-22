@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
-from sqlalchemy import func
 from datetime import datetime, timedelta, timezone
-from app.database import get_db
-from app.models.user import User
-from app.models.article import Article
-from app.models.search import SearchRun
-from app.models.logs import JobLog
-from app.models.calendar import EditorialSlot
-from app.models.prompt import Prompt
+
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import func
+from sqlalchemy.orm import Session
+
 from app.api.deps import get_current_user
+from app.database import get_db
+from app.models.article import Article
+from app.models.calendar import EditorialSlot
+from app.models.logs import JobLog
+from app.models.prompt import Prompt
+from app.models.user import User
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -32,9 +33,7 @@ def get_kpis(
 
     avg_score = db.query(func.avg(Article.ai_score)).filter(Article.ai_score.isnot(None)).scalar()
 
-    pending_slots = db.query(EditorialSlot).filter(
-        EditorialSlot.status == "scheduled"
-    ).count()
+    pending_slots = db.query(EditorialSlot).filter(EditorialSlot.status == "scheduled").count()
 
     return {
         "total_articles": total_articles,
@@ -95,11 +94,14 @@ def get_recent_jobs(
 
     return [
         {
-            "id": j.id, "job_type": j.job_type,
+            "id": j.id,
+            "job_type": j.job_type,
             "entity_ref": resolve_ref(j.entity_ref),
-            "status": j.status, "started_at": str(j.started_at) if j.started_at else None,
+            "status": j.status,
+            "started_at": str(j.started_at) if j.started_at else None,
             "ended_at": str(j.ended_at) if j.ended_at else None,
-            "error": j.error, "progress": j.progress,
+            "error": j.error,
+            "progress": j.progress,
         }
         for j in jobs
     ]
@@ -111,22 +113,32 @@ def get_alerts(
     _current_user: User = Depends(get_current_user),
 ):
     alerts = []
-    failed_jobs = db.query(JobLog).filter(JobLog.status == "failed").order_by(JobLog.started_at.desc()).limit(5).all()
+    failed_jobs = (
+        db.query(JobLog)
+        .filter(JobLog.status == "failed")
+        .order_by(JobLog.started_at.desc())
+        .limit(5)
+        .all()
+    )
     for j in failed_jobs:
-        alerts.append({
-            "type": "job_failed",
-            "message": f"{j.job_type} job failed: {j.error or 'Unknown error'}",
-            "entity_ref": j.entity_ref,
-            "timestamp": str(j.started_at) if j.started_at else None,
-        })
+        alerts.append(
+            {
+                "type": "job_failed",
+                "message": f"{j.job_type} job failed: {j.error or 'Unknown error'}",
+                "entity_ref": j.entity_ref,
+                "timestamp": str(j.started_at) if j.started_at else None,
+            }
+        )
 
     failed_publish = db.query(Article).filter(Article.status == "publish_failed").count()
     if failed_publish > 0:
-        alerts.append({
-            "type": "publish_failed",
-            "message": f"{failed_publish} article(s) failed to publish",
-            "entity_ref": None,
-            "timestamp": None,
-        })
+        alerts.append(
+            {
+                "type": "publish_failed",
+                "message": f"{failed_publish} article(s) failed to publish",
+                "entity_ref": None,
+                "timestamp": None,
+            }
+        )
 
     return alerts

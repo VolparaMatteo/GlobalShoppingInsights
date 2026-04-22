@@ -81,9 +81,7 @@ def test_health_uploads_not_writable_marks_degraded(client, monkeypatch):
 
 
 def test_health_ollama_unreachable_marks_degraded(client, monkeypatch):
-    monkeypatch.setattr(
-        health_module.settings, "OLLAMA_BASE_URL", "http://127.0.0.1:1"
-    )
+    monkeypatch.setattr(health_module.settings, "OLLAMA_BASE_URL", "http://127.0.0.1:1")
     # httpx fallirà per connection refused
     r = client.get("/api/v1/health")
     assert r.status_code == 200

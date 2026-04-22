@@ -2,13 +2,8 @@
 
 from __future__ import annotations
 
-import io
-import json
-import logging
 import re
 import uuid
-
-import structlog
 
 from app.middleware.request_id import _pick_request_id
 from app.utils.logging import (
@@ -17,7 +12,6 @@ from app.utils.logging import (
     get_logger,
     request_id_var,
 )
-
 
 # ---------------------------------------------------------------------------
 # RequestIdMiddleware

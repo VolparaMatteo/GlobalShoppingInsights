@@ -1,46 +1,46 @@
 from datetime import datetime
-from typing import Optional
+
 from pydantic import BaseModel
 
 
 class TagCreate(BaseModel):
     name: str
-    slug: Optional[str] = None
+    slug: str | None = None
 
 
 class TagUpdate(BaseModel):
-    name: Optional[str] = None
-    slug: Optional[str] = None
+    name: str | None = None
+    slug: str | None = None
 
 
 class TagResponse(BaseModel):
     id: int
     name: str
     slug: str
-    wp_id: Optional[int] = None
-    created_at: Optional[datetime] = None
+    wp_id: int | None = None
+    created_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
 
 class CategoryCreate(BaseModel):
     name: str
-    slug: Optional[str] = None
-    parent_id: Optional[int] = None
+    slug: str | None = None
+    parent_id: int | None = None
 
 
 class CategoryUpdate(BaseModel):
-    name: Optional[str] = None
-    slug: Optional[str] = None
-    parent_id: Optional[int] = None
+    name: str | None = None
+    slug: str | None = None
+    parent_id: int | None = None
 
 
 class CategoryResponse(BaseModel):
     id: int
     name: str
     slug: str
-    parent_id: Optional[int] = None
-    wp_id: Optional[int] = None
-    created_at: Optional[datetime] = None
+    parent_id: int | None = None
+    wp_id: int | None = None
+    created_at: datetime | None = None
 
     model_config = {"from_attributes": True}

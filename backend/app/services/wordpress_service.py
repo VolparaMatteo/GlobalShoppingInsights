@@ -1,14 +1,16 @@
 import logging
 import os
 from datetime import datetime, timezone
+
 import httpx
+
 from app.config import settings
 from app.database import SessionLocal
-from app.models.article import Article, article_tags, article_categories
-from app.models.taxonomy import Tag, Category
+from app.models.article import Article, article_categories, article_tags
 from app.models.calendar import EditorialSlot
-from app.models.wordpress import WPConfig, WPPost
 from app.models.logs import JobLog
+from app.models.taxonomy import Category, Tag
+from app.models.wordpress import WPConfig, WPPost
 from app.utils.encryption import decrypt, is_encrypted
 from app.utils.retry import with_retry
 
@@ -40,9 +42,7 @@ def _wp_auth_credentials(config: WPConfig) -> tuple[str, str]:
         return (config.wp_username or "", "")
     if is_encrypted(stored):
         return (config.wp_username or "", decrypt(stored))
-    logger.warning(
-        "WP app password trovata in plaintext in DB: esegui la migrazione di cifratura."
-    )
+    logger.warning("WP app password trovata in plaintext in DB: esegui la migrazione di cifratura.")
     return (config.wp_username or "", stored)
 
 
@@ -104,12 +104,17 @@ def _upload_featured_image(
             resp = _wp_http_get(image_url, timeout=30, follow_redirects=True)
             file_bytes = resp.content
             # Derive filename from URL
-            filename = image_url.rsplit("/", 1)[-1].split("?")[0] or "image.jpg"
+            filename = image_url.rsplit("/", 1)[-1].split("?", maxsplit=1)[0] or "image.jpg"
 
         # Determine content type from extension
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "jpg"
-        content_types = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
-                         "gif": "image/gif", "webp": "image/webp"}
+        content_types = {
+            "jpg": "image/jpeg",
+            "jpeg": "image/jpeg",
+            "png": "image/png",
+            "gif": "image/gif",
+            "webp": "image/webp",
+        }
         content_type = content_types.get(ext, "image/jpeg")
 
         media_url = f"{wp_base_url.rstrip('/')}/wp-json/wp/v2/media"
