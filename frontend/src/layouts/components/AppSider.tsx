@@ -107,14 +107,29 @@ export default function AppSider({ collapsed }: AppSiderProps) {
           letterSpacing: 0.2,
         }}
       >
-        <img
-          src="/favicon.svg"
-          alt=""
-          aria-hidden="true"
-          width={28}
-          height={28}
-          style={{ display: 'block', flexShrink: 0 }}
-        />
+        <div
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: '50%',
+            background: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 3,
+            flexShrink: 0,
+            boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+          }}
+        >
+          <img
+            src="/logo-gsi.png"
+            alt=""
+            aria-hidden="true"
+            width={28}
+            height={28}
+            style={{ display: 'block', objectFit: 'contain' }}
+          />
+        </div>
         {!collapsed && <span>Global Shopping</span>}
       </div>
 

@@ -104,16 +104,28 @@ export default function AuthLayout() {
         >
           {/* Logo + nome prodotto (top) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <img
-              src="/favicon.svg"
-              alt=""
-              width={40}
-              height={40}
+            <div
               style={{
-                display: 'block',
-                filter: 'drop-shadow(0 4px 12px rgba(22,119,255,0.4))',
+                width: 48,
+                height: 48,
+                borderRadius: '50%',
+                background: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 6px 18px rgba(22,119,255,0.35)',
+                flexShrink: 0,
+                padding: 4,
               }}
-            />
+            >
+              <img
+                src="/logo-gsi.png"
+                alt=""
+                width={40}
+                height={40}
+                style={{ display: 'block', objectFit: 'contain' }}
+              />
+            </div>
             <span style={{ fontSize: 16, fontWeight: 600, letterSpacing: 0.2 }}>
               Global Shopping Insights
             </span>
@@ -250,11 +262,11 @@ export default function AuthLayout() {
             {/* Mobile logo (visibile < lg) */}
             <div className="gsi-auth-mobile-logo" style={{ marginBottom: 32, textAlign: 'center' }}>
               <img
-                src="/favicon.svg"
+                src="/logo-gsi.png"
                 alt=""
-                width={52}
-                height={52}
-                style={{ display: 'inline-block' }}
+                width={60}
+                height={60}
+                style={{ display: 'inline-block', objectFit: 'contain' }}
               />
               <Title level={4} style={{ margin: '12px 0 0', color: '#141414' }}>
                 Global Shopping Insights
