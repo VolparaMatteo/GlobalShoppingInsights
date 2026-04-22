@@ -354,16 +354,22 @@ def upload_article_image(
     if len(contents) > MAX_IMAGE_SIZE:
         raise HTTPException(status_code=400, detail="Il file supera la dimensione massima di 5 MB.")
 
-    ext = (
-        file.filename.rsplit(".", 1)[-1].lower()
-        if file.filename and "." in file.filename
-        else "jpg"
-    )
-    filename = f"{article_id}_{uuid.uuid4().hex}.{ext}"
+    # Resize + conversione WebP (GIF animati: passthrough). Il file salvato
+    # avra' sempre estensione coerente con l'output (webp o gif).
+    from PIL import UnidentifiedImageError
+
+    from app.utils.image_processing import process_image
+
+    try:
+        processed = process_image(contents)
+    except UnidentifiedImageError as exc:
+        raise HTTPException(status_code=400, detail="Immagine non valida o corrotta.") from exc
+
+    filename = f"{article_id}_{uuid.uuid4().hex}.{processed.extension}"
     filepath = os.path.join(settings.UPLOAD_DIR, filename)
 
     with open(filepath, "wb") as f:
-        f.write(contents)
+        f.write(processed.data)
 
     # Delete old local image if present
     old_url = article.featured_image_url
