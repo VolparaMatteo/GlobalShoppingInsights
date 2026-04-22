@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 import { useCallback, useMemo } from 'react';
 import { Input, Select, Slider, Button, Space, Row, Col } from 'antd';
-import { SearchOutlined, ClearOutlined } from '@ant-design/icons';
+import { Search, X } from 'lucide-react';
 import { ARTICLE_STATUSES, STATUS_MAP, type ArticleStatus } from '@/config/constants';
 
 // ---------------------------------------------------------------------------
@@ -111,7 +111,7 @@ export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersP
         <Col xs={24} sm={12} md={6}>
           <Input
             placeholder="Cerca articoli..."
-            prefix={<SearchOutlined />}
+            prefix={<Search size={14} />}
             allowClear
             value={filters.search}
             onChange={(e) => patch({ search: e.target.value })}
@@ -180,7 +180,7 @@ export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersP
 
         {/* ---- Clear Filters ---- */}
         <Col flex="none">
-          <Button icon={<ClearOutlined />} disabled={!isDirty} onClick={handleClear}>
+          <Button icon={<X size={14} />} disabled={!isDirty} onClick={handleClear}>
             Pulisci Filtri
           </Button>
         </Col>
