@@ -193,9 +193,7 @@ def run_discovery_pipeline(prompt_id: int, user_id: int | None = None):
                     article_title = scraped.get("title") or result.get("title") or "Untitled"
                     raw_date = scraped.get("date")
                     published_at = _parse_date(raw_date)
-                    logger.info(
-                        f"Article date for {url}: raw={raw_date!r} parsed={published_at!r}"
-                    )
+                    logger.info(f"Article date for {url}: raw={raw_date!r} parsed={published_at!r}")
 
                     date_check = _is_within_time_depth(published_at, prompt.time_depth)
                     if date_check is False:
@@ -287,9 +285,7 @@ def run_discovery_pipeline(prompt_id: int, user_id: int | None = None):
 
                     search_result.article_id = article.id
                     db.execute(
-                        article_prompts.insert().values(
-                            article_id=article.id, prompt_id=prompt_id
-                        )
+                        article_prompts.insert().values(article_id=article.id, prompt_id=prompt_id)
                     )
 
                     articles_created += 1

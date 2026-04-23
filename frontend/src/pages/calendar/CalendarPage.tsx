@@ -46,8 +46,7 @@ export default function CalendarPage() {
             width: 340,
             height: 340,
             borderRadius: '50%',
-            background:
-              'radial-gradient(circle, rgba(22,119,255,0.22) 0%, rgba(22,119,255,0) 70%)',
+            background: 'radial-gradient(circle, rgba(22,119,255,0.22) 0%, rgba(22,119,255,0) 70%)',
             pointerEvents: 'none',
           }}
         />
@@ -60,8 +59,7 @@ export default function CalendarPage() {
             width: 300,
             height: 300,
             borderRadius: '50%',
-            background:
-              'radial-gradient(circle, rgba(114,46,209,0.22) 0%, rgba(114,46,209,0) 70%)',
+            background: 'radial-gradient(circle, rgba(114,46,209,0.22) 0%, rgba(114,46,209,0) 70%)',
             pointerEvents: 'none',
           }}
         />

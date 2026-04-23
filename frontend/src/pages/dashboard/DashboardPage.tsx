@@ -183,8 +183,8 @@ export default function DashboardPage() {
               lineHeight: 1.6,
             }}
           >
-            Global Shopping Insights scopre articoli nel mondo del retail, li valuta con AI e
-            ti aiuta a pubblicarli sulla tua piattaforma. Da dove vuoi iniziare?
+            Global Shopping Insights scopre articoli nel mondo del retail, li valuta con AI e ti
+            aiuta a pubblicarli sulla tua piattaforma. Da dove vuoi iniziare?
           </Text>
         </div>
       </div>

@@ -46,8 +46,7 @@ export default function TaxonomyPage() {
             width: 340,
             height: 340,
             borderRadius: '50%',
-            background:
-              'radial-gradient(circle, rgba(22,119,255,0.22) 0%, rgba(22,119,255,0) 70%)',
+            background: 'radial-gradient(circle, rgba(22,119,255,0.22) 0%, rgba(22,119,255,0) 70%)',
             pointerEvents: 'none',
           }}
         />
@@ -60,8 +59,7 @@ export default function TaxonomyPage() {
             width: 300,
             height: 300,
             borderRadius: '50%',
-            background:
-              'radial-gradient(circle, rgba(114,46,209,0.22) 0%, rgba(114,46,209,0) 70%)',
+            background: 'radial-gradient(circle, rgba(114,46,209,0.22) 0%, rgba(114,46,209,0) 70%)',
             pointerEvents: 'none',
           }}
         />
@@ -130,8 +128,8 @@ export default function TaxonomyPage() {
               lineHeight: 1.6,
             }}
           >
-            Stiamo lavorando sugli ultimi dettagli. Presto la piattaforma sarà live con la
-            gestione completa di categorie e tag sincronizzati con il tuo WordPress.
+            Stiamo lavorando sugli ultimi dettagli. Presto la piattaforma sarà live con la gestione
+            completa di categorie e tag sincronizzati con il tuo WordPress.
           </Text>
 
           {/* Mini pill list di feature in arrivo */}
@@ -144,24 +142,22 @@ export default function TaxonomyPage() {
               marginTop: 24,
             }}
           >
-            {['Sync WordPress', 'Gerarchia categorie', 'Tag multipli', 'Bulk edit'].map(
-              (label) => (
-                <span
-                  key={label}
-                  style={{
-                    padding: '5px 11px',
-                    borderRadius: 999,
-                    fontSize: 12,
-                    fontWeight: 500,
-                    background: token.colorBgContainer,
-                    border: `1px solid ${token.colorBorderSecondary}`,
-                    color: token.colorTextSecondary,
-                  }}
-                >
-                  {label}
-                </span>
-              ),
-            )}
+            {['Sync WordPress', 'Gerarchia categorie', 'Tag multipli', 'Bulk edit'].map((label) => (
+              <span
+                key={label}
+                style={{
+                  padding: '5px 11px',
+                  borderRadius: 999,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  background: token.colorBgContainer,
+                  border: `1px solid ${token.colorBorderSecondary}`,
+                  color: token.colorTextSecondary,
+                }}
+              >
+                {label}
+              </span>
+            ))}
           </div>
 
           {/* CTA */}
