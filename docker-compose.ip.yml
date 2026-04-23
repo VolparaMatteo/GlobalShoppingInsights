@@ -28,6 +28,8 @@ volumes:
     name: gsi_backend_uploads
   hf_cache:
     name: gsi_hf_cache
+  ollama_data:
+    name: gsi_ollama_data
 
 services:
   postgres:
@@ -98,3 +100,25 @@ services:
       - "80:80"
     networks:
       - internal
+
+  # -----------------------------------------------------------------------
+  # Ollama — LLM second-opinion (profilo `llm`).
+  # Abilitare con: `docker compose --profile llm -f docker-compose.ip.yml up -d`
+  # Il backend pesca OLLAMA_BASE_URL da .env.prod. Se vuoto, il circuit breaker
+  # skippa lo step LLM e la discovery fa solo embedding + filtri.
+  # -----------------------------------------------------------------------
+  ollama:
+    profiles: ["llm"]
+    image: ollama/ollama:latest
+    container_name: gsi-ollama-prod
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
