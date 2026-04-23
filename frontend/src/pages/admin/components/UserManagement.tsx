@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Tag, Space, message } from 'antd';
-import { PlusOutlined, EditOutlined, StopOutlined } from '@ant-design/icons';
+import { useState } from 'react';
+import { Table, Button, Modal, Form, Input, Select, Tag, Space } from 'antd';
+import { Ban, Pencil, UserPlus } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/config/queryKeys';
 import { getUsers, createUser, updateUser } from '@/services/api/users.api';
 import { showConfirmModal } from '@/components/common/ConfirmModal';
 import { formatDateTime } from '@/utils/date';
 import { ROLES, ROLE_LABELS } from '@/config/constants';
+import { useToast } from '@/hooks/useToast';
 import type { User, UserCreate, UserUpdate } from '@/types';
 import type { ColumnsType } from 'antd/es/table';
 import type { Role } from '@/config/constants';
@@ -22,6 +23,7 @@ const ROLE_COLORS: Record<Role, string> = {
 
 export default function UserManagement() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [createForm] = Form.useForm<UserCreate>();
@@ -39,25 +41,22 @@ export default function UserManagement() {
   const createMutation = useMutation({
     mutationFn: (payload: UserCreate) => createUser(payload),
     onSuccess: () => {
-      message.success('User created successfully');
+      toast.success('Utente creato');
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
       closeModal();
     },
-    onError: () => {
-      message.error('Failed to create user');
-    },
+    // toast.error mappa AxiosError via describeError (IT, include 422 detail).
+    onError: (err) => toast.error(err),
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: UserUpdate }) => updateUser(id, payload),
     onSuccess: () => {
-      message.success('User updated successfully');
+      toast.success('Utente aggiornato');
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
       closeModal();
     },
-    onError: () => {
-      message.error('Failed to update user');
-    },
+    onError: (err) => toast.error(err),
   });
 
   // ---- Modal helpers ------------------------------------------------------
@@ -100,9 +99,9 @@ export default function UserManagement() {
 
   function handleDeactivate(user: User) {
     showConfirmModal({
-      title: 'Deactivate User',
-      content: `Are you sure you want to deactivate "${user.name}"? They will no longer be able to log in.`,
-      okText: 'Deactivate',
+      title: 'Disattiva utente',
+      content: `Confermi la disattivazione di "${user.name}"? Non potrà più accedere finché non lo riattivi.`,
+      okText: 'Disattiva',
       danger: true,
       onOk: async () => {
         await updateMutation.mutateAsync({
@@ -124,7 +123,7 @@ export default function UserManagement() {
 
   const columns: ColumnsType<User> = [
     {
-      title: 'Name',
+      title: 'Nome',
       dataIndex: 'name',
       key: 'name',
       sorter: (a, b) => a.name.localeCompare(b.name),
@@ -135,7 +134,7 @@ export default function UserManagement() {
       key: 'email',
     },
     {
-      title: 'Role',
+      title: 'Ruolo',
       dataIndex: 'role',
       key: 'role',
       render: (role: string) => (
@@ -147,43 +146,45 @@ export default function UserManagement() {
       onFilter: (value, record) => record.role === value,
     },
     {
-      title: 'Active',
+      title: 'Stato',
       dataIndex: 'is_active',
       key: 'is_active',
       render: (val: boolean) => (
-        <Tag color={val ? 'green' : 'default'}>{val ? 'Active' : 'Inactive'}</Tag>
+        <Tag color={val ? 'green' : 'default'}>{val ? 'Attivo' : 'Disattivato'}</Tag>
       ),
       filters: [
-        { text: 'Active', value: true },
-        { text: 'Inactive', value: false },
+        { text: 'Attivo', value: true },
+        { text: 'Disattivato', value: false },
       ],
       onFilter: (value, record) => record.is_active === value,
     },
     {
-      title: 'Last Login',
+      title: 'Ultimo login',
       dataIndex: 'last_login',
       key: 'last_login',
       render: (val: string | null) => formatDateTime(val),
     },
     {
-      title: 'Actions',
+      title: 'Azioni',
       key: 'actions',
-      width: 120,
+      width: 110,
       render: (_: unknown, record: User) => (
         <Space size="small">
           <Button
             type="text"
             size="small"
-            icon={<EditOutlined />}
+            icon={<Pencil size={14} />}
             onClick={() => openEditModal(record)}
+            aria-label={`Modifica ${record.name}`}
           />
           {record.is_active && (
             <Button
               type="text"
               size="small"
               danger
-              icon={<StopOutlined />}
+              icon={<Ban size={14} />}
               onClick={() => handleDeactivate(record)}
+              aria-label={`Disattiva ${record.name}`}
             />
           )}
         </Space>
@@ -196,8 +197,8 @@ export default function UserManagement() {
   return (
     <div>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
-          Add User
+        <Button type="primary" icon={<UserPlus size={14} />} onClick={openCreateModal}>
+          Nuovo utente
         </Button>
       </div>
 
@@ -211,6 +212,7 @@ export default function UserManagement() {
           pageSize,
           total: data?.total ?? 0,
           showSizeChanger: true,
+          showTotal: (total, range) => `${range[0]}-${range[1]} di ${total}`,
           onChange: (p, ps) => {
             setPage(p);
             setPageSize(ps);
@@ -220,71 +222,79 @@ export default function UserManagement() {
 
       {/* ---- Create / Edit Modal ---- */}
       <Modal
-        title={editingUser ? 'Edit User' : 'Add User'}
+        title={editingUser ? 'Modifica utente' : 'Nuovo utente'}
         open={modalOpen}
         onOk={handleSubmit}
         onCancel={closeModal}
+        okText={editingUser ? 'Salva' : 'Crea'}
+        cancelText="Annulla"
         confirmLoading={createMutation.isPending || updateMutation.isPending}
         destroyOnClose
+        centered
       >
         {editingUser ? (
           <Form form={editForm} layout="vertical" autoComplete="off">
             <Form.Item
               name="name"
-              label="Name"
-              rules={[{ required: true, message: 'Please enter a name' }]}
+              label="Nome"
+              rules={[{ required: true, message: 'Inserisci il nome' }]}
             >
-              <Input placeholder="Full name" />
+              <Input placeholder="Nome e cognome" />
             </Form.Item>
             <Form.Item
               name="email"
               label="Email"
               rules={[
-                { required: true, message: 'Please enter an email' },
-                { type: 'email', message: 'Please enter a valid email' },
+                { required: true, message: "Inserisci un'email" },
+                { type: 'email', message: 'Email non valida' },
               ]}
             >
-              <Input placeholder="user@example.com" />
+              <Input placeholder="utente@esempio.com" />
             </Form.Item>
             <Form.Item
               name="password"
               label="Password"
-              extra="Leave blank to keep the current password."
+              extra="Lascia vuoto per non modificare la password attuale. Minimo 12 caratteri."
+              rules={[{ min: 12, message: 'Almeno 12 caratteri' }]}
             >
-              <Input.Password placeholder="New password (optional)" />
+              <Input.Password placeholder="Nuova password (opzionale)" autoComplete="new-password" />
             </Form.Item>
-            <Form.Item name="role" label="Role">
-              <Select options={roleOptions} placeholder="Select role" />
+            <Form.Item name="role" label="Ruolo">
+              <Select options={roleOptions} placeholder="Seleziona un ruolo" />
             </Form.Item>
           </Form>
         ) : (
           <Form form={createForm} layout="vertical" autoComplete="off">
             <Form.Item
               name="name"
-              label="Name"
-              rules={[{ required: true, message: 'Please enter a name' }]}
+              label="Nome"
+              rules={[{ required: true, message: 'Inserisci il nome' }]}
             >
-              <Input placeholder="Full name" />
+              <Input placeholder="Nome e cognome" />
             </Form.Item>
             <Form.Item
               name="email"
               label="Email"
               rules={[
-                { required: true, message: 'Please enter an email' },
-                { type: 'email', message: 'Please enter a valid email' },
+                { required: true, message: "Inserisci un'email" },
+                { type: 'email', message: 'Email non valida' },
               ]}
             >
-              <Input placeholder="user@example.com" />
+              <Input placeholder="utente@esempio.com" />
             </Form.Item>
             <Form.Item
               name="password"
               label="Password"
-              rules={[{ required: true, message: 'Please enter a password' }]}
+              extra="Minimo 12 caratteri. Niente spazi iniziali/finali, niente password comuni."
+              rules={[
+                { required: true, message: 'Inserisci una password' },
+                { min: 12, message: 'Almeno 12 caratteri' },
+              ]}
             >
-              <Input.Password placeholder="Password" />
+              <Input.Password placeholder="Password iniziale" autoComplete="new-password" />
             </Form.Item>
-            <Form.Item name="role" label="Role" initialValue="contributor">
-              <Select options={roleOptions} placeholder="Select role" />
+            <Form.Item name="role" label="Ruolo" initialValue="contributor">
+              <Select options={roleOptions} placeholder="Seleziona un ruolo" />
             </Form.Item>
           </Form>
         )}
