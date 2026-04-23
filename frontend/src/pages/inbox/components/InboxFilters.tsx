@@ -8,7 +8,7 @@ import { useCallback, useMemo } from 'react';
 import { Button, Col, Input, Row, Select, Slider, Typography, theme as antdTheme } from 'antd';
 import { FilterX, Search, SlidersHorizontal } from 'lucide-react';
 
-import { ARTICLE_STATUSES, STATUS_MAP } from '@/config/constants';
+import { MANUAL_ARTICLE_STATUSES, STATUS_MAP } from '@/config/constants';
 
 const { Text } = Typography;
 
@@ -45,7 +45,7 @@ interface InboxFiltersProps {
 // Statics
 // ---------------------------------------------------------------------------
 
-const statusOptions = ARTICLE_STATUSES.map((s) => ({
+const statusOptions = MANUAL_ARTICLE_STATUSES.map((s) => ({
   label: STATUS_MAP[s].label,
   value: s,
 }));
