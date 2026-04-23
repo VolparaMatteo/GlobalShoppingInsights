@@ -1,0 +1,100 @@
+# ============================================================================
+# GSI — modalità "IP mode" (HTTP only, senza Traefik/TLS).
+#
+# Usata solo TEMPORANEAMENTE finché il DNS del dominio finale non è pronto.
+# Espone la frontend nginx direttamente sulla porta 80 del VPS, così la
+# piattaforma è raggiungibile via http://<IP-PUBBLICO>/.
+#
+# Appena il dominio è attivo:
+#   docker compose -f docker-compose.ip.yml --env-file .env.prod down
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+# Volumi e DB persistono (named volumes sono condivisi fra i due compose).
+#
+# NOTA: senza TLS, HSTS dal backend è innocuo (i browser applicano HSTS solo
+# quando la risposta arriva via HTTPS). Login/credenziali passano in chiaro
+# sulla rete: usare questa modalità SOLO per smoke test iniziale.
+# ============================================================================
+
+name: gsi-prod
+
+networks:
+  internal:
+    name: gsi-internal
+
+volumes:
+  postgres_data:
+    name: gsi_postgres_data
+  backend_uploads:
+    name: gsi_backend_uploads
+  hf_cache:
+    name: gsi_hf_cache
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gsi-postgres-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    image: gsi-backend:prod
+    container_name: gsi-backend-prod
+    restart: unless-stopped
+    environment:
+      ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      SECRET_KEY: ${SECRET_KEY}
+      WP_ENCRYPTION_KEY: ${WP_ENCRYPTION_KEY}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      UPLOAD_DIR: /app/uploads
+      UNSPLASH_ACCESS_KEY: ${UNSPLASH_ACCESS_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-1}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-60}
+      HF_HOME: /app/.cache/huggingface
+    volumes:
+      - backend_uploads:/app/uploads
+      - hf_cache:/app/.cache/huggingface
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        # Stessa origin: Nginx fa proxy di /api/* verso backend:8000
+        VITE_API_BASE_URL: /api/v1
+    image: gsi-frontend:prod
+    container_name: gsi-frontend-prod
+    restart: unless-stopped
+    depends_on:
+      - backend
+    # Porta 80 direttamente sull'host (no Traefik in IP mode)
+    ports:
+      - "80:80"
+    networks:
+      - internal
