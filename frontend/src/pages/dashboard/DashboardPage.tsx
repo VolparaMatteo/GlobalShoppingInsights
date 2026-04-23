@@ -183,8 +183,8 @@ export default function DashboardPage() {
               lineHeight: 1.6,
             }}
           >
-            Global Shopping Insights scopre articoli di retail &amp; e-commerce per te, li valuta
-            con AI e ti aiuta a pubblicarli sul tuo WordPress. Da dove vuoi iniziare?
+            Global Shopping Insights scopre articoli nel mondo del retail, li valuta con AI e
+            ti aiuta a pubblicarli sul tuo WordPress. Da dove vuoi iniziare?
           </Text>
         </div>
       </div>
