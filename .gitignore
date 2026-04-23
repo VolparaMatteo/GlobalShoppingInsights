@@ -50,3 +50,4 @@ frontend/coverage/
 frontend/.vite/
 frontend/**/tsconfig.tsbuildinfo
 frontend/tsconfig.tsbuildinfo
+.pr-body.md
