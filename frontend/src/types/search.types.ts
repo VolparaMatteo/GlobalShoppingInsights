@@ -14,6 +14,8 @@ export interface SearchResult {
   domain: string | null;
   language_est: string | null;
   article_id: number | null;
+  /** AI relevance score dell'articolo collegato (null se riga filtrata o senza article). */
+  article_score: number | null;
 }
 
 /** One execution of a prompt search. */

@@ -131,163 +131,167 @@ def run_discovery_pipeline(prompt_id: int, user_id: int | None = None):
         llm_filtered = 0
 
         for result in results:
+            # SAVEPOINT per-iteration: un errore qui rollback-a solo questo giro,
+            # non l'intera transazione (che contiene tutti i SearchResult/Article
+            # degli altri URL). Senza savepoint, un singolo fallimento cancellava
+            # l'intera cronologia della run.
             try:
-                url = normalize_url(result.get("url", ""))
-                domain = extract_domain(url)
+                with db.begin_nested():
+                    url = normalize_url(result.get("url", ""))
+                    domain = extract_domain(url)
 
-                if domain in blocked_domains:
-                    continue
-
-                search_result = SearchResult(
-                    search_run_id=search_run.id,
-                    url=url,
-                    title=result.get("title"),
-                    snippet=result.get("body", result.get("snippet")),
-                    provider="serp",
-                    domain=domain,
-                )
-                db.add(search_result)
-
-                existing = db.query(Article).filter(Article.canonical_url == url).first()
-                if existing:
-                    search_result.article_id = existing.id
-                    db.execute(
-                        article_prompts.insert()
-                        .values(article_id=existing.id, prompt_id=prompt_id)
-                        .prefix_with("OR IGNORE")
-                    )
-                    duplicates_skipped += 1
-                    continue
-
-                scraped = scrape_url(url)
-                if not scraped or not scraped.get("text"):
-                    errors_count += 1
-                    continue
-
-                content_hash = compute_content_hash(scraped["text"])
-                hash_duplicate = (
-                    db.query(Article).filter(Article.content_hash == content_hash).first()
-                )
-                if hash_duplicate:
-                    duplicates_skipped += 1
-                    continue
-
-                # --- Language filter (post-scraping) ---
-                detected_lang = scraped.get("language")
-                if prompt.language and detected_lang and detected_lang != prompt.language:
-                    logger.info(
-                        f"Language filter: skipping {url} (detected={detected_lang}, expected={prompt.language})"
-                    )
-                    language_filtered += 1
-                    continue
-
-                # Use detected language, fallback to prompt language
-                article_language = detected_lang or prompt.language or "en"
-
-                # --- Date filter (post-scraping) ---
-                article_title = scraped.get("title") or result.get("title") or "Untitled"
-                raw_date = scraped.get("date")
-                published_at = _parse_date(raw_date)
-                logger.info(f"Article date for {url}: raw={raw_date!r} parsed={published_at!r}")
-
-                date_check = _is_within_time_depth(published_at, prompt.time_depth)
-                if date_check is False:
-                    logger.info(
-                        f"Date filter: skipping {url} (published_at={published_at}, time_depth={prompt.time_depth})"
-                    )
-                    date_filtered += 1
-                    continue
-
-                # --- AI relevance check (BEFORE creating the article) ---
-                # Score the full scraped text against the prompt to decide
-                # whether this article is actually on-topic.
-                prompt_text = prompt.description or " ".join(prompt.keywords)
-                try:
-                    ai_result = score_article(scraped["text"], prompt_text, prompt.keywords)
-                except Exception as e:
-                    logger.warning(f"AI scoring failed for {url}: {e}")
-                    ai_result = {
-                        "score": 0,
-                        "explanation": [f"Scoring error: {e}"],
-                        "tags": [],
-                        "category": None,
-                        "model_version": "error",
-                    }
-
-                ai_score = ai_result.get("score", 0)
-
-                if ai_score < MIN_RELEVANCE_SCORE:
-                    logger.info(
-                        f"Relevance filter: skipping {url} (score={ai_score}, min={MIN_RELEVANCE_SCORE})"
-                    )
-                    relevance_filtered += 1
-                    continue
-
-                # --- LLM deep relevance check (second-level filter) ---
-                llm_comment = None
-                llm_score = None
-                try:
-                    llm_result = evaluate_relevance(
-                        article_text=scraped["text"],
-                        article_title=article_title,
-                        prompt_description=prompt.description or " ".join(prompt.keywords),
-                        prompt_keywords=prompt.keywords or [],
-                        language=article_language,
-                    )
-                    logger.info(
-                        f"LLM evaluation for {url}: "
-                        f"relevant={llm_result['relevant']}, score={llm_result.get('score')}, "
-                        f"confidence={llm_result['confidence']:.2f}, "
-                        f"comment={llm_result.get('comment')}"
-                    )
-                    if not llm_result["relevant"] and llm_result["confidence"] > 0.85:
-                        logger.info(f"LLM relevance filter: SKIPPING {url}")
-                        relevance_filtered += 1
-                        llm_filtered += 1
+                    if domain in blocked_domains:
                         continue
-                    llm_comment = llm_result.get("comment")
-                    llm_score = llm_result.get("score")
-                except Exception as e:
-                    logger.warning(f"LLM evaluation failed for {url}: {e}")
 
-                # Final score: use LLM score if available, fall back to embedding score
-                final_score = llm_score if llm_score is not None else ai_score
+                    search_result = SearchResult(
+                        search_run_id=search_run.id,
+                        url=url,
+                        title=result.get("title"),
+                        snippet=result.get("body", result.get("snippet")),
+                        provider="serp",
+                        domain=domain,
+                    )
+                    db.add(search_result)
 
-                article = Article(
-                    canonical_url=url,
-                    source_domain=domain,
-                    title=article_title,
-                    author=scraped.get("author"),
-                    published_at=published_at,
-                    language=article_language,
-                    country=prompt.countries[0] if prompt.countries else None,
-                    content_html=sanitize_html(scraped.get("html", "")),
-                    content_text=scraped["text"],
-                    content_hash=content_hash,
-                    featured_image_url=scraped.get("image") or result.get("image"),
-                    status="imported",
-                    ai_score=final_score,
-                    ai_score_explanation=ai_result.get("explanation", []),
-                    ai_suggested_tags=ai_result.get("tags", []),
-                    ai_suggested_category=ai_result.get("category"),
-                    ai_model_version=f"llm:{OLLAMA_MODEL}"
-                    if llm_score is not None
-                    else ai_result.get("model_version"),
-                    ai_relevance_comment=llm_comment,
-                )
-                db.add(article)
-                db.flush()
+                    existing = db.query(Article).filter(Article.canonical_url == url).first()
+                    if existing:
+                        search_result.article_id = existing.id
+                        db.execute(
+                            article_prompts.insert()
+                            .values(article_id=existing.id, prompt_id=prompt_id)
+                            .prefix_with("OR IGNORE")
+                        )
+                        duplicates_skipped += 1
+                        continue
 
-                search_result.article_id = article.id
-                db.execute(
-                    article_prompts.insert().values(article_id=article.id, prompt_id=prompt_id)
-                )
+                    scraped = scrape_url(url)
+                    if not scraped or not scraped.get("text"):
+                        errors_count += 1
+                        continue
 
-                articles_created += 1
+                    content_hash = compute_content_hash(scraped["text"])
+                    hash_duplicate = (
+                        db.query(Article).filter(Article.content_hash == content_hash).first()
+                    )
+                    if hash_duplicate:
+                        duplicates_skipped += 1
+                        continue
+
+                    # --- Language filter (post-scraping) ---
+                    detected_lang = scraped.get("language")
+                    if prompt.language and detected_lang and detected_lang != prompt.language:
+                        logger.info(
+                            f"Language filter: skipping {url} (detected={detected_lang}, expected={prompt.language})"
+                        )
+                        language_filtered += 1
+                        continue
+
+                    # Use detected language, fallback to prompt language
+                    article_language = detected_lang or prompt.language or "en"
+
+                    # --- Date filter (post-scraping) ---
+                    article_title = scraped.get("title") or result.get("title") or "Untitled"
+                    raw_date = scraped.get("date")
+                    published_at = _parse_date(raw_date)
+                    logger.info(f"Article date for {url}: raw={raw_date!r} parsed={published_at!r}")
+
+                    date_check = _is_within_time_depth(published_at, prompt.time_depth)
+                    if date_check is False:
+                        logger.info(
+                            f"Date filter: skipping {url} (published_at={published_at}, time_depth={prompt.time_depth})"
+                        )
+                        date_filtered += 1
+                        continue
+
+                    # --- AI relevance check (BEFORE creating the article) ---
+                    # Score the full scraped text against the prompt to decide
+                    # whether this article is actually on-topic.
+                    prompt_text = prompt.description or " ".join(prompt.keywords)
+                    try:
+                        ai_result = score_article(scraped["text"], prompt_text, prompt.keywords)
+                    except Exception as e:
+                        logger.warning(f"AI scoring failed for {url}: {e}")
+                        ai_result = {
+                            "score": 0,
+                            "explanation": [f"Scoring error: {e}"],
+                            "tags": [],
+                            "category": None,
+                            "model_version": "error",
+                        }
+
+                    ai_score = ai_result.get("score", 0)
+
+                    if ai_score < MIN_RELEVANCE_SCORE:
+                        logger.info(
+                            f"Relevance filter: skipping {url} (score={ai_score}, min={MIN_RELEVANCE_SCORE})"
+                        )
+                        relevance_filtered += 1
+                        continue
+
+                    # --- LLM deep relevance check (second-level filter) ---
+                    llm_comment = None
+                    llm_score = None
+                    try:
+                        llm_result = evaluate_relevance(
+                            article_text=scraped["text"],
+                            article_title=article_title,
+                            prompt_description=prompt.description or " ".join(prompt.keywords),
+                            prompt_keywords=prompt.keywords or [],
+                            language=article_language,
+                        )
+                        logger.info(
+                            f"LLM evaluation for {url}: "
+                            f"relevant={llm_result['relevant']}, score={llm_result.get('score')}, "
+                            f"confidence={llm_result['confidence']:.2f}, "
+                            f"comment={llm_result.get('comment')}"
+                        )
+                        if not llm_result["relevant"] and llm_result["confidence"] > 0.85:
+                            logger.info(f"LLM relevance filter: SKIPPING {url}")
+                            relevance_filtered += 1
+                            llm_filtered += 1
+                            continue
+                        llm_comment = llm_result.get("comment")
+                        llm_score = llm_result.get("score")
+                    except Exception as e:
+                        logger.warning(f"LLM evaluation failed for {url}: {e}")
+
+                    # Final score: use LLM score if available, fall back to embedding score
+                    final_score = llm_score if llm_score is not None else ai_score
+
+                    article = Article(
+                        canonical_url=url,
+                        source_domain=domain,
+                        title=article_title,
+                        author=scraped.get("author"),
+                        published_at=published_at,
+                        language=article_language,
+                        country=prompt.countries[0] if prompt.countries else None,
+                        content_html=sanitize_html(scraped.get("html", "")),
+                        content_text=scraped["text"],
+                        content_hash=content_hash,
+                        featured_image_url=scraped.get("image") or result.get("image"),
+                        status="imported",
+                        ai_score=final_score,
+                        ai_score_explanation=ai_result.get("explanation", []),
+                        ai_suggested_tags=ai_result.get("tags", []),
+                        ai_suggested_category=ai_result.get("category"),
+                        ai_model_version=f"llm:{OLLAMA_MODEL}"
+                        if llm_score is not None
+                        else ai_result.get("model_version"),
+                        ai_relevance_comment=llm_comment,
+                    )
+                    db.add(article)
+                    db.flush()
+
+                    search_result.article_id = article.id
+                    db.execute(
+                        article_prompts.insert().values(article_id=article.id, prompt_id=prompt_id)
+                    )
+
+                    articles_created += 1
 
             except Exception as e:
                 logger.error(f"Error processing result: {e}")
-                db.rollback()
                 errors_count += 1
 
         logger.info(

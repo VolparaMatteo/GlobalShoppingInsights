@@ -72,10 +72,18 @@ services:
     container_name: gsi-frontend
     environment:
       VITE_API_BASE_URL: http://localhost:8000/api/v1
+      # Dev proxy Vite (/api, /uploads) → target backend. In Docker compose
+      # il servizio backend e' raggiungibile via DNS "backend:8000";
+      # in dev nativo (npm run dev fuori Docker) il default localhost:8000
+      # del vite.config.ts va bene.
+      BACKEND_URL: http://backend:8000
     volumes:
       - ./frontend:/app
-      # node_modules gestito dal container, NON sovrascritto dal bind mount.
-      - /app/node_modules
+      # Volume NOMINATO (non anonimo): cosi' possiamo rimuoverlo con nome
+      # pulito — `docker volume rm gsi-dev_frontend_node_modules` — quando
+      # cambia package.json (nuove dipendenze aggiunte). Con volume anonimo
+      # il container avrebbe riutilizzato i node_modules cached.
+      - frontend_node_modules:/app/node_modules
     ports:
       - "5173:5173"
     depends_on:
@@ -97,3 +105,4 @@ volumes:
   postgres_data:
   backend_uploads:
   ollama_data:
+  frontend_node_modules:

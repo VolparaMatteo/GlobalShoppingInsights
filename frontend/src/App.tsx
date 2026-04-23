@@ -33,7 +33,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ConfigProvider theme={themeForMode(themeMode)} locale={itIT}>
-        <AntdApp>
+        <AntdApp message={{ maxCount: 3, top: 72 }} notification={{ placement: 'bottomRight' }}>
           <RouterProvider router={router} />
         </AntdApp>
       </ConfigProvider>

@@ -15,6 +15,7 @@ import {
   CalendarPage,
   TaxonomyPage,
   SettingsPage,
+  ProfilePage,
   NotFoundPage,
 } from '@/router/LazyPages';
 
@@ -80,6 +81,10 @@ const routes: RouteObject[] = [
           {
             path: '/settings',
             element: suspense(SettingsPage),
+          },
+          {
+            path: '/profile',
+            element: suspense(ProfilePage),
           },
           {
             path: '*',

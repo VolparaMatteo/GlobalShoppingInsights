@@ -2,10 +2,12 @@
 // PromptSearchHistory.tsx  --  Table of past search runs for a prompt
 // ---------------------------------------------------------------------------
 import { useState, useMemo, useCallback } from 'react';
-import { Badge, Descriptions, Drawer, Table, Tag, Typography } from 'antd';
+import { Badge, Descriptions, Drawer, Skeleton, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 
+import { getSearchRun } from '@/services/api/search.api';
 import type { SearchRun, SearchResult } from '@/types';
 
 const { Title, Text, Link } = Typography;
@@ -49,63 +51,70 @@ interface PromptSearchHistoryProps {
 // ---------------------------------------------------------------------------
 
 interface ResultsDrawerProps {
+  /** Run "leggera" dalla lista parent (senza `results`). Usata per header mentre il detail carica. */
   run: SearchRun | null;
   open: boolean;
   onClose: () => void;
 }
 
 function ResultsDrawer({ run, open, onClose }: ResultsDrawerProps) {
+  // IMPORTANTE: la lista `searchRuns` non include `results` (solo il detail
+  // endpoint `GET /search-runs/:id` li popola). Qui rifacciamo la fetch del
+  // detail all'apertura del drawer.
+  const { data: runDetail, isLoading: detailLoading } = useQuery({
+    queryKey: ['searchRunDetail', run?.id],
+    queryFn: () => getSearchRun(run!.id),
+    enabled: open && !!run,
+  });
+
   if (!run) return null;
+
+  // Preferisce sempre il detail fresco; fallback al record leggero finché la
+  // query non risponde (lo header statistico è identico nei due shape).
+  const displayRun = runDetail ?? run;
 
   const resultColumns: ColumnsType<SearchResult> = [
     {
-      title: 'Titolo',
-      dataIndex: 'title',
-      key: 'title',
+      title: 'Articolo',
+      key: 'article',
       ellipsis: true,
-      render: (text: string | null, record: SearchResult) =>
-        text ? (
-          <Link href={record.url} target="_blank" rel="noopener noreferrer">
-            {text}
-          </Link>
-        ) : (
-          <Link href={record.url} target="_blank" rel="noopener noreferrer">
-            {record.url}
-          </Link>
-        ),
-    },
-    {
-      title: 'Provider',
-      dataIndex: 'provider',
-      key: 'provider',
-      width: 100,
+      render: (_: unknown, record: SearchResult) => (
+        <Link
+          href={record.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ fontWeight: 500 }}
+        >
+          {record.title || record.url}
+        </Link>
+      ),
     },
     {
       title: 'Dominio',
       dataIndex: 'domain',
       key: 'domain',
-      width: 160,
+      width: 180,
       ellipsis: true,
+      render: (val: string | null) =>
+        val ? <Text style={{ fontSize: 12 }}>{val}</Text> : <Text type="secondary">—</Text>,
     },
     {
-      title: 'Pubblicato',
-      dataIndex: 'published_at_est',
-      key: 'published_at_est',
-      width: 150,
-      render: (val: string | null) => (val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '--'),
-    },
-    {
-      title: 'Articolo',
-      dataIndex: 'article_id',
-      key: 'article_id',
-      width: 80,
-      render: (val: number | null) => (val ? <Tag color="green">#{val}</Tag> : <Tag>--</Tag>),
+      title: 'Score',
+      dataIndex: 'article_score',
+      key: 'article_score',
+      width: 90,
+      align: 'center' as const,
+      render: (score: number | null) => {
+        if (score == null) return <Text type="secondary">—</Text>;
+        const color = score >= 70 ? 'green' : score >= 40 ? 'orange' : 'red';
+        return <Tag color={color}>{score}</Tag>;
+      },
     },
   ];
 
   return (
     <Drawer
-      title={`Esecuzione #${run.id} — Risultati`}
+      title={`Esecuzione #${displayRun.id} — Risultati`}
       placement="right"
       width={800}
       open={open}
@@ -114,30 +123,44 @@ function ResultsDrawer({ run, open, onClose }: ResultsDrawerProps) {
     >
       {/* Run summary */}
       <Descriptions column={2} bordered size="small" style={{ marginBottom: 24 }}>
-        <Descriptions.Item label="Stato">{getStatusBadge(run.status)}</Descriptions.Item>
+        <Descriptions.Item label="Stato">{getStatusBadge(displayRun.status)}</Descriptions.Item>
         <Descriptions.Item label="Avvio">
-          {dayjs(run.started_at).format('YYYY-MM-DD HH:mm:ss')}
+          {dayjs(displayRun.started_at).format('YYYY-MM-DD HH:mm:ss')}
         </Descriptions.Item>
         <Descriptions.Item label="Fine">
-          {run.ended_at ? dayjs(run.ended_at).format('YYYY-MM-DD HH:mm:ss') : '--'}
+          {displayRun.ended_at ? dayjs(displayRun.ended_at).format('YYYY-MM-DD HH:mm:ss') : '--'}
         </Descriptions.Item>
-        <Descriptions.Item label="URL Trovati">{run.urls_found}</Descriptions.Item>
-        <Descriptions.Item label="Articoli Creati">{run.articles_created}</Descriptions.Item>
-        <Descriptions.Item label="Duplicati Ignorati">{run.duplicates_skipped}</Descriptions.Item>
+        <Descriptions.Item label="URL Trovati">{displayRun.urls_found}</Descriptions.Item>
+        <Descriptions.Item label="Articoli Creati">{displayRun.articles_created}</Descriptions.Item>
+        <Descriptions.Item label="Duplicati Ignorati">
+          {displayRun.duplicates_skipped}
+        </Descriptions.Item>
         <Descriptions.Item label="Filtrati per Lingua">
-          {run.language_filtered > 0 ? <Text type="warning">{run.language_filtered}</Text> : '0'}
+          {displayRun.language_filtered > 0 ? (
+            <Text type="warning">{displayRun.language_filtered}</Text>
+          ) : (
+            '0'
+          )}
         </Descriptions.Item>
         <Descriptions.Item label="Filtrati per Data">
-          {run.date_filtered > 0 ? <Text type="warning">{run.date_filtered}</Text> : '0'}
+          {displayRun.date_filtered > 0 ? (
+            <Text type="warning">{displayRun.date_filtered}</Text>
+          ) : (
+            '0'
+          )}
         </Descriptions.Item>
         <Descriptions.Item label="Filtrati per Rilevanza">
-          {run.relevance_filtered > 0 ? <Text type="warning">{run.relevance_filtered}</Text> : '0'}
+          {displayRun.relevance_filtered > 0 ? (
+            <Text type="warning">{displayRun.relevance_filtered}</Text>
+          ) : (
+            '0'
+          )}
         </Descriptions.Item>
         <Descriptions.Item label="Errori">
-          {run.errors_count > 0 ? (
+          {displayRun.errors_count > 0 ? (
             <Text type="danger">
-              {run.errors_count}
-              {run.error_message ? ` - ${run.error_message}` : ''}
+              {displayRun.errors_count}
+              {displayRun.error_message ? ` - ${displayRun.error_message}` : ''}
             </Text>
           ) : (
             '0'
@@ -147,17 +170,21 @@ function ResultsDrawer({ run, open, onClose }: ResultsDrawerProps) {
 
       {/* Results table */}
       <Title level={5} style={{ marginBottom: 12 }}>
-        Risultati ({run.results?.length ?? 0})
+        Risultati ({detailLoading ? '…' : (runDetail?.results?.length ?? 0)})
       </Title>
 
-      <Table<SearchResult>
-        rowKey="id"
-        columns={resultColumns}
-        dataSource={run.results ?? []}
-        pagination={{ pageSize: 20, showSizeChanger: false }}
-        size="small"
-        scroll={{ x: 700 }}
-      />
+      {detailLoading && !runDetail ? (
+        <Skeleton active paragraph={{ rows: 4 }} />
+      ) : (
+        <Table<SearchResult>
+          rowKey="id"
+          columns={resultColumns}
+          dataSource={runDetail?.results ?? []}
+          pagination={{ pageSize: 20, showSizeChanger: false }}
+          size="small"
+          scroll={{ x: 700 }}
+        />
+      )}
     </Drawer>
   );
 }

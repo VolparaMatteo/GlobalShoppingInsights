@@ -9,7 +9,7 @@ export type { PaginatedResponse, ApiError, MessageResponse } from './api.types';
 export type { LoginRequest, TokenResponse, RefreshRequest } from './auth.types';
 
 // Users
-export type { User, UserCreate, UserUpdate } from './user.types';
+export type { User, UserCreate, UserUpdate, UserSelfUpdate } from './user.types';
 
 // Prompts
 export type { Prompt, PromptCreate, PromptUpdate } from './prompt.types';

@@ -49,6 +49,8 @@ export function useCreatePrompt() {
 /**
  * Updates an existing prompt.
  * Invalidates prompt list and detail queries on success.
+ * Also invalidates promptFolders so that per-folder counters stay in sync
+ * when folder_id changes.
  */
 export function useUpdatePrompt() {
   const queryClient = useQueryClient();
@@ -58,6 +60,7 @@ export function useUpdatePrompt() {
     onSuccess: (_result, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.prompts.detail(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.prompts.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.promptFolders.all });
     },
   });
 }

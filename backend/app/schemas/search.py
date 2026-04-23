@@ -13,6 +13,9 @@ class SearchResultResponse(BaseModel):
     domain: str | None = None
     language_est: str | None = None
     article_id: int | None = None
+    # AI relevance score dell'Article collegato (null se la riga è stata filtrata
+    # prima della creazione dell'articolo oppure se non c'è un article_id).
+    article_score: int | None = None
 
     model_config = {"from_attributes": True}
 

@@ -4,12 +4,17 @@
 # Avvia l'intero stack tramite Docker Compose.
 #
 # Uso:
-#   ./start.sh                # avvia tutto
-#   ./start.sh --with-llm     # + servizio ollama
-#   ./start.sh stop           # ferma i container (mantiene i volumi)
-#   ./start.sh clean          # ferma e cancella VOLUMI (DB + uploads)
+#   ./start.sh                           # avvia tutto
+#   ./start.sh --with-llm                # + servizio ollama
+#   ./start.sh stop                      # ferma (mantiene i volumi)
+#   ./start.sh clean                     # ferma e cancella VOLUMI (DB + uploads)
 #   ./start.sh logs [servizio]
-#   ./start.sh rebuild        # forza rebuild immagini
+#   ./start.sh rebuild                   # forza rebuild immagini
+#   ./start.sh refresh-frontend-deps     # ricrea il volume node_modules
+#                                        # (usare dopo aver aggiunto/rimosso
+#                                        # dipendenze in frontend/package.json)
+#   ./start.sh refresh-backend-deps      # rebuild immagine backend
+#                                        # (usare dopo cambio requirements.txt)
 # ============================================================================
 
 set -euo pipefail
@@ -48,6 +53,23 @@ case "$CMD" in
         ;;
     rebuild)
         docker compose "${PROFILE_ARGS[@]}" up -d --build
+        ;;
+    refresh-frontend-deps)
+        echo "Refresh node_modules frontend (dopo cambio package.json)..."
+        docker compose "${PROFILE_ARGS[@]}" stop frontend || true
+        docker compose "${PROFILE_ARGS[@]}" rm -f frontend || true
+        docker volume rm gsi-dev_frontend_node_modules 2>/dev/null || true
+        echo "Volume node_modules rimosso. Rebuild immagine frontend..."
+        docker compose "${PROFILE_ARGS[@]}" build frontend
+        docker compose "${PROFILE_ARGS[@]}" up -d
+        echo "Fatto. Frontend ripartito su http://localhost:5173"
+        ;;
+    refresh-backend-deps)
+        echo "Rebuild immagine backend (dopo cambio requirements.txt)..."
+        docker compose "${PROFILE_ARGS[@]}" stop backend || true
+        docker compose "${PROFILE_ARGS[@]}" build backend
+        docker compose "${PROFILE_ARGS[@]}" up -d
+        echo "Fatto. Backend ripartito su http://localhost:8000"
         ;;
     up|"")
         docker compose "${PROFILE_ARGS[@]}" up -d

@@ -39,7 +39,7 @@ import dayjs from 'dayjs';
 import type { Article } from '@/types';
 import { buildArticleDetailPath, buildPromptDetailPath } from '@/config/routes';
 import { queryKeys } from '@/config/queryKeys';
-import { ARTICLE_STATUSES, STATUS_MAP, type ArticleStatus } from '@/config/constants';
+import { MANUAL_ARTICLE_STATUSES, STATUS_MAP } from '@/config/constants';
 import { changeStatus, translateArticle } from '@/services/api/articles.api';
 import { batchAction } from '@/services/api/articles.api';
 import { useTags, useCategories } from '@/hooks/queries/useTaxonomy';
@@ -223,8 +223,8 @@ export default function ArticlePreviewDrawer({
     navigate(buildArticleDetailPath(article.id));
   };
 
-  // ---- Status dropdown items (all statuses except current) ----------------
-  const statusMenuItems: MenuProps['items'] = ARTICLE_STATUSES.filter(
+  // ---- Status dropdown items (solo stati manuali, escluso quello corrente) --
+  const statusMenuItems: MenuProps['items'] = MANUAL_ARTICLE_STATUSES.filter(
     (s) => s !== article.status,
   ).map((s) => {
     const meta = STATUS_MAP[s];

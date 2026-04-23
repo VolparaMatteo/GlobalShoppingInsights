@@ -1,48 +1,62 @@
 // ---------------------------------------------------------------------------
-// PromptsListPage.tsx  --  Paginated table listing all search prompts
-//                          with a left sidebar for folder navigation (tree)
+// PromptsListPage.tsx — Sprint 7 polish b9 (premium, Lucide, dark-mode aware)
+// Include: folder sidebar, column "Cartella" con quick-move per riga,
+// bulk-select con toolbar "Sposta in..." per spostare più prompt alla volta.
 // ---------------------------------------------------------------------------
-import { useState, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button, Dropdown, Input, Modal, Table, Tag, Tree, Typography, message } from 'antd';
-import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
-import type { DataNode } from 'antd/es/tree';
-import {
-  DeleteOutlined,
-  EditOutlined,
-  EllipsisOutlined,
-  FolderOutlined,
-  FolderOpenOutlined,
-  InboxOutlined,
-  PlusOutlined,
-  SearchOutlined,
-  SubnodeOutlined,
-} from '@ant-design/icons';
-import dayjs from 'dayjs';
+import { useCallback, useMemo, useState } from 'react';
 
-import { getPrompts } from '@/services/api/prompts.api';
-import { queryKeys } from '@/config/queryKeys';
-import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/config/constants';
 import {
-  usePromptFolders,
+  App,
+  Button,
+  Input,
+  Modal,
+  Space,
+  Table,
+  Tooltip,
+  Typography,
+  theme as antdTheme,
+} from 'antd';
+import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
+import dayjs from 'dayjs';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  Folder,
+  FolderInput,
+  FolderOpen,
+  FolderTree,
+  FolderX,
+  Inbox,
+  Pause,
+  Play,
+  Plus,
+  Search,
+  X,
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+
+import EmptyIllustrated from '@/components/common/EmptyIllustrated';
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/config/constants';
+import { queryKeys } from '@/config/queryKeys';
+import {
   useCreatePromptFolder,
-  useUpdatePromptFolder,
   useDeletePromptFolder,
+  usePromptFolders,
+  useUpdatePromptFolder,
 } from '@/hooks/queries/usePromptFolders';
+import { useUpdatePrompt } from '@/hooks/queries/usePrompts';
+import { useToast } from '@/hooks/useToast';
+import FolderPickerModal from '@/pages/prompts/components/FolderPickerModal';
+import PromptFolderTree from '@/pages/prompts/components/PromptFolderTree';
+import { getPrompts } from '@/services/api/prompts.api';
 import type { Prompt, PromptFolder } from '@/types';
 
 const { Title, Text } = Typography;
 
 // ---------------------------------------------------------------------------
-// Types
+// Types + hooks
 // ---------------------------------------------------------------------------
 
-type FolderSelection = number | 'unfiled' | null; // null = "Tutti"
-
-// ---------------------------------------------------------------------------
-// Hook: usePrompts (local to this page)
-// ---------------------------------------------------------------------------
+type FolderSelection = number | 'unfiled' | null;
 
 function usePrompts(params: {
   page: number;
@@ -55,11 +69,8 @@ function usePrompts(params: {
     page_size: params.pageSize,
     search: params.search || undefined,
   };
-  if (typeof params.selectedFolder === 'number') {
-    apiParams.folder_id = params.selectedFolder;
-  } else if (params.selectedFolder === 'unfiled') {
-    apiParams.unfiled = true;
-  }
+  if (typeof params.selectedFolder === 'number') apiParams.folder_id = params.selectedFolder;
+  else if (params.selectedFolder === 'unfiled') apiParams.unfiled = true;
 
   return useQuery({
     queryKey: queryKeys.prompts.list(apiParams),
@@ -67,26 +78,6 @@ function usePrompts(params: {
     placeholderData: (prev) => prev,
   });
 }
-
-// ---------------------------------------------------------------------------
-// Helper: build Ant Design Tree data from nested PromptFolder[]
-// ---------------------------------------------------------------------------
-
-function buildTreeData(
-  folders: PromptFolder[],
-  renderTitle: (folder: PromptFolder) => React.ReactNode,
-): DataNode[] {
-  return folders.map((f) => ({
-    key: String(f.id),
-    title: renderTitle(f),
-    icon: <FolderOutlined style={{ color: 'var(--color-text-tertiary)' }} />,
-    children: f.children.length > 0 ? buildTreeData(f.children, renderTitle) : undefined,
-  }));
-}
-
-// ---------------------------------------------------------------------------
-// Helper: count total prompts across a folder tree (recursive)
-// ---------------------------------------------------------------------------
 
 function countAllPrompts(folders: PromptFolder[]): number {
   let total = 0;
@@ -98,76 +89,90 @@ function countAllPrompts(folders: PromptFolder[]): number {
 }
 
 // ---------------------------------------------------------------------------
-// Shared styles
+// Sub-component: SidebarItem
 // ---------------------------------------------------------------------------
 
-const SIDEBAR_ITEM_BASE: React.CSSProperties = {
-  padding: '8px 12px',
-  borderRadius: 'var(--border-radius-md)',
-  cursor: 'pointer',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  transition: 'background var(--transition-fast)',
-  fontSize: 'var(--font-size-base)',
-  lineHeight: 1.5,
-  userSelect: 'none',
-};
-
-// ---------------------------------------------------------------------------
-// Sub-component: SidebarItem (Tutti / Senza cartella)
-// ---------------------------------------------------------------------------
-
-function SidebarItem({
-  icon,
-  label,
-  count,
-  active,
-  onClick,
-}: {
+interface SidebarItemProps {
   icon: React.ReactNode;
   label: string;
   count: number;
   active: boolean;
   onClick: () => void;
-}) {
+}
+
+function SidebarItem({ icon, label, count, active, onClick }: SidebarItemProps) {
+  const { token } = antdTheme.useToken();
   return (
-    <div
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
       onClick={onClick}
-      onKeyDown={(e) => e.key === 'Enter' && onClick()}
       style={{
-        ...SIDEBAR_ITEM_BASE,
-        background: active ? 'var(--color-primary-bg)' : 'transparent',
-        fontWeight: active ? 600 : 400,
-        color: active ? 'var(--color-primary)' : 'var(--color-text-primary)',
+        width: '100%',
+        padding: '9px 12px',
+        borderRadius: 8,
+        border: 'none',
+        cursor: 'pointer',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 8,
+        background: active
+          ? 'linear-gradient(135deg, rgba(22,119,255,0.12) 0%, rgba(114,46,209,0.12) 100%)'
+          : 'transparent',
+        color: active ? token.colorPrimary : token.colorText,
+        fontWeight: active ? 600 : 500,
+        fontSize: 13.5,
+        lineHeight: 1.4,
+        transition: 'background 150ms',
+      }}
+      onMouseEnter={(e) => {
+        if (!active) e.currentTarget.style.background = token.colorBgLayout;
+      }}
+      onMouseLeave={(e) => {
+        if (!active) e.currentTarget.style.background = 'transparent';
       }}
     >
-      <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
         {icon}
-        <span className="text-ellipsis" style={{ flex: 1, minWidth: 0 }}>
+        <span
+          style={{
+            flex: 1,
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            textAlign: 'left',
+          }}
+        >
           {label}
         </span>
       </span>
-      <Text
-        type="secondary"
+      <span
         style={{
-          fontSize: 'var(--font-size-xs)',
-          fontWeight: 400,
+          fontSize: 11,
+          fontWeight: 500,
+          color: token.colorTextTertiary,
           flexShrink: 0,
-          marginLeft: 8,
+          fontVariantNumeric: 'tabular-nums',
         }}
       >
         {count}
-      </Text>
-    </div>
+      </span>
+    </button>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Sub-component: FolderSidebar
+// FolderSidebar
 // ---------------------------------------------------------------------------
+
+interface FolderSidebarProps {
+  folders: PromptFolder[];
+  foldersLoading: boolean;
+  selectedFolder: FolderSelection;
+  onSelect: (folder: FolderSelection) => void;
+  totalPrompts: number;
+}
 
 function FolderSidebar({
   folders,
@@ -175,14 +180,12 @@ function FolderSidebar({
   selectedFolder,
   onSelect,
   totalPrompts,
-}: {
-  folders: PromptFolder[];
-  foldersLoading: boolean;
-  selectedFolder: FolderSelection;
-  onSelect: (folder: FolderSelection) => void;
-  totalPrompts: number;
-}) {
+}: FolderSidebarProps) {
+  const { token } = antdTheme.useToken();
   const queryClient = useQueryClient();
+  const toast = useToast();
+  const { modal } = App.useApp();
+
   const createMutation = useCreatePromptFolder();
   const updateMutation = useUpdatePromptFolder();
   const deleteMutation = useDeletePromptFolder();
@@ -216,291 +219,168 @@ function FolderSidebar({
     if (!trimmed) return;
     try {
       if (modalMode === 'create') {
-        await createMutation.mutateAsync({
-          name: trimmed,
-          parent_id: parentIdForCreate,
-        });
-        message.success('Cartella creata');
+        await createMutation.mutateAsync({ name: trimmed, parent_id: parentIdForCreate });
+        toast.success('Cartella creata');
       } else if (editingFolder) {
         await updateMutation.mutateAsync({ id: editingFolder.id, data: { name: trimmed } });
-        message.success('Cartella rinominata');
+        toast.success('Cartella rinominata');
       }
       setModalOpen(false);
-    } catch {
-      message.error(
-        modalMode === 'create'
-          ? 'Impossibile creare la cartella'
-          : 'Impossibile rinominare la cartella',
-      );
+    } catch (err) {
+      toast.error(err);
     }
-  }, [folderName, modalMode, editingFolder, parentIdForCreate, createMutation, updateMutation]);
+  }, [
+    folderName,
+    modalMode,
+    editingFolder,
+    parentIdForCreate,
+    createMutation,
+    updateMutation,
+    toast,
+  ]);
 
   const handleDeleteFolder = useCallback(
     (folder: PromptFolder) => {
       const childCount = folder.children.length;
       const extraMsg = childCount > 0 ? ` Le ${childCount} sotto-cartelle verranno eliminate.` : '';
-      Modal.confirm({
-        title: 'Elimina Cartella',
+      modal.confirm({
+        title: 'Elimina cartella',
         content: `Eliminare "${folder.name}"?${extraMsg} I prompt contenuti non verranno eliminati, ma saranno spostati tra quelli senza cartella.`,
         okText: 'Elimina',
         okType: 'danger',
         cancelText: 'Annulla',
+        centered: true,
         onOk: async () => {
           try {
             await deleteMutation.mutateAsync(folder.id);
-            message.success('Cartella eliminata');
+            toast.success('Cartella eliminata');
             if (selectedFolder === folder.id) onSelect(null);
             queryClient.invalidateQueries({ queryKey: queryKeys.prompts.lists() });
-          } catch {
-            message.error('Impossibile eliminare la cartella');
+          } catch (err) {
+            toast.error(err);
           }
         },
       });
     },
-    [deleteMutation, selectedFolder, onSelect, queryClient],
+    [deleteMutation, selectedFolder, onSelect, queryClient, modal, toast],
   );
 
-  // Render title for each tree node
-  const renderNodeTitle = useCallback(
-    (folder: PromptFolder) => (
+  const selectedNumericId = typeof selectedFolder === 'number' ? selectedFolder : null;
+
+  return (
+    <aside
+      style={{
+        width: 280,
+        flexShrink: 0,
+        background: token.colorBgContainer,
+        borderRadius: 12,
+        border: `1px solid ${token.colorBorderSecondary}`,
+        padding: 16,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        alignSelf: 'stretch',
+        boxShadow: 'var(--shadow-sm)',
+      }}
+    >
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          width: '100%',
-          padding: '2px 0',
-          gap: 6,
+          gap: 8,
+          marginBottom: 10,
+          padding: '0 6px',
         }}
       >
-        <span
-          style={{
-            flex: 1,
-            minWidth: 0,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            fontSize: 'var(--font-size-base)',
-          }}
-        >
-          {folder.name}
-        </span>
-
-        <span
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            flexShrink: 0,
-          }}
-        >
-          <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)', lineHeight: 1 }}>
-            {folder.prompt_count}
-          </Text>
-          <Dropdown
-            trigger={['click']}
-            menu={{
-              items: [
-                {
-                  key: 'rename',
-                  icon: <EditOutlined />,
-                  label: 'Rinomina',
-                  onClick: (e) => {
-                    e.domEvent.stopPropagation();
-                    openRename(folder);
-                  },
-                },
-                {
-                  key: 'subfolder',
-                  icon: <SubnodeOutlined />,
-                  label: 'Nuova Sottocartella',
-                  onClick: (e) => {
-                    e.domEvent.stopPropagation();
-                    openCreate(folder.id);
-                  },
-                },
-                { type: 'divider' },
-                {
-                  key: 'delete',
-                  icon: <DeleteOutlined />,
-                  label: 'Elimina',
-                  danger: true,
-                  onClick: (e) => {
-                    e.domEvent.stopPropagation();
-                    handleDeleteFolder(folder);
-                  },
-                },
-              ],
-            }}
-          >
-            <Button
-              type="text"
-              size="small"
-              icon={<EllipsisOutlined />}
-              onClick={(e) => e.stopPropagation()}
-              className="folder-action-btn"
-              style={{
-                minWidth: 22,
-                width: 22,
-                height: 22,
-                padding: 0,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 'var(--border-radius-sm)',
-                opacity: 0,
-                transition: 'opacity var(--transition-fast)',
-              }}
-            />
-          </Dropdown>
-        </span>
-      </div>
-    ),
-    [openRename, openCreate, handleDeleteFolder],
-  );
-
-  const treeData = useMemo(
-    () => buildTreeData(folders, renderNodeTitle),
-    [folders, renderNodeTitle],
-  );
-
-  const selectedKeys = useMemo(() => {
-    if (typeof selectedFolder === 'number') return [String(selectedFolder)];
-    return [];
-  }, [selectedFolder]);
-
-  return (
-    <div
-      style={{
-        width: 280,
-        flexShrink: 0,
-        background: 'var(--color-bg-container)',
-        borderRadius: 'var(--border-radius-lg)',
-        border: '1px solid var(--color-border-secondary)',
-        padding: 16,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 4,
-        alignSelf: 'stretch',
-      }}
-    >
-      {/* Header */}
-      <div style={{ marginBottom: 8 }}>
+        <FolderTree size={14} color={token.colorTextTertiary} />
         <Text
           strong
           style={{
-            fontSize: 'var(--font-size-sm)',
+            fontSize: 10.5,
             textTransform: 'uppercase',
-            letterSpacing: '0.04em',
-            color: 'var(--color-text-tertiary)',
+            letterSpacing: 1,
+            color: token.colorTextTertiary,
           }}
         >
           Cartelle
         </Text>
       </div>
 
-      {/* Special entries */}
       <SidebarItem
-        icon={<FolderOpenOutlined />}
+        icon={<FolderOpen size={15} />}
         label="Tutti i prompt"
         count={totalPrompts}
         active={selectedFolder === null}
         onClick={() => onSelect(null)}
       />
       <SidebarItem
-        icon={<InboxOutlined />}
+        icon={<Inbox size={15} />}
         label="Senza cartella"
         count={unfiledCount}
         active={selectedFolder === 'unfiled'}
         onClick={() => onSelect('unfiled')}
       />
 
-      {/* Divider */}
-      {treeData.length > 0 && (
-        <div style={{ height: 1, background: 'var(--color-border-secondary)', margin: '8px 0' }} />
+      {folders.length > 0 && (
+        <div
+          style={{
+            height: 1,
+            background: token.colorBorderSecondary,
+            margin: '10px 4px',
+          }}
+        />
       )}
 
-      {/* Folder tree */}
       {foldersLoading ? (
         <div style={{ padding: '12px 0', textAlign: 'center' }}>
-          <Text type="secondary" style={{ fontSize: 'var(--font-size-sm)' }}>
-            Caricamento...
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            Caricamento…
           </Text>
         </div>
-      ) : treeData.length > 0 ? (
-        <div className="folder-tree-wrap" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+      ) : folders.length > 0 ? (
+        <div
+          className="gsi-folder-tree-wrap"
+          style={{ flex: 1, minHeight: 0, overflow: 'auto', paddingTop: 4 }}
+        >
           <style>{`
-            .folder-tree-wrap .ant-tree {
-              background: transparent;
-              font-size: var(--font-size-base);
+            .gsi-folder-row:hover {
+              background: ${token.colorBgLayout} !important;
             }
-            .folder-tree-wrap .ant-tree .ant-tree-node-content-wrapper {
-              display: flex;
-              align-items: center;
-              min-width: 0;
-              border-radius: var(--border-radius-md);
-              padding: 4px 8px;
-              transition: background var(--transition-fast);
-            }
-            .folder-tree-wrap .ant-tree .ant-tree-title {
-              flex: 1;
-              min-width: 0;
-            }
-            .folder-tree-wrap .ant-tree .ant-tree-treenode {
-              padding: 1px 0;
-              width: 100%;
-            }
-            .folder-tree-wrap .ant-tree .ant-tree-node-content-wrapper:hover .folder-action-btn,
-            .folder-tree-wrap .ant-tree .ant-tree-node-selected .folder-action-btn {
+            .gsi-folder-row:hover .gsi-folder-actions,
+            .gsi-folder-row:focus-within .gsi-folder-actions {
               opacity: 1 !important;
             }
-            .folder-tree-wrap .ant-tree .ant-tree-node-content-wrapper:hover {
-              background: var(--color-border-secondary);
-            }
-            .folder-tree-wrap .ant-tree .ant-tree-node-selected {
-              background: var(--color-primary-bg) !important;
-            }
-            .folder-tree-wrap .ant-tree .ant-tree-switcher {
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              width: 20px;
-            }
           `}</style>
-          <Tree
-            showIcon
-            defaultExpandAll
-            blockNode
-            selectedKeys={selectedKeys}
-            treeData={treeData}
-            onSelect={(keys) => {
-              if (keys.length > 0) onSelect(Number(keys[0]));
-            }}
+          <PromptFolderTree
+            folders={folders}
+            selectedId={selectedNumericId}
+            onSelect={(id) => onSelect(id)}
+            onRename={openRename}
+            onCreateChild={(parentId) => openCreate(parentId)}
+            onDelete={handleDeleteFolder}
           />
         </div>
       ) : null}
 
-      {/* Create button */}
-      <div style={{ marginTop: treeData.length > 0 ? 8 : 4 }}>
+      <div style={{ marginTop: folders.length > 0 ? 8 : 6 }}>
         <Button
           type="dashed"
-          icon={<PlusOutlined />}
+          icon={<Plus size={14} />}
           block
           onClick={() => openCreate(null)}
-          style={{ borderRadius: 'var(--border-radius-md)' }}
+          style={{ borderRadius: 8, height: 36 }}
         >
-          Nuova Cartella
+          Nuova cartella
         </Button>
       </div>
 
-      {/* Folder create/rename modal */}
       <Modal
         title={
           modalMode === 'create'
             ? parentIdForCreate
-              ? 'Nuova Sottocartella'
-              : 'Nuova Cartella'
-            : 'Rinomina Cartella'
+              ? 'Nuova sottocartella'
+              : 'Nuova cartella'
+            : 'Rinomina cartella'
         }
         open={modalOpen}
         onOk={handleModalOk}
@@ -509,6 +389,7 @@ function FolderSidebar({
         cancelText="Annulla"
         confirmLoading={createMutation.isPending || updateMutation.isPending}
         destroyOnClose
+        centered
       >
         <Input
           placeholder="Nome della cartella"
@@ -517,28 +398,43 @@ function FolderSidebar({
           maxLength={100}
           onPressEnter={handleModalOk}
           autoFocus
+          size="large"
+          style={{ borderRadius: 8 }}
         />
       </Modal>
-    </div>
+    </aside>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Main Component
+// Main Page
 // ---------------------------------------------------------------------------
 
 export default function PromptsListPage() {
   const navigate = useNavigate();
+  const { token } = antdTheme.useToken();
+  const toast = useToast();
+  const updatePromptMutation = useUpdatePrompt();
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [search, setSearch] = useState('');
   const [selectedFolder, setSelectedFolder] = useState<FolderSelection>(null);
 
+  // Row-selection per bulk-move
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+
+  // Folder-picker modal (sia single che bulk)
+  const [pickerState, setPickerState] = useState<{
+    open: boolean;
+    promptIds: number[];
+    /** undefined per bulk (misto), number o null per single */
+    currentFolderId: number | null | undefined;
+  } | null>(null);
+
   const { data: foldersData, isLoading: foldersLoading } = usePromptFolders();
   const folders = foldersData ?? [];
 
-  // We need total count of all prompts (no folder filter) for the sidebar
   const { data: allPromptsData } = useQuery({
     queryKey: queryKeys.prompts.list({ page: 1, page_size: 1 }),
     queryFn: () => getPrompts({ page: 1, page_size: 1 }),
@@ -550,9 +446,26 @@ export default function PromptsListPage() {
   const handleFolderSelect = useCallback((folder: FolderSelection) => {
     setSelectedFolder(folder);
     setPage(1);
+    setSelectedRowKeys([]);
   }, []);
 
-  // ---- Columns -----------------------------------------------------------
+  const handleMovePrompts = useCallback(
+    async (folderId: number | null) => {
+      if (!pickerState) return;
+      const ids = pickerState.promptIds;
+      try {
+        await Promise.all(
+          ids.map((id) => updatePromptMutation.mutateAsync({ id, data: { folder_id: folderId } })),
+        );
+        toast.success(ids.length > 1 ? `${ids.length} prompt spostati` : 'Prompt spostato');
+        setSelectedRowKeys([]);
+        setPickerState(null);
+      } catch (err) {
+        toast.error(err);
+      }
+    },
+    [pickerState, updatePromptMutation, toast],
+  );
 
   const columns: ColumnsType<Prompt> = useMemo(
     () => [
@@ -561,27 +474,51 @@ export default function PromptsListPage() {
         dataIndex: 'title',
         key: 'title',
         ellipsis: true,
+        render: (t: string) => <span style={{ fontWeight: 500, color: token.colorText }}>{t}</span>,
+      },
+      {
+        title: 'Cartella',
+        key: 'folder',
+        width: 200,
+        render: (_: unknown, record: Prompt) => (
+          <FolderPill
+            folderName={record.folder_name}
+            onClick={() =>
+              setPickerState({
+                open: true,
+                promptIds: [record.id],
+                currentFolderId: record.folder_id,
+              })
+            }
+          />
+        ),
       },
       {
         title: 'Pianificazione',
         key: 'schedule',
-        width: 130,
+        width: 150,
         align: 'center' as const,
-        render: (_: unknown, record: Prompt) =>
-          record.schedule_enabled ? <Tag color="green">Attiva</Tag> : <Tag>Disattivata</Tag>,
+        render: (_: unknown, record: Prompt) => <ScheduleBadge enabled={record.schedule_enabled} />,
       },
       {
-        title: 'Ultima Esecuzione',
+        title: 'Ultima esecuzione',
         dataIndex: 'last_run_at',
         key: 'last_run',
         width: 170,
-        render: (val: string | null) => (val ? dayjs(val).format('DD/MM/YY HH:mm') : '--'),
+        render: (val: string | null) =>
+          val ? (
+            <Tooltip title={dayjs(val).format('DD/MM/YYYY HH:mm:ss')}>
+              <Text style={{ fontSize: 13 }}>{dayjs(val).format('DD/MM/YY HH:mm')}</Text>
+            </Tooltip>
+          ) : (
+            <Text type="secondary" style={{ fontSize: 13 }}>
+              —
+            </Text>
+          ),
       },
     ],
-    [],
+    [token.colorText],
   );
-
-  // ---- Pagination config -------------------------------------------------
 
   const pagination: TablePaginationConfig = {
     current: page,
@@ -596,35 +533,52 @@ export default function PromptsListPage() {
     },
   };
 
-  // ---- Render ------------------------------------------------------------
+  const items = data?.items ?? [];
+  const isEmpty = !isLoading && items.length === 0 && !search;
 
   return (
     <div style={{ maxWidth: 1400, margin: '0 auto' }}>
-      {/* Page header */}
+      {/* ---- Header with gradient CTA ---- */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: 'flex-end',
           marginBottom: 24,
           flexWrap: 'wrap',
-          gap: 12,
+          gap: 16,
         }}
       >
         <div>
-          <Title level={3} style={{ margin: 0, fontWeight: 600 }}>
-            Prompt di Ricerca
+          <Title
+            level={3}
+            style={{ margin: 0, fontWeight: 700, letterSpacing: -0.3, color: token.colorText }}
+          >
+            Prompt di ricerca
           </Title>
-          <Text type="secondary" style={{ fontSize: 15 }}>
-            Gestisci e monitora i tuoi prompt di ricerca automatizzati.
+          <Text type="secondary" style={{ fontSize: 14 }}>
+            Organizza in cartelle, schedula l'esecuzione, monitora lo storico.
           </Text>
         </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/prompts/new')}>
-          Nuovo Prompt
+        <Button
+          type="primary"
+          icon={<Plus size={16} strokeWidth={2.4} />}
+          onClick={() => navigate('/prompts/new')}
+          style={{
+            height: 40,
+            borderRadius: 10,
+            fontWeight: 600,
+            padding: '0 18px',
+            background: 'linear-gradient(135deg, #1677ff 0%, #722ed1 100%)',
+            border: 'none',
+            boxShadow: '0 4px 12px -2px rgba(114,46,209,0.35)',
+          }}
+        >
+          Nuovo prompt
         </Button>
       </div>
 
-      {/* Sidebar + Table layout */}
+      {/* ---- Layout: sidebar + main card ---- */}
       <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
         <FolderSidebar
           folders={folders}
@@ -638,17 +592,23 @@ export default function PromptsListPage() {
           style={{
             flex: 1,
             minWidth: 0,
-            background: 'var(--color-bg-container)',
-            borderRadius: 'var(--border-radius-lg)',
-            border: '1px solid var(--color-border-secondary)',
+            background: token.colorBgContainer,
+            borderRadius: 12,
+            border: `1px solid ${token.colorBorderSecondary}`,
             padding: 20,
+            boxShadow: 'var(--shadow-sm)',
           }}
         >
           <Input
-            placeholder="Cerca prompt per titolo..."
-            prefix={<SearchOutlined style={{ color: 'var(--color-text-quaternary)' }} />}
+            placeholder="Cerca prompt per titolo…"
+            prefix={<Search size={15} style={{ color: token.colorTextTertiary }} />}
             allowClear
-            style={{ maxWidth: 360, marginBottom: 16 }}
+            style={{
+              maxWidth: 380,
+              marginBottom: 16,
+              height: 40,
+              borderRadius: 10,
+            }}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -656,20 +616,223 @@ export default function PromptsListPage() {
             }}
           />
 
-          <Table<Prompt>
-            rowKey="id"
-            columns={columns}
-            dataSource={data?.items ?? []}
-            loading={isLoading}
-            pagination={pagination}
-            onRow={(record) => ({
-              onClick: () => navigate(`/prompts/${record.id}`),
-              style: { cursor: 'pointer' },
-            })}
-            size="middle"
-          />
+          {selectedRowKeys.length > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 14,
+                padding: '10px 14px',
+                background:
+                  'linear-gradient(135deg, rgba(22,119,255,0.08) 0%, rgba(114,46,209,0.08) 100%)',
+                border: `1px solid ${token.colorPrimary}33`,
+                borderRadius: 10,
+              }}
+            >
+              <Space size={10}>
+                <Text strong style={{ color: token.colorPrimary, fontSize: 13 }}>
+                  {selectedRowKeys.length}{' '}
+                  {selectedRowKeys.length === 1 ? 'prompt selezionato' : 'prompt selezionati'}
+                </Text>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<X size={12} />}
+                  onClick={() => setSelectedRowKeys([])}
+                  style={{ fontSize: 12, color: token.colorTextSecondary }}
+                >
+                  Annulla
+                </Button>
+              </Space>
+              <Button
+                type="primary"
+                icon={<FolderInput size={14} />}
+                onClick={() =>
+                  setPickerState({
+                    open: true,
+                    promptIds: selectedRowKeys.map(Number),
+                    currentFolderId: undefined,
+                  })
+                }
+                style={{
+                  height: 34,
+                  borderRadius: 8,
+                  fontWeight: 600,
+                  background: 'linear-gradient(135deg, #1677ff 0%, #722ed1 100%)',
+                  border: 'none',
+                  boxShadow: '0 2px 8px -1px rgba(114,46,209,0.3)',
+                }}
+              >
+                Sposta in cartella
+              </Button>
+            </div>
+          )}
+
+          {isEmpty ? (
+            <EmptyIllustrated
+              variant="prompts"
+              title={
+                selectedFolder === 'unfiled'
+                  ? 'Nessun prompt senza cartella'
+                  : 'Nessun prompt ancora creato'
+              }
+              description="Crea un prompt di ricerca per iniziare a scoprire articoli automaticamente. Puoi organizzarli in cartelle gerarchiche."
+              actionLabel="Nuovo prompt"
+              onAction={() => navigate('/prompts/new')}
+            />
+          ) : (
+            <Table<Prompt>
+              rowKey="id"
+              columns={columns}
+              dataSource={items}
+              loading={isLoading}
+              pagination={pagination}
+              rowSelection={{
+                selectedRowKeys,
+                onChange: (keys) => setSelectedRowKeys(keys),
+                preserveSelectedRowKeys: true,
+              }}
+              onRow={(record) => ({
+                onClick: () => navigate(`/prompts/${record.id}`),
+                style: { cursor: 'pointer' },
+              })}
+              size="middle"
+            />
+          )}
         </div>
       </div>
+
+      <FolderPickerModal
+        open={pickerState?.open ?? false}
+        folders={folders}
+        currentFolderId={pickerState?.currentFolderId}
+        loading={updatePromptMutation.isPending}
+        title={
+          pickerState && pickerState.promptIds.length > 1
+            ? `Sposta ${pickerState.promptIds.length} prompt`
+            : 'Sposta prompt in cartella'
+        }
+        onOk={handleMovePrompts}
+        onCancel={() => setPickerState(null)}
+      />
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// FolderPill — pill cliccabile nella colonna "Cartella": mostra il nome della
+// cartella corrente (o "Sposta in..." se unfiled) e apre il picker al click.
+// ---------------------------------------------------------------------------
+
+interface FolderPillProps {
+  folderName: string | null;
+  onClick: () => void;
+}
+
+function FolderPill({ folderName, onClick }: FolderPillProps) {
+  const { token } = antdTheme.useToken();
+  const hasFolder = !!folderName;
+
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      title={hasFolder ? `Cartella: ${folderName}` : 'Sposta in cartella…'}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        maxWidth: 180,
+        padding: '4px 10px',
+        height: 26,
+        borderRadius: 6,
+        fontSize: 12,
+        fontWeight: 500,
+        cursor: 'pointer',
+        color: hasFolder ? token.colorText : token.colorTextTertiary,
+        background: hasFolder ? token.colorFillQuaternary : 'transparent',
+        border: hasFolder
+          ? `1px solid ${token.colorBorderSecondary}`
+          : `1px dashed ${token.colorBorderSecondary}`,
+        transition: 'all 150ms',
+        lineHeight: 1,
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = token.colorPrimary;
+        e.currentTarget.style.color = token.colorPrimary;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = token.colorBorderSecondary;
+        e.currentTarget.style.color = hasFolder ? token.colorText : token.colorTextTertiary;
+      }}
+    >
+      {hasFolder ? (
+        <Folder size={12} strokeWidth={2} aria-hidden="true" />
+      ) : (
+        <FolderX size={12} strokeWidth={2} aria-hidden="true" />
+      )}
+      <span
+        style={{
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {hasFolder ? folderName : 'Sposta in…'}
+      </span>
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ScheduleBadge
+// ---------------------------------------------------------------------------
+
+function ScheduleBadge({ enabled }: { enabled: boolean }) {
+  if (enabled) {
+    return (
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 5,
+          padding: '3px 9px',
+          fontSize: 12,
+          fontWeight: 500,
+          color: 'var(--color-success)',
+          background: 'var(--color-success-bg)',
+          border: '1px solid var(--color-success)33',
+          borderRadius: 'var(--border-radius-md)',
+          lineHeight: 1,
+        }}
+      >
+        <Play size={11} strokeWidth={2.4} aria-hidden="true" />
+        Attiva
+      </span>
+    );
+  }
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 5,
+        padding: '3px 9px',
+        fontSize: 12,
+        fontWeight: 500,
+        color: 'var(--color-text-tertiary)',
+        background: 'var(--color-bg-layout)',
+        border: '1px solid var(--color-border-secondary)',
+        borderRadius: 'var(--border-radius-md)',
+        lineHeight: 1,
+      }}
+    >
+      <Pause size={11} strokeWidth={2.4} aria-hidden="true" />
+      Disattivata
+    </span>
   );
 }

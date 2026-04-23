@@ -1,40 +1,104 @@
+// ---------------------------------------------------------------------------
+// AppHeader.tsx — Sprint 7 polish b6 (topbar allineata al design brand)
+//
+// Layout:
+//   [ title + subtitle ]  [ search button ⌘K ]  [ locale · theme · bell | avatar ]
+//
+// Design consistent con sidebar + profile:
+//   - Altezza 60px, sticky con backdrop blur
+//   - Border bottom sottile dai tokens
+//   - Search button prominente center (pattern Linear/Vercel)
+//   - Avatar mini a destra cliccabile → /profile
+// ---------------------------------------------------------------------------
 import { useMemo } from 'react';
+
+import { App, Button, Layout, Space, theme as antdTheme, Tooltip, Typography } from 'antd';
+import { LogOut } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
-import { Layout, Typography, Space, theme as antdTheme } from 'antd';
-import NotificationBell from '@/layouts/components/NotificationBell';
-import UserMenu from '@/layouts/components/UserMenu';
+
 import ThemeToggle from '@/components/common/ThemeToggle';
+import HeaderAvatar from '@/layouts/components/HeaderAvatar';
+import HeaderSearchButton from '@/layouts/components/HeaderSearchButton';
+import NotificationBell from '@/layouts/components/NotificationBell';
+import { useAuthStore } from '@/stores/authStore';
 
 const { Header } = Layout;
-const { Title } = Typography;
 
-const PAGE_TITLES: Record<string, string> = {
-  '/dashboard': 'Dashboard',
-  '/prompts': 'Prompt',
-  '/inbox': 'Posta in Arrivo',
-  '/calendar': 'Calendario',
-  '/taxonomy': 'Tassonomia',
-  '/settings': 'Impostazioni',
+interface RouteMeta {
+  title: string;
+  subtitle?: string;
+}
+
+const ROUTE_META: Record<string, RouteMeta> = {
+  '/dashboard': {
+    title: 'Dashboard',
+    subtitle: 'Panoramica della tua pipeline editoriale',
+  },
+  '/dashboard/alerts': {
+    title: 'Alert & Job Log',
+    subtitle: 'Storico completo delle esecuzioni dello scheduler',
+  },
+  '/prompts': {
+    title: 'Prompt',
+    subtitle: 'Ricerche salvate e schedulazioni',
+  },
+  '/inbox': {
+    title: 'Posta in Arrivo',
+    subtitle: 'Articoli scoperti, filtrali e promuovili nel workflow',
+  },
+  '/calendar': {
+    title: 'Calendario',
+    subtitle: 'Pianificazione editoriale drag & drop',
+  },
+  '/taxonomy': {
+    title: 'Tassonomia',
+    subtitle: 'Tag e categorie sincronizzate con WordPress',
+  },
+  '/settings': {
+    title: 'Impostazioni',
+    subtitle: 'Configurazione WordPress, utenti e sistema',
+  },
+  '/profile': {
+    title: 'Il mio profilo',
+    subtitle: 'Avatar, dati personali e password',
+  },
 };
 
 export default function AppHeader() {
   const location = useLocation();
   const { token } = antdTheme.useToken();
+  const logout = useAuthStore((s) => s.logout);
+  const { modal } = App.useApp();
 
-  const pageTitle = useMemo(() => {
+  const handleLogoutClick = () => {
+    modal.confirm({
+      title: 'Confermare uscita?',
+      content:
+        'Sarai disconnesso e riportato alla pagina di login. Le modifiche non salvate andranno perse.',
+      okText: 'Esci',
+      okType: 'danger',
+      cancelText: 'Annulla',
+      centered: true,
+      autoFocusButton: 'cancel',
+      onOk: logout,
+    });
+  };
+
+  const meta: RouteMeta = useMemo(() => {
     const path = location.pathname;
+    if (ROUTE_META[path]) return ROUTE_META[path];
 
-    // Check for exact match first
-    if (PAGE_TITLES[path]) return PAGE_TITLES[path];
+    const base = '/' + path.split('/').filter(Boolean)[0];
+    if (ROUTE_META[base]) return ROUTE_META[base];
 
-    // Check for prefix match (e.g. /prompts/123 -> Prompts)
-    const basePath = '/' + path.split('/').filter(Boolean)[0];
-    if (PAGE_TITLES[basePath]) return PAGE_TITLES[basePath];
+    if (path.startsWith('/articles/')) {
+      return { title: 'Dettaglio articolo', subtitle: 'Contenuto, revisioni, tag e workflow' };
+    }
+    if (path.startsWith('/prompts/')) {
+      return { title: 'Dettaglio prompt', subtitle: 'Parametri ricerca e cronologia esecuzioni' };
+    }
 
-    // Special cases
-    if (path.startsWith('/articles/')) return 'Dettaglio Articolo';
-
-    return 'Global Shopping Insights';
+    return { title: 'Global Shopping Insights' };
   }, [location.pathname]);
 
   return (
@@ -42,23 +106,80 @@ export default function AppHeader() {
       style={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        background: token.colorBgContainer,
+        gap: 24,
+        background: `${token.colorBgContainer}f2`, // 95% alpha per backdrop blur
+        backdropFilter: 'saturate(180%) blur(10px)',
+        WebkitBackdropFilter: 'saturate(180%) blur(10px)',
         padding: '0 24px',
+        height: 60,
+        lineHeight: 1,
         borderBottom: `1px solid ${token.colorBorderSecondary}`,
         position: 'sticky',
         top: 0,
         zIndex: 10,
       }}
     >
-      <Title level={4} style={{ margin: 0, color: token.colorText }}>
-        {pageTitle}
-      </Title>
+      {/* ---- Left: title + subtitle ---- */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+        <Typography.Text
+          strong
+          style={{
+            fontSize: 15,
+            color: token.colorText,
+            lineHeight: 1.2,
+            letterSpacing: -0.2,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {meta.title}
+        </Typography.Text>
+        {meta.subtitle && (
+          <Typography.Text
+            type="secondary"
+            style={{
+              fontSize: 11.5,
+              lineHeight: 1.2,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {meta.subtitle}
+          </Typography.Text>
+        )}
+      </div>
 
-      <Space size="small">
+      {/* ---- Center: search button (command palette trigger) ---- */}
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+        <HeaderSearchButton />
+      </div>
+
+      {/* ---- Right: controls ---- */}
+      <Space size={6} align="center">
         <ThemeToggle />
         <NotificationBell />
-        <UserMenu />
+        <span
+          aria-hidden="true"
+          style={{
+            width: 1,
+            height: 22,
+            background: token.colorBorderSecondary,
+            margin: '0 4px',
+          }}
+        />
+        <HeaderAvatar />
+        <Tooltip title="Esci" placement="bottom">
+          <Button
+            type="text"
+            shape="circle"
+            icon={<LogOut size={17} />}
+            onClick={handleLogoutClick}
+            aria-label="Esci dall'applicazione"
+            style={{ color: token.colorTextSecondary }}
+          />
+        </Tooltip>
       </Space>
     </Header>
   );

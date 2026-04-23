@@ -9,11 +9,15 @@ import type { BatchActionRequest } from '@/types';
  * Typical filters: status, language, country, tag_ids, category_ids,
  * search (text), sort_by, sort_order, page, page_size.
  */
-export function useArticles(filters: Record<string, unknown> = {}) {
+export function useArticles(
+  filters: Record<string, unknown> = {},
+  options: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: queryKeys.articles.list(filters),
     queryFn: () => getArticles(filters),
     placeholderData: (prev) => prev, // keep previous data while fetching
+    enabled: options.enabled ?? true,
   });
 }
 

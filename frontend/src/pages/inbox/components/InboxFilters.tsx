@@ -1,10 +1,16 @@
 // ---------------------------------------------------------------------------
-// InboxFilters  --  Filter bar for the Inbox article list
+// InboxFilters — Sprint 7 polish b10 (Lucide + dark-mode aware)
+// Barra filtri della Inbox: search, stato, lingua, punteggio AI (range),
+// dominio, paese, clear.
 // ---------------------------------------------------------------------------
 import { useCallback, useMemo } from 'react';
-import { Input, Select, Slider, Button, Space, Row, Col } from 'antd';
-import { SearchOutlined, ClearOutlined } from '@ant-design/icons';
-import { ARTICLE_STATUSES, STATUS_MAP, type ArticleStatus } from '@/config/constants';
+
+import { Button, Col, Input, Row, Select, Slider, Typography, theme as antdTheme } from 'antd';
+import { FilterX, Search, SlidersHorizontal } from 'lucide-react';
+
+import { MANUAL_ARTICLE_STATUSES, STATUS_MAP } from '@/config/constants';
+
+const { Text } = Typography;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -39,7 +45,7 @@ interface InboxFiltersProps {
 // Statics
 // ---------------------------------------------------------------------------
 
-const statusOptions = ARTICLE_STATUSES.map((s) => ({
+const statusOptions = MANUAL_ARTICLE_STATUSES.map((s) => ({
   label: STATUS_MAP[s].label,
   value: s,
 }));
@@ -77,7 +83,8 @@ const countryOptions = [
 // ---------------------------------------------------------------------------
 
 export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersProps) {
-  /** Helper to patch a single field while keeping the rest intact. */
+  const { token } = antdTheme.useToken();
+
   const patch = useCallback(
     (partial: Partial<InboxFilterValues>) => {
       onFiltersChange({ ...filters, ...partial });
@@ -101,24 +108,22 @@ export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersP
     );
   }, [filters]);
 
-  // Debounce is left to the parent (InboxPage) so that this component
-  // remains a controlled, stateless filter bar.
-
   return (
     <div style={{ marginBottom: 16 }}>
       <Row gutter={[12, 12]} align="middle">
-        {/* ---- Search ---- */}
-        <Col xs={24} sm={12} md={6}>
+        {/* Search */}
+        <Col xs={24} sm={12} md={7}>
           <Input
-            placeholder="Cerca articoli..."
-            prefix={<SearchOutlined />}
+            placeholder="Cerca per titolo o contenuto…"
+            prefix={<Search size={15} style={{ color: token.colorTextTertiary }} />}
             allowClear
             value={filters.search}
             onChange={(e) => patch({ search: e.target.value })}
+            style={{ height: 40, borderRadius: 10 }}
           />
         </Col>
 
-        {/* ---- Status multi-select ---- */}
+        {/* Status multi-select */}
         <Col xs={24} sm={12} md={5}>
           <Select
             mode="multiple"
@@ -132,8 +137,8 @@ export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersP
           />
         </Col>
 
-        {/* ---- Language ---- */}
-        <Col xs={24} sm={12} md={3}>
+        {/* Language */}
+        <Col xs={24} sm={8} md={3}>
           <Select
             placeholder="Lingua"
             allowClear
@@ -144,30 +149,8 @@ export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersP
           />
         </Col>
 
-        {/* ---- AI Score Range ---- */}
-        <Col xs={24} sm={12} md={4}>
-          <Slider
-            range
-            min={0}
-            max={100}
-            value={[filters.minScore, filters.maxScore]}
-            onChange={([min, max]: number[]) => patch({ minScore: min, maxScore: max })}
-            tooltip={{ formatter: (v) => `Punteggio: ${v}` }}
-          />
-        </Col>
-
-        {/* ---- Domain ---- */}
-        <Col xs={24} sm={12} md={3}>
-          <Input
-            placeholder="Dominio"
-            allowClear
-            value={filters.domain}
-            onChange={(e) => patch({ domain: e.target.value })}
-          />
-        </Col>
-
-        {/* ---- Country ---- */}
-        <Col xs={24} sm={12} md={2}>
+        {/* Country */}
+        <Col xs={24} sm={8} md={3}>
           <Select
             placeholder="Paese"
             allowClear
@@ -178,11 +161,66 @@ export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersP
           />
         </Col>
 
-        {/* ---- Clear Filters ---- */}
+        {/* Domain */}
+        <Col xs={24} sm={8} md={3}>
+          <Input
+            placeholder="Dominio"
+            allowClear
+            value={filters.domain}
+            onChange={(e) => patch({ domain: e.target.value })}
+          />
+        </Col>
+
+        {/* Clear */}
         <Col flex="none">
-          <Button icon={<ClearOutlined />} disabled={!isDirty} onClick={handleClear}>
-            Pulisci Filtri
+          <Button
+            icon={<FilterX size={14} />}
+            disabled={!isDirty}
+            onClick={handleClear}
+            style={{ borderRadius: 8 }}
+          >
+            Pulisci
           </Button>
+        </Col>
+      </Row>
+
+      {/* Score range — riga dedicata per evitare squeeze orizzontale */}
+      <Row gutter={[12, 8]} align="middle" style={{ marginTop: 12 }}>
+        <Col flex="none">
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 12,
+              fontWeight: 500,
+              color: token.colorTextSecondary,
+            }}
+          >
+            <SlidersHorizontal size={13} />
+            Punteggio AI
+          </span>
+        </Col>
+        <Col flex="auto" style={{ maxWidth: 420, paddingLeft: 16 }}>
+          <Slider
+            range
+            min={0}
+            max={100}
+            value={[filters.minScore, filters.maxScore]}
+            onChange={([min, max]: number[]) => patch({ minScore: min, maxScore: max })}
+            tooltip={{ formatter: (v) => `${v}` }}
+          />
+        </Col>
+        <Col flex="none">
+          <Text
+            style={{
+              fontSize: 12,
+              color: token.colorTextTertiary,
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {filters.minScore} – {filters.maxScore}
+          </Text>
         </Col>
       </Row>
     </div>
