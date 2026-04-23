@@ -31,22 +31,16 @@ export default defineConfig({
     // Sourcemap abilitata per Sentry symbolication + debugging post-deploy.
     // Produce file .map separati (non inline) → non aumentano il bundle servito.
     sourcemap: true,
-    // Chunk splitting esplicito per caching piu' efficace.
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          // Libreria UI (cache separata, cambia raramente)
-          antd: ['antd', '@ant-design/icons'],
-          // React + router + query (core runtime)
-          react: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
-          // Utility pesanti
-          editor: ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
-          sanitize: ['dompurify'],
-        },
-      },
-    },
-    // Warning size chunk → 600 KB (default 500 KB e' stretto con antd).
-    chunkSizeWarningLimit: 600,
+    // NOTA: manualChunks in forma oggetto causava un race condition in produzione
+    // ("Cannot read properties of undefined (reading '__SECRET_INTERNALS...')"):
+    // react-dom si caricava prima che il chunk react fosse inizializzato a causa
+    // dell'ordine modulepreload → parse del tag script principale. Lasciamo che
+    // Vite/Rollup auto-chunking decida il grafo dipendenze — più robusto.
+    // Se servira' un caching piu' granulare, usare la forma functional di
+    // manualChunks con regole esplicite sugli id (e testare in prod!).
+    rollupOptions: {},
+    // Warning size chunk → 1200 KB (antd+ react + react-dom + tanstack insieme).
+    chunkSizeWarningLimit: 1200,
   },
   server: {
     port: 5173,
