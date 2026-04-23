@@ -5,14 +5,14 @@
 /** Possible article workflow statuses with associated display metadata. */
 export const STATUS_MAP = {
   imported: { label: 'Importato', color: '#8c8c8c', bgColor: '#f5f5f5' },
-  screened: { label: 'Vagliato', color: '#1890ff', bgColor: '#e6f7ff' },
+  screened: { label: 'Visualizzato', color: '#1890ff', bgColor: '#e6f7ff' },
   in_review: { label: 'In Revisione', color: '#faad14', bgColor: '#fffbe6' },
   approved: { label: 'Approvato', color: '#52c41a', bgColor: '#f6ffed' },
   scheduled: { label: 'Pianificato', color: '#722ed1', bgColor: '#f9f0ff' },
   publishing: { label: 'In Pubblicazione', color: '#13c2c2', bgColor: '#e6fffb' },
   published: { label: 'Pubblicato', color: '#389e0d', bgColor: '#f6ffed' },
   publish_failed: { label: 'Pubblicazione Fallita', color: '#ff4d4f', bgColor: '#fff2f0' },
-  rejected: { label: 'Rifiutato', color: '#cf1322', bgColor: '#fff1f0' },
+  rejected: { label: 'Scartato', color: '#cf1322', bgColor: '#fff1f0' },
 } as const;
 
 export type ArticleStatus = keyof typeof STATUS_MAP;
@@ -27,6 +27,20 @@ export const ARTICLE_STATUSES: ArticleStatus[] = [
   'publishing',
   'published',
   'publish_failed',
+  'rejected',
+];
+
+/**
+ * Stati selezionabili manualmente dall'editor via dropdown "Cambia stato".
+ *
+ * Esclusi: `imported` (assegnato dalla pipeline), `scheduled` (automatico quando
+ * l'articolo viene trascinato nel calendario), `publishing`/`published`/
+ * `publish_failed` (gestiti dal worker di pubblicazione).
+ */
+export const MANUAL_ARTICLE_STATUSES: ArticleStatus[] = [
+  'screened',
+  'in_review',
+  'approved',
   'rejected',
 ];
 

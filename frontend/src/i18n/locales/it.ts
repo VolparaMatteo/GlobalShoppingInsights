@@ -58,14 +58,14 @@ export default {
 
   status: {
     imported: 'Importato',
-    screened: 'Vagliato',
+    screened: 'Visualizzato',
     in_review: 'In Revisione',
     approved: 'Approvato',
     scheduled: 'Pianificato',
     publishing: 'In Pubblicazione',
     published: 'Pubblicato',
     publish_failed: 'Pubblicazione Fallita',
-    rejected: 'Rifiutato',
+    rejected: 'Scartato',
   },
 
   role: {

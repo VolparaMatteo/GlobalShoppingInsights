@@ -7,7 +7,7 @@ import type { MenuProps } from 'antd';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeftRight, Tags, Trash2, X } from 'lucide-react';
 
-import { ARTICLE_STATUSES, STATUS_MAP } from '@/config/constants';
+import { MANUAL_ARTICLE_STATUSES, STATUS_MAP } from '@/config/constants';
 
 const { Text } = Typography;
 
@@ -37,7 +37,7 @@ export default function BatchActionsBar({ selectedIds, onAction, onClear }: Batc
   const { modal } = App.useApp();
   const visible = selectedIds.length > 0;
 
-  const statusMenuItems: MenuProps['items'] = ARTICLE_STATUSES.map((s) => ({
+  const statusMenuItems: MenuProps['items'] = MANUAL_ARTICLE_STATUSES.map((s) => ({
     key: s,
     label: STATUS_MAP[s].label,
     onClick: () => onAction({ type: 'status', newStatus: s }),

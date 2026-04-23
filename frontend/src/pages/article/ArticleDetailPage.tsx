@@ -23,7 +23,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import ScoreBadge from '@/components/common/ScoreBadge';
 import StatusBadge from '@/components/common/StatusBadge';
-import { ARTICLE_STATUSES, STATUS_MAP } from '@/config/constants';
+import { MANUAL_ARTICLE_STATUSES, STATUS_MAP } from '@/config/constants';
 import { buildPromptDetailPath } from '@/config/routes';
 import { queryKeys } from '@/config/queryKeys';
 import { useToast } from '@/hooks/useToast';
@@ -97,7 +97,7 @@ export default function ArticleDetailPage() {
     );
   }
 
-  const statusMenuItems: MenuProps['items'] = ARTICLE_STATUSES.filter(
+  const statusMenuItems: MenuProps['items'] = MANUAL_ARTICLE_STATUSES.filter(
     (s) => s !== article.status,
   ).map((s) => {
     const meta = STATUS_MAP[s];

@@ -48,7 +48,7 @@ const META: Record<ArticleStatus, Meta> = {
     icon: Upload,
   },
   screened: {
-    label: 'Vagliato',
+    label: 'Visualizzato',
     color: 'var(--status-screened)',
     bg: 'var(--color-primary-bg)',
     icon: FileSearch,
@@ -90,7 +90,7 @@ const META: Record<ArticleStatus, Meta> = {
     icon: XCircle,
   },
   rejected: {
-    label: 'Rifiutato',
+    label: 'Scartato',
     color: 'var(--status-rejected)',
     bg: 'var(--color-error-bg)',
     icon: XCircle,
