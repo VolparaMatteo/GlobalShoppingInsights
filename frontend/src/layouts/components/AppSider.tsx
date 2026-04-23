@@ -196,30 +196,23 @@ export default function AppSider({ collapsed }: AppSiderProps) {
             />
           </div>
           {!collapsed && (
-            <div
-              style={{ minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}
+            <span
+              style={{
+                fontSize: 22,
+                fontWeight: 800,
+                color: '#ffffff',
+                letterSpacing: 1.2,
+                lineHeight: 1,
+                whiteSpace: 'nowrap',
+                background: 'linear-gradient(135deg, #ffffff 0%, rgba(255,255,255,0.72) 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+              aria-label="Global Shopping Insights"
             >
-              <span
-                style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: '#ffffff',
-                  letterSpacing: 0.15,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Global Shopping
-              </span>
-              <span
-                style={{
-                  fontSize: 11,
-                  color: 'rgba(255,255,255,0.5)',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Insights
-              </span>
-            </div>
+              GSI
+            </span>
           )}
         </div>
 
