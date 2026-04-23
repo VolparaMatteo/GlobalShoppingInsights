@@ -10,14 +10,18 @@
 # ---------------------------------------------------------------------------
 FROM node:20-alpine AS builder
 
-ENV CI=true \
-    NODE_ENV=production
+# NOTA: in fase di BUILD servono anche devDependencies (vite, typescript,
+# @vitejs/plugin-react, @axe-core/react usato via dynamic import in DEV, ecc).
+# Non settiamo NODE_ENV=production qui, altrimenti `npm ci` skippa devDeps.
+# L'immagine runtime finale (nginx:alpine) non include node_modules, quindi
+# il footprint di produzione resta minimo comunque.
+ENV CI=true
 
 WORKDIR /build
 
 # Layer caching: dipendenze cambiano raramente rispetto al codice.
 COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
+RUN npm ci --include=dev --no-audit --no-fund
 
 # Vite inline-a le VITE_* env vars al build-time.
 # Default: /api/v1 (same-origin, nginx fa proxy verso backend). Sovrascrivibile
