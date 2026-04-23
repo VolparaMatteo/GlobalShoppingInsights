@@ -28,42 +28,52 @@
 
 ---
 
-## Stato verificato al 2026-04-22 (post-merge PR #2)
+## Stato verificato al 2026-04-23 (fine Sprint 7 pre-VPS)
 
-Verifica sul codebase reale (non sulla percezione). Aggiornare a ogni chiusura
-di batch/sprint. Ultimi 2 PR mergeati su `main`:
-- **PR #1** (`7306122` parent): preparazione consegna Sprint 0→5 core + Sprint 8 docs
-- **PR #2** (`7306122`): Sprint 4 completo + Sprint 6 parziale + Sprint 7 foundation + polish b1
+Verifica sul codebase reale (non sulla percezione). Branch attivo
+`feat/sprint-7-polish-productivity` (pronto per PR su `main` prima del deploy).
 
-### Sprint completati (tutti su `main`)
+### Sprint completati (tutti su `main` o pronti per merge)
 
 | Sprint | Stato | Copertura reale |
 |---|---|---|
 | 0 Fondazioni | ✅ done | tooling, CI, Makefile, pre-commit attivi |
-| 1 Security (backend) | ✅ done | config validator, Fernet, JWT refresh rotation, slowapi, security headers, audit log API. **UI audit log → Sprint 7** |
+| 1 Security (backend) | ✅ done | config validator, Fernet, JWT refresh rotation, slowapi, security headers, audit log API. UI audit log disponibile in /settings → "Registro audit" |
 | 2 DB & Postgres | ✅ done (light) | Alembic, pool, indici, backup/restore. Async rinviato a post-VPS |
-| 3 Test baseline | ✅ done | **149 test backend** (132 + 10 circuit_breaker + 7 image_processing) + 3 file test frontend (9 casi). Coverage gate backend 50%. Coverage frontend **da attivare** |
+| 3 Test baseline | ✅ done | **150+ test backend** (inc. `test_error_in_one_iteration_preserves_others` — regressione SAVEPOINT discovery) + 3 file test frontend (9 casi). Coverage gate backend 50% |
 | 4 Observability | ✅ done | batch 1-4 completi: structlog + request_id + @with_retry + health deep + circuit breaker Ollama + LLMStatusBanner UI + errorToast IT + Sentry opt-in + Prometheus /metrics + logrotate template + /dashboard/alerts |
-| 5 Deploy | 🔴 core done | Dockerfile.prod ×2, compose.prod Traefik v3 + ACME, deploy.sh rollback, RUNBOOK 11 sezioni. **Mancano**: CI/CD GHCR push, UptimeRobot, dry-run VPS reale |
+| 5 Deploy | 🔴 core done | Dockerfile.prod ×2, compose.prod Traefik v3 + ACME, deploy.sh rollback, RUNBOOK 11 sezioni. **Mancano**: CI/CD GHCR push (opzionale), UptimeRobot, dry-run VPS reale |
 | 6 Performance | 🟡 parziale | **Frontend**: bundle analyzer + sourcemap + chunk splitting + react-virtuoso dep. **Backend**: fix N+1, Pillow+WebP resize, cache nginx 1y, cache utility TTL. **Rinviato post-VPS**: ARQ+Redis migration, cache attivazione endpoint |
-| 8 Doc/UAT/Handoff | 🟡 parziale | **Done**: USER_GUIDE + ADMIN_GUIDE + DEVELOPER_GUIDE + RUNBOOK + PDF tecnico + README allineato. **Mancano**: screenshot UI (post Sprint 7), UAT, OWASP ZAP, k6, video walkthrough, contratto manutenzione |
+| 7 UX/UI premium | ✅ done (per consegna) | **vedi sotto — ridisegno completo di tutte le 9+ pagine** |
+| 8 Doc/UAT/Handoff | 🟡 parziale | **Done**: USER_GUIDE + ADMIN_GUIDE + DEVELOPER_GUIDE + RUNBOOK + PDF tecnico + README allineato. **Mancano post-VPS**: screenshot UI aggiornati, UAT, OWASP ZAP, k6, video walkthrough, contratto manutenzione |
 
-### Sprint 7 (in corso)
+### Sprint 7 — stato al 2026-04-23
 
 | Batch | Stato | Contenuto |
 |---|---|---|
-| Foundation | ✅ done | Design tokens TS (300+ righe, 8 palette WCAG AA 10-step) + ConfigProvider AntD dark+light + uiStore themeMode persistito + Inter self-hosted + logo SVG + favicon + skip-to-content a11y + ThemeToggle Lucide Moon/Sun |
-| Polish batch 1 | ✅ done | StatusBadge + ScoreBadge + RoleChip custom con Lucide icons + wrapper deprecated per retrocompat + PipelineFunnel Recharts nella Dashboard + PipelineOverview refresh (dark-mode aware) + sidebar migrata completamente a Lucide |
-| Polish batch 2 | ✅ done | **p1** (`fa7f641`): PageTransition framer-motion (fade+slide 200ms con reduced-motion) + SkeletonLoaders shimmer 4 varianti (Page/Table/Cards/Detail) + EmptyIllustrated SVG 6 variant + Sparkline Recharts + KPICards rinnovata (Lucide + tokens + sparkline trend 7gg). **p2** (`30ca556`): hook `useToast` (success/info/warning/error + toast.promise) wrapping `App.useApp()`, AntdApp config (maxCount=3, top=72, notification bottom-right), Lucide su InboxFilters (Search, X) |
-| Productivity | ✅ done (p1) | **Done**: CommandPalette (cmdk, ⌘+K/Ctrl+K, ricerca articoli+prompt via React Query con debounce 200ms, azioni naviga+toggle-tema+nuovo-prompt/utente ruolo-aware, footer con kbd hints) + useKeyboardShortcut hook (mod/shift/alt parsing + skip-in-input eccetto ⌘+K) + ShortcutsCheatsheet modal (aperto con ?) + TypedConfirmModal (pattern "digita SCARTA" per destructive) + integrazione in MainLayout con mod+k/?/mod+shift+L. **Rinviato a batch futuro**: onboarding tour (react-joyride) + optimistic UI sui mutation hook (refactor distribuito) |
-| A11y + i18n + refactor | 🟡 in corso | **Done**: react-i18next setup (IT primario + EN secondario) con LanguageDetector localStorage, locale files `src/i18n/locales/{it,en}.ts` con 80+ chiavi su 11 sezioni (common/nav/auth/theme/status/role/dashboard/inbox/commandPalette/errors/llm), LocaleSwitcher dropdown in header (Lucide Languages icon), @axe-core/react attivato in DEV (audit WCAG a console su ogni render). **Next**: refactor ArticlePreviewDrawer 764 → sub-componenti + bottom-sheet filtri mobile + Lighthouse budget CI. **Note**: migrazione graduale stringhe hardcoded → `t('...')` è task diffusa, da fare quando si toccano i componenti |
+| Foundation | ✅ done | Design tokens (8 palette WCAG AA 10-step), ConfigProvider dark+light, uiStore themeMode persistito, Inter self-hosted, logo GSI + favicon fondo bianco, ThemeToggle Lucide |
+| Polish b1 | ✅ done | StatusBadge/ScoreBadge/RoleChip custom Lucide, PipelineFunnel Recharts, PipelineOverview dark-aware, sidebar Lucide-only |
+| Polish b2 | ✅ done | PageTransition framer-motion, SkeletonLoaders shimmer, EmptyIllustrated 6 variant, Sparkline Recharts, KPICards rinnovata, useToast hook (success/info/warning/error + promise) |
+| Productivity | ✅ done | CommandPalette ⌘+K cmdk + useKeyboardShortcut + ShortcutsCheatsheet (`?`) + TypedConfirmModal + integrazione MainLayout. Rinviato: react-joyride tour, optimistic UI mutation |
+| A11y + i18n | ✅ setup | react-i18next IT-only (EN rimosso su richiesta), locale files 80+ chiavi, @axe-core/react DEV audit, focus-trap nativo AntD Drawer/Modal |
+| **Page redesign b3→b16** | ✅ done | **Ridisegno completo pagine allineato al design premium** (gradient brand blue→purple, radius 12, shadow-sm, Lucide everywhere, dark-mode-aware via `antdTheme.useToken()`). Pagine toccate: `AuthLayout` + `LoginPage` split-screen + `AppSider` dark immersivo con mesh orb + `AppHeader` + `ProfilePage` con AvatarCropModal + `HeaderSearchButton` ⌘K + `NotificationBell` + `PromptsListPage` con `FolderPickerModal` bulk-move + `PromptDetailPage` hero+tabs + `PromptFolderTree` custom + `PromptSearchHistory` drawer detail fix + `InboxPage` hero+card+BatchActionsBar floating pill + `ArticleDetailPage` hero+MetaPill + `AlertsPage` StatusPill+ProgressBar + `SettingsPage` hero+card + `DashboardPage` welcome page + `/calendar` + `/taxonomy` → **placeholder "Coming Soon"** (versioni full preservate in `_*.full.tsx` riattivabili) |
+
+### Fix funzionali inclusi in Sprint 7
+
+- **Discovery pipeline SAVEPOINT** (`be28969`): un errore per-URL non cancella più tutti i `SearchResult` accumulati nella transazione. Test di regressione `test_error_in_one_iteration_preserves_others` aggiunto.
+- **Prompt detail "Risultati" drawer** (`68082c1`): ora fa la GET `/search-runs/:id` per popolare `results` (prima la lista parent non li aveva → sempre 0 righe).
+- **Colonna Risultati semplificata** (`3462148`): Articolo/Dominio/Score con LEFT JOIN `articles.ai_score` (no N+1).
+- **Workflow stati manuali** (`3189a07` + `ca3d83d`): nuova costante `MANUAL_ARTICLE_STATUSES = ['screened', 'in_review', 'approved', 'rejected']` usata in tutti i dropdown di cambio stato (BatchActionsBar, ArticleDetailPage, ArticlePreviewDrawer) e nel filtro inbox. Rename label: "Vagliato"→"**Visualizzato**", "Rifiutato"→"**Scartato**". `scheduled`/`publishing`/`published` sono automatici (calendar / worker pubblicazione).
+- **Quick-move prompt in cartella** (`330774b`): colonna "Cartella" cliccabile in `/prompts` + bulk-select toolbar + `FolderPickerModal` riusabile.
 
 ### Blocker assoluti prima della consegna (minimum viable)
 
 - [x] ~~Manuale utente + admin + developer + PDF tecnico + README~~ done
-- [x] ~~CI verde su Linux~~ — tutti e 3 i job passano (backend mypy + pytest coverage ≥50%, frontend lint+tsc+vitest, dependency audit)
-- [ ] Dry-run completo di `./deploy.sh` su VPS di staging — `RUNBOOK.md §2`
-- [ ] OWASP ZAP baseline scan su staging — no HIGH findings
+- [x] ~~CI verde su Linux~~ — backend mypy+pytest coverage≥50%, frontend lint+tsc+vitest, dependency audit
+- [x] ~~Sprint 7 UX/UI premium allineato al design~~ done (tutte le pagine attive)
+- [ ] **Merge branch `feat/sprint-7-polish-productivity` → `main`** (PR da aprire)
+- [ ] **Dry-run `./deploy.sh` su VPS del cliente** — `RUNBOOK.md §2` (richiede credenziali VPS)
+- [ ] OWASP ZAP baseline scan su staging — no HIGH findings (post-deploy staging)
 - [ ] Contratto di manutenzione proposto al cliente
 
 ### Gap per lo scenario "Professional" (raccomandato)
@@ -71,16 +81,19 @@ di batch/sprint. Ultimi 2 PR mergeati su `main`:
 - [x] ~~Sprint 4 batch 2-4~~ done
 - [x] ~~Sprint 6 parziale~~ done (non-VPS)
 - [x] ~~Sprint 7 foundation + polish b1~~ done
-- [ ] **Sprint 7 polish b2 + productivity + a11y** (in corso) — design completo, motion, command palette, a11y WCAG AA, i18n, refactoring file grandi, Lighthouse ≥95
+- [x] ~~Sprint 7 polish b2 + productivity + i18n + page redesign~~ done
 - [ ] Sprint 6 post-VPS — ARQ+Redis + cache attivazione (richiede Redis vivo)
 - [ ] Sprint 5 post-VPS — test live deploy, UptimeRobot, CI/CD GHCR
+- [ ] Sprint 7 follow-up post-deploy — refactor `ArticlePreviewDrawer.tsx` (764 righe), Lighthouse budget CI, onboarding tour react-joyride, screenshot aggiornati in USER_GUIDE
 
 ### Note operative
 
-- **Coverage frontend**: `fail_under` non configurato. Test 3 componenti comuni. Target pre-consegna: gate ≥30% + LoginPage/ProtectedRoute/RoleGuard coperti.
+- **Coverage frontend**: `fail_under` non configurato. Test 3 componenti comuni. Non bloccante per consegna; target follow-up: gate ≥30% + LoginPage/ProtectedRoute/RoleGuard coperti.
 - **pip-audit**: attivo in CI con `--ignore-vuln PYSEC-2022-252` (deep-translator 2022 takeover, versione attuale sicura).
-- **Password reset utente**: endpoint `/auth/password-reset` non presente. Admin-only reset da UI ora (Sprint 7 productivity). Valutare aggiunta pre-consegna (~2h).
-- **Default admin**: `admin@gsi.local`/`admin123` sostituito da random in seed se default, ma `.env.prod` sul VPS **deve** avere valore custom.
+- **Password reset utente self-service**: endpoint `/auth/password-reset` non presente. Admin-only reset disponibile. Da valutare in contratto di manutenzione (~2h).
+- **Default admin**: `admin@gsi.local`/`admin123` sostituito da random in seed se default, ma `.env.prod` sul VPS **deve** avere valore custom (documentato in `RUNBOOK.md §2`).
+- **`/calendar` e `/taxonomy`**: placeholder "Coming Soon" temporanei. Le versioni complete sono pronte (`_CalendarPage.full.tsx` / `_TaxonomyPage.full.tsx`) e possono essere riattivate sostituendo l'import in `LazyPages.tsx`. Scelta lato prodotto, non tecnica.
+- **Dashboard**: semplificata a welcome page con quick-actions tiles. KPI/funnel/recent jobs restano in `pages/dashboard/components/` riattivabili quando la pipeline avrà dati di produzione.
 
 ---
 
