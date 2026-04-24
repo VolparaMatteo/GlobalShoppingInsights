@@ -48,14 +48,12 @@ services:
   # Traefik v3 — reverse proxy + Let's Encrypt ACME
   # -----------------------------------------------------------------------
   traefik:
-    image: traefik:v3.2
+    # Docker Engine >= 29 (API 1.50) rifiuta Traefik 3.1/3.2 perché il loro
+    # Go SDK Docker nega l'API version e cade sul default 1.24 (molto vecchio).
+    # Traefik 3.6+ ha version negotiation corretta.
+    image: traefik:v3.6
     container_name: gsi-traefik
     restart: unless-stopped
-    # Docker Engine >= 29 richiede API version >= 1.40. Traefik default
-    # negozierebbe l'API, ma v3.1 ha un bug di default 1.24 → fallisce.
-    # Soluzione: force env var + upgrade a 3.2.
-    environment:
-      DOCKER_API_VERSION: "1.45"
     command:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
