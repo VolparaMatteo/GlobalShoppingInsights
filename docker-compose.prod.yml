@@ -48,9 +48,14 @@ services:
   # Traefik v3 — reverse proxy + Let's Encrypt ACME
   # -----------------------------------------------------------------------
   traefik:
-    image: traefik:v3.1
+    image: traefik:v3.2
     container_name: gsi-traefik
     restart: unless-stopped
+    # Docker Engine >= 29 richiede API version >= 1.40. Traefik default
+    # negozierebbe l'API, ma v3.1 ha un bug di default 1.24 → fallisce.
+    # Soluzione: force env var + upgrade a 3.2.
+    environment:
+      DOCKER_API_VERSION: "1.45"
     command:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
