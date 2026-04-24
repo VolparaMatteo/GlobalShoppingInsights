@@ -5,10 +5,8 @@
 // ---------------------------------------------------------------------------
 import { Button, Typography, theme as antdTheme } from 'antd';
 import {
-  ArrowRight,
   ArrowUpRight,
   CheckCheck,
-  CircleSlash2,
   Download,
   ExternalLink,
   FileText,
@@ -16,7 +14,6 @@ import {
   Gauge,
   Globe2,
   Keyboard,
-  Lightbulb,
   ListChecks,
   MousePointerClick,
   Search as SearchIcon,
@@ -27,8 +24,18 @@ import { useNavigate } from 'react-router-dom';
 import ScoreBadge from '@/components/common/ScoreBadge';
 import StatusBadge from '@/components/common/StatusBadge';
 import { MANUAL_ARTICLE_STATUSES } from '@/config/constants';
+import {
+  Arrow,
+  ContactFooter,
+  Faq,
+  GuideDivider as Divider,
+  InfoCard as FilterCard,
+  Kbd,
+  SectionTitle,
+  Tip,
+} from '@/pages/support/components/GuidePrimitives';
 
-const { Title, Text, Paragraph } = Typography;
+const { Paragraph } = Typography;
 
 export default function InboxGuide() {
   const { token } = antdTheme.useToken();
@@ -408,233 +415,8 @@ export default function InboxGuide() {
         a="Lo scraping non sempre riesce perfettamente (paywall, JavaScript-only pages, layout complessi). Apri il link alla fonte originale dal preview drawer per leggerlo nel contesto completo. Se scarti gli articoli di un dominio ricorrente che non scraperano mai bene, valuta di aggiungerlo alla blacklist in /settings."
       />
 
-      <div
-        style={{
-          marginTop: 36,
-          padding: '20px 22px',
-          borderRadius: 12,
-          background:
-            'linear-gradient(135deg, rgba(22,119,255,0.08) 0%, rgba(114,46,209,0.08) 100%)',
-          border: `1px solid ${token.colorPrimary}33`,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 14,
-          flexWrap: 'wrap',
-        }}
-      >
-        <div
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 10,
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: token.colorBgContainer,
-            border: `1px solid ${token.colorPrimary}33`,
-            color: token.colorPrimary,
-            flexShrink: 0,
-          }}
-        >
-          <CircleSlash2 size={18} strokeWidth={2} />
-        </div>
-        <div style={{ flex: 1, minWidth: 240 }}>
-          <Text strong style={{ fontSize: 14, color: token.colorText }}>
-            Hai altre domande?
-          </Text>
-          <div>
-            <Text type="secondary" style={{ fontSize: 13 }}>
-              Scrivimi direttamente a{' '}
-              <a href="mailto:matteo@spinottowebagency.com">matteo@spinottowebagency.com</a> — la
-              guida viene estesa di continuo in base alle domande che ricevo.
-            </Text>
-          </div>
-        </div>
-      </div>
+      <ContactFooter />
     </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Sub-componenti
-// ---------------------------------------------------------------------------
-
-function SectionTitle({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
-  const { token } = antdTheme.useToken();
-  return (
-    <Title
-      level={4}
-      style={{
-        margin: '12px 0 12px',
-        fontWeight: 700,
-        letterSpacing: -0.3,
-        color: token.colorText,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-      }}
-    >
-      <span
-        style={{
-          fontSize: 20,
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: 30,
-          height: 30,
-        }}
-      >
-        {icon}
-      </span>
-      {children}
-    </Title>
-  );
-}
-
-function Divider() {
-  const { token } = antdTheme.useToken();
-  return (
-    <div
-      style={{
-        height: 1,
-        background: token.colorBorderSecondary,
-        margin: '32px 0',
-      }}
-    />
-  );
-}
-
-function Arrow() {
-  const { token } = antdTheme.useToken();
-  return <ArrowRight size={14} color={token.colorTextTertiary} strokeWidth={2.2} />;
-}
-
-function FilterCard({
-  icon,
-  title,
-  body,
-  children,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  body: string;
-  children?: React.ReactNode;
-}) {
-  const { token } = antdTheme.useToken();
-  return (
-    <div
-      style={{
-        marginTop: 12,
-        padding: '14px 16px',
-        background: token.colorBgLayout,
-        borderRadius: 10,
-        border: `1px solid ${token.colorBorderSecondary}`,
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          marginBottom: 4,
-          color: token.colorPrimary,
-        }}
-      >
-        {icon}
-        <Text strong style={{ fontSize: 13.5, color: token.colorText }}>
-          {title}
-        </Text>
-      </div>
-      <Text style={{ fontSize: 13.5, color: token.colorTextSecondary, lineHeight: 1.6 }}>
-        {body}
-      </Text>
-      {children}
-    </div>
-  );
-}
-
-function Tip({
-  icon = <Lightbulb size={15} />,
-  children,
-}: {
-  icon?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  const { token } = antdTheme.useToken();
-  return (
-    <div
-      style={{
-        marginTop: 18,
-        padding: '12px 16px',
-        background: 'linear-gradient(135deg, rgba(250,173,20,0.08) 0%, rgba(250,173,20,0.04) 100%)',
-        border: `1px solid rgba(250,173,20,0.3)`,
-        borderRadius: 10,
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 10,
-      }}
-    >
-      <span
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          color: '#faad14',
-          fontSize: 18,
-          lineHeight: 1,
-          marginTop: 2,
-        }}
-      >
-        {icon}
-      </span>
-      <Text style={{ fontSize: 13.5, lineHeight: 1.7, color: token.colorText }}>{children}</Text>
-    </div>
-  );
-}
-
-function Faq({ q, a }: { q: string; a: React.ReactNode }) {
-  const { token } = antdTheme.useToken();
-  return (
-    <div
-      style={{
-        marginTop: 12,
-        padding: '14px 16px',
-        background: token.colorBgLayout,
-        borderRadius: 10,
-        border: `1px solid ${token.colorBorderSecondary}`,
-      }}
-    >
-      <Text
-        strong
-        style={{ fontSize: 13.5, display: 'block', marginBottom: 5, color: token.colorText }}
-      >
-        {q}
-      </Text>
-      <Text style={{ fontSize: 13.5, color: token.colorTextSecondary, lineHeight: 1.7 }}>{a}</Text>
-    </div>
-  );
-}
-
-function Kbd({ children }: { children: React.ReactNode }) {
-  const { token } = antdTheme.useToken();
-  return (
-    <kbd
-      style={{
-        display: 'inline-block',
-        padding: '1px 7px',
-        fontSize: 12,
-        fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
-        color: token.colorText,
-        background: token.colorBgContainer,
-        border: `1px solid ${token.colorBorderSecondary}`,
-        borderBottomWidth: 2,
-        borderRadius: 6,
-        lineHeight: 1.4,
-      }}
-    >
-      {children}
-    </kbd>
   );
 }
 

@@ -19,8 +19,14 @@ import {
 } from 'lucide-react';
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
+import AlertsGuide from '@/pages/support/sections/AlertsGuide';
+import ArticleGuide from '@/pages/support/sections/ArticleGuide';
+import CalendarGuide from '@/pages/support/sections/CalendarGuide';
 import InboxGuide from '@/pages/support/sections/InboxGuide';
-import ComingSoonSection from '@/pages/support/sections/ComingSoonSection';
+import PromptsGuide from '@/pages/support/sections/PromptsGuide';
+import SettingsGuide from '@/pages/support/sections/SettingsGuide';
+import TaxonomyGuide from '@/pages/support/sections/TaxonomyGuide';
+import UsersGuide from '@/pages/support/sections/UsersGuide';
 
 const { Title, Text } = Typography;
 
@@ -33,13 +39,13 @@ interface SectionEntry {
 
 const SECTIONS: SectionEntry[] = [
   { slug: 'inbox', label: 'Inbox editoriale', icon: InboxIcon, ready: true },
-  { slug: 'prompts', label: 'Prompt di ricerca', icon: Search, ready: false },
-  { slug: 'article', label: 'Dettaglio articolo', icon: FileText, ready: false },
-  { slug: 'calendar', label: 'Calendario', icon: CalendarDays, ready: false },
-  { slug: 'taxonomy', label: 'Tassonomia', icon: FolderTree, ready: false },
-  { slug: 'users', label: 'Utenti e ruoli', icon: Users, ready: false },
-  { slug: 'alerts', label: 'Alert e log', icon: Bell, ready: false },
-  { slug: 'settings', label: 'Impostazioni', icon: Settings2, ready: false },
+  { slug: 'prompts', label: 'Prompt di ricerca', icon: Search, ready: true },
+  { slug: 'article', label: 'Dettaglio articolo', icon: FileText, ready: true },
+  { slug: 'calendar', label: 'Calendario', icon: CalendarDays, ready: true },
+  { slug: 'taxonomy', label: 'Tassonomia', icon: FolderTree, ready: true },
+  { slug: 'users', label: 'Utenti e ruoli', icon: Users, ready: true },
+  { slug: 'alerts', label: 'Alert e log', icon: Bell, ready: true },
+  { slug: 'settings', label: 'Impostazioni', icon: Settings2, ready: true },
 ];
 
 export default function SupportPage() {
@@ -145,13 +151,13 @@ export default function SupportPage() {
         >
           <Routes>
             <Route path="inbox" element={<InboxGuide />} />
-            {SECTIONS.filter((s) => !s.ready).map((sec) => (
-              <Route
-                key={sec.slug}
-                path={sec.slug}
-                element={<ComingSoonSection label={sec.label} />}
-              />
-            ))}
+            <Route path="prompts" element={<PromptsGuide />} />
+            <Route path="article" element={<ArticleGuide />} />
+            <Route path="calendar" element={<CalendarGuide />} />
+            <Route path="taxonomy" element={<TaxonomyGuide />} />
+            <Route path="users" element={<UsersGuide />} />
+            <Route path="alerts" element={<AlertsGuide />} />
+            <Route path="settings" element={<SettingsGuide />} />
             {/* /support senza sub-path → redirect a inbox */}
             <Route path="*" element={<Navigate to="inbox" replace />} />
           </Routes>
