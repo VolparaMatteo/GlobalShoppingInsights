@@ -13,6 +13,7 @@ import {
   CalendarDays,
   FolderTree,
   Inbox,
+  LifeBuoy,
   Search,
   Settings2,
   Sparkles,
@@ -66,6 +67,12 @@ const QUICK_ACTIONS: QuickAction[] = [
     description: 'Cronologia dei job dello scheduler (discovery, publish).',
     icon: <Bell size={20} strokeWidth={2} />,
     to: '/dashboard/alerts',
+  },
+  {
+    title: 'Guida & Supporto',
+    description: "Tour guidato e manuale d'uso di ogni pagina della piattaforma.",
+    icon: <LifeBuoy size={20} strokeWidth={2} />,
+    to: '/support',
   },
   {
     title: 'Impostazioni',

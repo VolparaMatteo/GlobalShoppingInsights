@@ -22,6 +22,7 @@ import {
   ChevronsRight,
   Inbox as InboxIcon,
   LayoutDashboard,
+  LifeBuoy,
   Search,
   Settings,
   Tags,
@@ -93,6 +94,7 @@ export default function AppSider({ collapsed }: AppSiderProps) {
             label: 'Alert & Job Log',
             getBadge: () => unreadCount || undefined,
           },
+          { to: '/support', icon: LifeBuoy, label: 'Guida & Supporto' },
           ...(isAdmin
             ? [{ to: '/settings', icon: Settings, label: 'Impostazioni' } as SidebarItem]
             : []),

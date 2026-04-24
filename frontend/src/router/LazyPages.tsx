@@ -11,5 +11,6 @@ export const CalendarPage = lazy(() => import('@/pages/calendar/CalendarPage'));
 export const TaxonomyPage = lazy(() => import('@/pages/taxonomy/TaxonomyPage'));
 export const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage'));
 export const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage'));
+export const SupportPage = lazy(() => import('@/pages/support/SupportPage'));
 export const NotFoundPage = lazy(() => import('@/pages/errors/NotFoundPage'));
 export const ForbiddenPage = lazy(() => import('@/pages/errors/ForbiddenPage'));

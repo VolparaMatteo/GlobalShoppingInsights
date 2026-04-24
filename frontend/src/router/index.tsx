@@ -16,6 +16,7 @@ import {
   TaxonomyPage,
   SettingsPage,
   ProfilePage,
+  SupportPage,
   NotFoundPage,
 } from '@/router/LazyPages';
 
@@ -85,6 +86,11 @@ const routes: RouteObject[] = [
           {
             path: '/profile',
             element: suspense(ProfilePage),
+          },
+          {
+            // /support e sub-path (/support/inbox, /support/prompts, ecc)
+            path: '/support/*',
+            element: suspense(SupportPage),
           },
           {
             path: '*',
