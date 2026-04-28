@@ -47,7 +47,7 @@ function filtersToParams(
   if (filters.search) params.search = filters.search;
   if (filters.statuses.length > 0) params.status = filters.statuses.join(',');
   if (filters.language) params.language = filters.language;
-  if (filters.promptIds.length > 0) params.prompt_ids = filters.promptIds;
+  if (filters.categories.length > 0) params.categories = filters.categories;
   if (filters.minScore > 0) params.min_score = filters.minScore;
   if (filters.maxScore < 100) params.max_score = filters.maxScore;
 

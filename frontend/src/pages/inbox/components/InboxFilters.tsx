@@ -1,17 +1,18 @@
 // ---------------------------------------------------------------------------
 // InboxFilters — Sprint 7 polish b10 (Lucide + dark-mode aware)
-// Barra filtri della Inbox: search, stato, lingua, prompt sorgente,
+// Barra filtri della Inbox: search, stato, lingua, categoria,
 // punteggio AI (range), clear.
 // ---------------------------------------------------------------------------
 import { useCallback, useMemo } from 'react';
 
 import { Button, Col, Input, Row, Select, Slider, Typography, theme as antdTheme } from 'antd';
-import { useQuery } from '@tanstack/react-query';
 import { FilterX, Search, SlidersHorizontal } from 'lucide-react';
 
-import { MANUAL_ARTICLE_STATUSES, STATUS_MAP } from '@/config/constants';
-import { queryKeys } from '@/config/queryKeys';
-import { getPrompts } from '@/services/api/prompts.api';
+import {
+  ARTICLE_CATEGORIES,
+  MANUAL_ARTICLE_STATUSES,
+  STATUS_MAP,
+} from '@/config/constants';
 
 const { Text } = Typography;
 
@@ -23,7 +24,7 @@ export interface InboxFilterValues {
   search: string;
   statuses: string[];
   language: string | undefined;
-  promptIds: number[];
+  categories: string[];
   minScore: number;
   maxScore: number;
 }
@@ -32,7 +33,7 @@ export const DEFAULT_FILTERS: InboxFilterValues = {
   search: '',
   statuses: [],
   language: undefined,
-  promptIds: [],
+  categories: [],
   minScore: 0,
   maxScore: 100,
 };
@@ -64,34 +65,36 @@ const languageOptions = [
   { label: 'Coreano', value: 'ko' },
 ];
 
+// Opzioni del Select 'Categoria' con icona + cerchio colorato del brand.
+// Il label è un ReactNode così Antd Select lo renderizza nel dropdown
+// e nella tag selezionata.
+const categoryOptions = ARTICLE_CATEGORIES.map((cat) => ({
+  value: cat.name,
+  label: (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      <span
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          background: cat.color,
+          display: 'inline-block',
+          flexShrink: 0,
+        }}
+      />
+      <span>
+        {cat.icon} {cat.name}
+      </span>
+    </span>
+  ),
+}));
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersProps) {
   const { token } = antdTheme.useToken();
-
-  // Fetch tutti i prompt una volta sola (cached). Per il multi-select serve
-  // l'elenco completo; il backend ritorna max 100/page, ma 700 prompt totali
-  // entrano in 7 pagine. Soluzione semplice: chiediamo page_size=1000 (cap a
-  // 100 lato API → ne ritorna 100). Per ora ci accontentiamo dei top 100;
-  // se in futuro servono di più si farà autocomplete server-side.
-  const { data: promptsData } = useQuery({
-    queryKey: queryKeys.prompts.list({ page: 1, page_size: 1000 }),
-    queryFn: () => getPrompts({ page: 1, page_size: 1000 }),
-    staleTime: 5 * 60_000, // 5 min
-  });
-
-  const promptOptions = useMemo(
-    () =>
-      (promptsData?.items ?? []).map((p) => ({
-        // Mostra il titolo nel select; se ha [LANG] suffix mantienilo per
-        // distinguere prompt analoghi in lingue diverse.
-        label: p.title,
-        value: p.id,
-      })),
-    [promptsData],
-  );
 
   const patch = useCallback(
     (partial: Partial<InboxFilterValues>) => {
@@ -109,7 +112,7 @@ export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersP
       filters.search !== DEFAULT_FILTERS.search ||
       filters.statuses.length !== 0 ||
       filters.language !== DEFAULT_FILTERS.language ||
-      filters.promptIds.length !== 0 ||
+      filters.categories.length !== 0 ||
       filters.minScore !== DEFAULT_FILTERS.minScore ||
       filters.maxScore !== DEFAULT_FILTERS.maxScore
     );
@@ -131,7 +134,7 @@ export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersP
         </Col>
 
         {/* Status multi-select */}
-        <Col xs={24} sm={12} md={5}>
+        <Col xs={24} sm={12} md={4}>
           <Select
             mode="multiple"
             placeholder="Stato"
@@ -156,21 +159,17 @@ export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersP
           />
         </Col>
 
-        {/* Prompt multi-select (filtra articoli per prompt sorgente) */}
-        <Col xs={24} sm={24} md={7}>
+        {/* Category multi-select (macrocategoria editoriale) */}
+        <Col xs={24} sm={24} md={8}>
           <Select
             mode="multiple"
-            placeholder="Prompt sorgente…"
+            placeholder="Categoria editoriale"
             allowClear
-            showSearch
-            optionFilterProp="label"
             maxTagCount="responsive"
             style={{ width: '100%' }}
-            options={promptOptions}
-            value={filters.promptIds}
-            onChange={(promptIds) => patch({ promptIds })}
-            // Per cercare fra centinaia di prompt: virtualizza il dropdown.
-            virtual
+            options={categoryOptions}
+            value={filters.categories}
+            onChange={(categories) => patch({ categories })}
           />
         </Col>
 

@@ -45,6 +45,28 @@ export const MANUAL_ARTICLE_STATUSES: ArticleStatus[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Macrocategorie editoriali (top-level prompt_folders)
+// ---------------------------------------------------------------------------
+// Riflettono la tassonomia "Categorie GSI" (PDF cliente). I prompt sono
+// organizzati in 3 livelli: Categoria > Sottogruppo > Cartella prompt.
+// Il filtro /inbox permette di restringere agli articoli importati da prompt
+// di una specifica categoria.
+
+export interface ArticleCategoryDef {
+  name: string;
+  icon: string;
+  color: string;
+}
+
+export const ARTICLE_CATEGORIES: ArticleCategoryDef[] = [
+  { name: 'STRATEGY', icon: '🎯', color: '#007BA7' }, // Blu Ceruleo
+  { name: 'CUSTOMER JOURNEY', icon: '🗺️', color: '#8b5cf6' }, // Viola
+  { name: 'CUSTOMER INSIGHT', icon: '💡', color: '#f59e0b' }, // Ambra
+  { name: 'INNOVATION', icon: '🚀', color: '#10b981' }, // Verde Smeraldo
+  { name: 'HUMAN SIDE', icon: '❤️', color: '#ec4899' }, // Rosa/Magenta
+];
+
+// ---------------------------------------------------------------------------
 // Roles
 // ---------------------------------------------------------------------------
 

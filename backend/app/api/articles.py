@@ -174,9 +174,10 @@ def list_articles(
     search: str | None = None,
     min_score: int | None = None,
     max_score: int | None = None,
-    # Filtra solo articoli associati ai prompt specificati (M:M via article_prompts).
-    # URL: ?prompt_ids=1&prompt_ids=2&prompt_ids=3
-    prompt_ids: list[int] | None = Query(None),
+    # Filtra articoli associati a prompt che vivono in cartelle figlie di
+    # una macrocategoria (livello 1: STRATEGY, CUSTOMER JOURNEY, ecc).
+    # URL: ?categories=STRATEGY&categories=INNOVATION
+    categories: list[str] | None = Query(None),
     # Default: ai_score desc → gli articoli più rilevanti in cima.
     sort_by: str = "ai_score",
     sort_order: str = "desc",
@@ -198,13 +199,27 @@ def list_articles(
         query = query.filter(Article.ai_score >= min_score)
     if max_score is not None:
         query = query.filter(Article.ai_score <= max_score)
-    if prompt_ids:
-        # Subquery sui link M:M article_prompts: include un articolo se è
-        # legato ad ALMENO UNO dei prompt_ids richiesti (logica OR).
+    if categories:
+        # 3-level folder hierarchy: leaf (con prompt) -> sottogruppo -> categoria.
+        # Subquery: trova tutti gli article_id linkati a prompt il cui folder
+        # gerarchia risale a una delle categorie selezionate.
         from sqlalchemy import select
+        from sqlalchemy.orm import aliased
 
-        sub = select(article_prompts.c.article_id).where(
-            article_prompts.c.prompt_id.in_(prompt_ids)
+        from app.models.prompt_folder import PromptFolder
+
+        f_leaf = aliased(PromptFolder)  # livello 3 (folder del prompt)
+        f_sub = aliased(PromptFolder)  # livello 2 (sottogruppo)
+        f_cat = aliased(PromptFolder)  # livello 1 (categoria)
+
+        sub = (
+            select(article_prompts.c.article_id)
+            .select_from(article_prompts)
+            .join(Prompt, Prompt.id == article_prompts.c.prompt_id)
+            .join(f_leaf, f_leaf.id == Prompt.folder_id)
+            .join(f_sub, f_sub.id == f_leaf.parent_id)
+            .join(f_cat, f_cat.id == f_sub.parent_id)
+            .where(f_cat.name.in_(categories))
         )
         query = query.filter(Article.id.in_(sub))
 
