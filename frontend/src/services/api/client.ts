@@ -8,6 +8,12 @@ import { useAuthStore } from '@/stores/authStore';
 const client = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   headers: { 'Content-Type': 'application/json' },
+  // Serializzazione query: array → ripetizioni (?k=1&k=2&k=3) invece di
+  // 'k[]=1&k[]=2' o 'k=1,2'. FastAPI Query(...) decodifica nativamente
+  // questo formato come list[T].
+  paramsSerializer: {
+    indexes: null, // ripetizioni senza [] / indici
+  },
 });
 
 // ---- Request interceptor: attach Bearer token ----------------------------

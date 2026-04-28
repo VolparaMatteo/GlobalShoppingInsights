@@ -23,6 +23,8 @@ export interface GetArticlesParams {
   category_id?: number;
   min_score?: number;
   max_score?: number;
+  /** Filtra solo articoli associati a uno o più di questi prompt (M:M, OR). */
+  prompt_ids?: number[];
   sort_by?: string;
   sort_order?: 'asc' | 'desc';
 }

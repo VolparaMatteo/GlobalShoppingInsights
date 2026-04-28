@@ -174,6 +174,9 @@ def list_articles(
     search: str | None = None,
     min_score: int | None = None,
     max_score: int | None = None,
+    # Filtra solo articoli associati ai prompt specificati (M:M via article_prompts).
+    # URL: ?prompt_ids=1&prompt_ids=2&prompt_ids=3
+    prompt_ids: list[int] | None = Query(None),
     # Default: ai_score desc → gli articoli più rilevanti in cima.
     sort_by: str = "ai_score",
     sort_order: str = "desc",
@@ -195,6 +198,15 @@ def list_articles(
         query = query.filter(Article.ai_score >= min_score)
     if max_score is not None:
         query = query.filter(Article.ai_score <= max_score)
+    if prompt_ids:
+        # Subquery sui link M:M article_prompts: include un articolo se è
+        # legato ad ALMENO UNO dei prompt_ids richiesti (logica OR).
+        from sqlalchemy import select
+
+        sub = select(article_prompts.c.article_id).where(
+            article_prompts.c.prompt_id.in_(prompt_ids)
+        )
+        query = query.filter(Article.id.in_(sub))
 
     sort_col = getattr(Article, sort_by, Article.created_at)
     query = query.order_by(sort_col.desc() if sort_order == "desc" else sort_col.asc())

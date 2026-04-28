@@ -1,14 +1,17 @@
 // ---------------------------------------------------------------------------
 // InboxFilters — Sprint 7 polish b10 (Lucide + dark-mode aware)
-// Barra filtri della Inbox: search, stato, lingua, punteggio AI (range),
-// dominio, paese, clear.
+// Barra filtri della Inbox: search, stato, lingua, prompt sorgente,
+// punteggio AI (range), clear.
 // ---------------------------------------------------------------------------
 import { useCallback, useMemo } from 'react';
 
 import { Button, Col, Input, Row, Select, Slider, Typography, theme as antdTheme } from 'antd';
+import { useQuery } from '@tanstack/react-query';
 import { FilterX, Search, SlidersHorizontal } from 'lucide-react';
 
 import { MANUAL_ARTICLE_STATUSES, STATUS_MAP } from '@/config/constants';
+import { queryKeys } from '@/config/queryKeys';
+import { getPrompts } from '@/services/api/prompts.api';
 
 const { Text } = Typography;
 
@@ -20,20 +23,18 @@ export interface InboxFilterValues {
   search: string;
   statuses: string[];
   language: string | undefined;
+  promptIds: number[];
   minScore: number;
   maxScore: number;
-  domain: string;
-  country: string | undefined;
 }
 
 export const DEFAULT_FILTERS: InboxFilterValues = {
   search: '',
   statuses: [],
   language: undefined,
+  promptIds: [],
   minScore: 0,
   maxScore: 100,
-  domain: '',
-  country: undefined,
 };
 
 interface InboxFiltersProps {
@@ -63,27 +64,34 @@ const languageOptions = [
   { label: 'Coreano', value: 'ko' },
 ];
 
-const countryOptions = [
-  { label: 'Stati Uniti', value: 'US' },
-  { label: 'Regno Unito', value: 'GB' },
-  { label: 'Canada', value: 'CA' },
-  { label: 'Germania', value: 'DE' },
-  { label: 'Francia', value: 'FR' },
-  { label: 'Spagna', value: 'ES' },
-  { label: 'Italia', value: 'IT' },
-  { label: 'Giappone', value: 'JP' },
-  { label: 'Cina', value: 'CN' },
-  { label: 'Australia', value: 'AU' },
-  { label: 'Brasile', value: 'BR' },
-  { label: 'India', value: 'IN' },
-];
-
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersProps) {
   const { token } = antdTheme.useToken();
+
+  // Fetch tutti i prompt una volta sola (cached). Per il multi-select serve
+  // l'elenco completo; il backend ritorna max 100/page, ma 700 prompt totali
+  // entrano in 7 pagine. Soluzione semplice: chiediamo page_size=1000 (cap a
+  // 100 lato API → ne ritorna 100). Per ora ci accontentiamo dei top 100;
+  // se in futuro servono di più si farà autocomplete server-side.
+  const { data: promptsData } = useQuery({
+    queryKey: queryKeys.prompts.list({ page: 1, page_size: 1000 }),
+    queryFn: () => getPrompts({ page: 1, page_size: 1000 }),
+    staleTime: 5 * 60_000, // 5 min
+  });
+
+  const promptOptions = useMemo(
+    () =>
+      (promptsData?.items ?? []).map((p) => ({
+        // Mostra il titolo nel select; se ha [LANG] suffix mantienilo per
+        // distinguere prompt analoghi in lingue diverse.
+        label: p.title,
+        value: p.id,
+      })),
+    [promptsData],
+  );
 
   const patch = useCallback(
     (partial: Partial<InboxFilterValues>) => {
@@ -101,10 +109,9 @@ export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersP
       filters.search !== DEFAULT_FILTERS.search ||
       filters.statuses.length !== 0 ||
       filters.language !== DEFAULT_FILTERS.language ||
+      filters.promptIds.length !== 0 ||
       filters.minScore !== DEFAULT_FILTERS.minScore ||
-      filters.maxScore !== DEFAULT_FILTERS.maxScore ||
-      filters.domain !== DEFAULT_FILTERS.domain ||
-      filters.country !== DEFAULT_FILTERS.country
+      filters.maxScore !== DEFAULT_FILTERS.maxScore
     );
   }, [filters]);
 
@@ -138,7 +145,7 @@ export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersP
         </Col>
 
         {/* Language */}
-        <Col xs={24} sm={8} md={3}>
+        <Col xs={24} sm={12} md={3}>
           <Select
             placeholder="Lingua"
             allowClear
@@ -149,25 +156,21 @@ export default function InboxFilters({ filters, onFiltersChange }: InboxFiltersP
           />
         </Col>
 
-        {/* Country */}
-        <Col xs={24} sm={8} md={3}>
+        {/* Prompt multi-select (filtra articoli per prompt sorgente) */}
+        <Col xs={24} sm={24} md={7}>
           <Select
-            placeholder="Paese"
+            mode="multiple"
+            placeholder="Prompt sorgente…"
             allowClear
+            showSearch
+            optionFilterProp="label"
+            maxTagCount="responsive"
             style={{ width: '100%' }}
-            options={countryOptions}
-            value={filters.country}
-            onChange={(country) => patch({ country })}
-          />
-        </Col>
-
-        {/* Domain */}
-        <Col xs={24} sm={8} md={3}>
-          <Input
-            placeholder="Dominio"
-            allowClear
-            value={filters.domain}
-            onChange={(e) => patch({ domain: e.target.value })}
+            options={promptOptions}
+            value={filters.promptIds}
+            onChange={(promptIds) => patch({ promptIds })}
+            // Per cercare fra centinaia di prompt: virtualizza il dropdown.
+            virtual
           />
         </Col>
 
