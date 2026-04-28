@@ -14,7 +14,12 @@ router = APIRouter(prefix="/prompt-folders", tags=["prompt-folders"])
 
 
 def _build_tree(folders: list, counts: dict) -> list[PromptFolderResponse]:
-    """Build a nested tree from a flat list of folders."""
+    """Build a nested tree from a flat list of folders.
+
+    `prompt_count` viene propagato a cascata dai figli al padre, così
+    categorie/sottocategorie senza prompt diretti mostrano comunque il totale
+    degli articoli ricavati dai loro discendenti.
+    """
     by_id: dict[int, PromptFolderResponse] = {}
     for f in folders:
         resp = PromptFolderResponse.model_validate(f)
@@ -23,12 +28,23 @@ def _build_tree(folders: list, counts: dict) -> list[PromptFolderResponse]:
         by_id[f.id] = resp
 
     roots: list[PromptFolderResponse] = []
+    children_of: dict[int, list[int]] = {}
     for f in folders:
-        node = by_id[f.id]
         if f.parent_id and f.parent_id in by_id:
-            by_id[f.parent_id].children.append(node)
+            children_of.setdefault(f.parent_id, []).append(f.id)
         else:
-            roots.append(node)
+            roots.append(by_id[f.id])
+
+    def attach_and_aggregate(node_id: int) -> int:
+        node = by_id[node_id]
+        for child_id in children_of.get(node_id, []):
+            child_total = attach_and_aggregate(child_id)
+            node.children.append(by_id[child_id])
+            node.prompt_count += child_total
+        return node.prompt_count
+
+    for root in roots:
+        attach_and_aggregate(root.id)
 
     return roots
 
