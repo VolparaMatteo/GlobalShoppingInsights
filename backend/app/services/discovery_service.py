@@ -255,8 +255,17 @@ def run_discovery_pipeline(prompt_id: int, user_id: int | None = None):
                     except Exception as e:
                         logger.warning(f"LLM evaluation failed for {url}: {e}")
 
-                    # Final score: use LLM score if available, fall back to embedding score
-                    final_score = llm_score if llm_score is not None else ai_score
+                    # Final score: blend embedding score (granulare ma con piccolo
+                    # bias verso l'alto) e LLM score (Qwen 2.5 3B tende a polarizzare
+                    # su valori canonici come 85/39/0). Il 60/40 dà una distribuzione
+                    # realistica preservando il giudizio di rilevanza del LLM.
+                    # Se LLM non risponde, usiamo solo l'embedding.
+                    if llm_score is not None:
+                        final_score = int(round(0.6 * ai_score + 0.4 * llm_score))
+                        model_version = f"blend(embedding,llm:{OLLAMA_MODEL})"
+                    else:
+                        final_score = ai_score
+                        model_version = ai_result.get("model_version")
 
                     article = Article(
                         canonical_url=url,
@@ -275,9 +284,7 @@ def run_discovery_pipeline(prompt_id: int, user_id: int | None = None):
                         ai_score_explanation=ai_result.get("explanation", []),
                         ai_suggested_tags=ai_result.get("tags", []),
                         ai_suggested_category=ai_result.get("category"),
-                        ai_model_version=f"llm:{OLLAMA_MODEL}"
-                        if llm_score is not None
-                        else ai_result.get("model_version"),
+                        ai_model_version=model_version,
                         ai_relevance_comment=llm_comment,
                     )
                     db.add(article)

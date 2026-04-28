@@ -69,14 +69,18 @@ INSTRUCTIONS:
 1. Read the article carefully.
 2. Decide if the article is genuinely and substantially about the search topic.
 3. An article that merely mentions a keyword in passing but is actually about a different subject is NOT relevant.
-4. Assign a relevance score from 0 to 100:
-   - 80-100: The article is directly and deeply about the search topic
-   - 60-79: The article is substantially about the topic but also covers other themes
-   - 40-59: The article touches on the topic but it is not the main focus
-   - 0-39: The article is not about the topic
+4. Assign a relevance score from 0 to 100. Use the FULL RANGE and avoid round/canonical numbers
+   (do NOT pick 80, 85, 90, 95, 100 unless the article is exactly that level — vary by ±2-4 points
+   based on quality, depth, recency, source authority).
+   Reference bands (pick a SPECIFIC value INSIDE these, not the boundary):
+   - 88-100: Exceptional, comprehensive coverage of the exact topic (e.g. 91, 94, 97)
+   - 72-87: Strong on-topic article, deep treatment (e.g. 74, 79, 83, 86)
+   - 55-71: Substantially relevant, shares attention with adjacent themes (e.g. 57, 62, 68)
+   - 35-54: Tangential — topic is mentioned but not the focus (e.g. 38, 44, 51)
+   - 0-34: Off-topic or only loosely connected (e.g. 12, 22, 31)
 5. Respond ONLY with a valid JSON object (no markdown, no extra text):
 
-{{"relevant": true/false, "score": 0-100, "comment": "your explanation in {lang_label}", "confidence": 0.0-1.0}}
+{{"relevant": true/false, "score": <integer 0-100>, "comment": "your explanation in {lang_label}", "confidence": 0.0-1.0}}
 
 The "comment" field must be written in {lang_label}. Keep it concise (1-2 sentences)."""
 
@@ -150,7 +154,10 @@ def _call_ollama_generate(base_url: str, prompt: str) -> str:
             "prompt": prompt,
             "stream": False,
             "options": {
-                "temperature": 0.1,
+                # 0.4 invece di 0.1: 3B model con T=0.1 collassava su valori
+                # canonici (85/39/0). T più alta dà variabilità realistica;
+                # il prompt rinforzato evita comunque hallucination su altri campi.
+                "temperature": 0.4,
                 "num_predict": 256,
             },
         },

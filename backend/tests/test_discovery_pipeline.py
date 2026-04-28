@@ -148,7 +148,9 @@ def test_pipeline_happy_path_creates_article(db, patch_discovery_session, mock_d
     article = db.query(Article).filter(Article.canonical_url.like("%news.example.com%")).first()
     assert article is not None
     assert article.status == "imported"
-    assert article.ai_score == 80  # LLM score prevale
+    # Score blend 60/40: 0.6*70 (embedding) + 0.4*80 (LLM) = 74
+    assert article.ai_score == 74
+    assert article.ai_model_version == "blend(embedding,llm:qwen2.5:3b)"
     assert article.ai_relevance_comment == "Relevant"
 
 
