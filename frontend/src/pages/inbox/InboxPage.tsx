@@ -87,7 +87,8 @@ export default function InboxPage() {
     pageSize: DEFAULT_PAGE_SIZE,
     total: 0,
   });
-  const [sort, setSort] = useState<SortState | null>(null);
+  // Default sort: ai_score desc — articoli più rilevanti in cima.
+  const [sort, setSort] = useState<SortState | null>({ field: 'ai_score', order: 'desc' });
 
   // ---- Selection ----------------------------------------------------------
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);

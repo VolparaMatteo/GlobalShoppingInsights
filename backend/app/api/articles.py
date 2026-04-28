@@ -174,7 +174,8 @@ def list_articles(
     search: str | None = None,
     min_score: int | None = None,
     max_score: int | None = None,
-    sort_by: str = "created_at",
+    # Default: ai_score desc → gli articoli più rilevanti in cima.
+    sort_by: str = "ai_score",
     sort_order: str = "desc",
     db: Session = Depends(get_db),
     _current_user: User = Depends(get_current_user),

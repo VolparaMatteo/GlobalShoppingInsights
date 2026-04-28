@@ -84,6 +84,8 @@ const columns: ColumnsType<Article> = [
     dataIndex: 'ai_score',
     key: 'ai_score',
     sorter: true,
+    // Sort di default: AI score discendente (più rilevanti in cima).
+    defaultSortOrder: 'descend',
     width: 110,
     align: 'center',
     render: (score: number | null) => <ScoreBadge score={score} />,
