@@ -19,7 +19,9 @@ router = APIRouter(prefix="/prompts", tags=["prompts"])
 @router.get("", response_model=PaginatedResponse[PromptResponse])
 def list_prompts(
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
+    # Cap aumentato a 1000 per consentire al filtro UI '/inbox' di
+    # popolare il multi-select con tutti i prompt in una sola query.
+    page_size: int = Query(20, ge=1, le=1000),
     search: str | None = None,
     folder_id: int | None = None,
     unfiled: bool | None = None,
