@@ -31,8 +31,6 @@ import AIScorePanel from '@/pages/article/components/AIScorePanel';
 import ArticleContent from '@/pages/article/components/ArticleContent';
 import ArticleEditor from '@/pages/article/components/ArticleEditor';
 import ArticleMetadata from '@/pages/article/components/ArticleMetadata';
-import CommentsThread from '@/pages/article/components/CommentsThread';
-import TagCategoryAssign from '@/pages/article/components/TagCategoryAssign';
 import { changeStatus, getArticle } from '@/services/api/articles.api';
 
 const { Title, Text } = Typography;
@@ -337,14 +335,11 @@ export default function ArticleDetailPage() {
           ) : (
             <ArticleContent article={article} />
           )}
-
-          <CommentsThread articleId={article.id} />
         </Col>
 
         <Col xs={24} lg={8}>
           <ArticleMetadata article={article} />
           <AIScorePanel article={article} />
-          <TagCategoryAssign article={article} />
         </Col>
       </Row>
     </div>
