@@ -269,8 +269,9 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
             Nessun risultato per "{query}"
           </Command.Empty>
 
-          {/* Actions + navigazione */}
-          {groupedActions.map(([groupName, items]) => (
+          {/* Actions + navigazione — nascoste durante la ricerca remota
+              (altrimenti Invio cadrebbe su "Vai alla Dashboard") */}
+          {!searchEnabled && groupedActions.map(([groupName, items]) => (
             <Command.Group
               key={groupName}
               heading={groupName}

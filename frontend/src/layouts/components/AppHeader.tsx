@@ -19,7 +19,6 @@ import { useLocation } from 'react-router-dom';
 import ThemeToggle from '@/components/common/ThemeToggle';
 import HeaderAvatar from '@/layouts/components/HeaderAvatar';
 import HeaderSearchButton from '@/layouts/components/HeaderSearchButton';
-import NotificationBell from '@/layouts/components/NotificationBell';
 import { useAuthStore } from '@/stores/authStore';
 
 const { Header } = Layout;
@@ -159,7 +158,6 @@ export default function AppHeader() {
       {/* ---- Right: controls ---- */}
       <Space size={6} align="center">
         <ThemeToggle />
-        <NotificationBell />
         <span
           aria-hidden="true"
           style={{
