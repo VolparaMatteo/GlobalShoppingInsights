@@ -2,32 +2,18 @@
 // ArticlePreviewDrawer  --  Side-panel preview for a single article
 // ---------------------------------------------------------------------------
 import { useEffect, useState } from 'react';
-import {
-  Button,
-  Drawer,
-  Dropdown,
-  Flex,
-  message,
-  Select,
-  Space,
-  Tag,
-  Typography,
-  Upload,
-} from 'antd';
+import { Button, Drawer, Dropdown, Flex, message, Space, Tag, Typography, Upload } from 'antd';
 import {
   ArrowRightOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
   DeleteOutlined,
-  FolderOutlined,
   GlobalOutlined,
   LinkOutlined,
   PictureOutlined,
-  PlusOutlined,
   RobotOutlined,
   SearchOutlined,
   SwapOutlined,
-  TagsOutlined,
   TranslationOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
@@ -41,8 +27,6 @@ import { buildArticleDetailPath, buildPromptDetailPath } from '@/config/routes';
 import { queryKeys } from '@/config/queryKeys';
 import { MANUAL_ARTICLE_STATUSES, STATUS_MAP } from '@/config/constants';
 import { changeStatus, translateArticle } from '@/services/api/articles.api';
-import { batchAction } from '@/services/api/articles.api';
-import { useTags, useCategories } from '@/hooks/queries/useTaxonomy';
 import { useUpdateArticle, useUploadArticleImage } from '@/hooks/queries/useArticle';
 import StatusBadge from '@/pages/inbox/components/StatusBadge';
 import ScoreBadge from '@/pages/inbox/components/ScoreBadge';
@@ -118,12 +102,6 @@ export default function ArticlePreviewDrawer({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // ---- Tag selector state -------------------------------------------------
-  const [tagSelectOpen, setTagSelectOpen] = useState(false);
-
-  // ---- Category selector state -------------------------------------------
-  const [catSelectOpen, setCatSelectOpen] = useState(false);
-
   // ---- Unsplash picker state ---------------------------------------------
   const [unsplashOpen, setUnsplashOpen] = useState(false);
 
@@ -139,13 +117,6 @@ export default function ArticlePreviewDrawer({
     setTranslation(null);
   }, [article?.id]);
 
-  // ---- Fetch all available tags & categories ------------------------------
-  const { data: tagsData } = useTags();
-  const allTags = tagsData?.items ?? [];
-
-  const { data: categoriesData } = useCategories();
-  const allCategories = categoriesData?.items ?? [];
-
   // ---- Update / upload article mutations ---------------------------------
   const updateArticleMutation = useUpdateArticle();
   const uploadImageMutation = useUploadArticleImage();
@@ -160,42 +131,6 @@ export default function ArticlePreviewDrawer({
     },
     onError: () => {
       message.error('Impossibile aggiornare lo stato');
-    },
-  });
-
-  // ---- Tag mutation (uses batch API for single article) -------------------
-  const tagMutation = useMutation({
-    mutationFn: (tagIds: number[]) =>
-      batchAction({
-        article_ids: [article!.id],
-        action: 'tag',
-        tag_ids: tagIds,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.articles.all });
-      message.success('Tag aggiornati');
-      setTagSelectOpen(false);
-    },
-    onError: () => {
-      message.error('Impossibile aggiornare i tag');
-    },
-  });
-
-  // ---- Category mutation (uses batch API for single article) --------------
-  const categoryMutation = useMutation({
-    mutationFn: (categoryIds: number[]) =>
-      batchAction({
-        article_ids: [article!.id],
-        action: 'category',
-        category_ids: categoryIds,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.articles.all });
-      message.success('Categorie aggiornate');
-      setCatSelectOpen(false);
-    },
-    onError: () => {
-      message.error('Impossibile aggiornare le categorie');
     },
   });
 
@@ -247,20 +182,6 @@ export default function ArticlePreviewDrawer({
       onClick: () => statusMutation.mutate({ id: article.id, newStatus: s }),
     };
   });
-
-  // ---- Tags already assigned to this article ------------------------------
-  const assignedTagIds = new Set(article.tags?.map((t) => t.id) ?? []);
-  const availableTagOptions = allTags
-    .filter((t) => !assignedTagIds.has(t.id))
-    .map((t) => ({ label: t.name, value: t.id }));
-
-  const hasTags = article.tags && article.tags.length > 0;
-
-  // ---- Categories already assigned to this article -----------------------
-  const assignedCatIds = new Set(article.categories?.map((c) => c.id) ?? []);
-  const availableCatOptions = allCategories
-    .filter((c) => !assignedCatIds.has(c.id))
-    .map((c) => ({ label: c.name, value: c.id }));
 
   return (
     <Drawer
@@ -462,102 +383,6 @@ export default function ArticlePreviewDrawer({
               )}
             </Section>
           )}
-
-          {/* ---- Tags ---- */}
-          <Section label="Tags">
-            <Flex wrap="wrap" gap={6} align="center">
-              {article.tags?.map((tag) => (
-                <Tag key={tag.id} icon={<TagsOutlined />}>
-                  {tag.name}
-                </Tag>
-              ))}
-              {!article.tags?.length && (
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  Nessun tag
-                </Typography.Text>
-              )}
-
-              {/* ---- Add tag inline (hidden in readOnly) ---- */}
-              {!readOnly &&
-                (tagSelectOpen ? (
-                  <Select
-                    autoFocus
-                    mode="multiple"
-                    placeholder="Seleziona tag..."
-                    size="small"
-                    style={{ minWidth: 180 }}
-                    options={availableTagOptions}
-                    onBlur={() => setTagSelectOpen(false)}
-                    onChange={(selectedIds: number[]) => {
-                      if (selectedIds.length > 0) {
-                        tagMutation.mutate(selectedIds);
-                      }
-                    }}
-                    loading={tagMutation.isPending}
-                  />
-                ) : (
-                  <Tag
-                    onClick={() => setTagSelectOpen(true)}
-                    style={{
-                      borderStyle: 'dashed',
-                      cursor: 'pointer',
-                      color: '#1890ff',
-                      borderColor: '#1890ff',
-                    }}
-                  >
-                    <PlusOutlined /> Aggiungi
-                  </Tag>
-                ))}
-            </Flex>
-          </Section>
-
-          {/* ---- Categories ---- */}
-          <Section label="Categorie">
-            <Flex wrap="wrap" gap={6} align="center">
-              {article.categories?.map((cat) => (
-                <Tag key={cat.id} icon={<FolderOutlined />}>
-                  {cat.name}
-                </Tag>
-              ))}
-              {!article.categories?.length && (
-                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  Nessuna categoria
-                </Typography.Text>
-              )}
-
-              {/* ---- Add category inline (hidden in readOnly) ---- */}
-              {!readOnly &&
-                (catSelectOpen ? (
-                  <Select
-                    autoFocus
-                    mode="multiple"
-                    placeholder="Seleziona categorie..."
-                    size="small"
-                    style={{ minWidth: 180 }}
-                    options={availableCatOptions}
-                    onBlur={() => setCatSelectOpen(false)}
-                    onChange={(selectedIds: number[]) => {
-                      if (selectedIds.length > 0) {
-                        categoryMutation.mutate(selectedIds);
-                      }
-                    }}
-                    loading={categoryMutation.isPending}
-                  />
-                ) : (
-                  <Tag
-                    onClick={() => setCatSelectOpen(true)}
-                    style={{
-                      borderStyle: 'dashed',
-                      cursor: 'pointer',
-                      color: '#1890ff',
-                      borderColor: '#1890ff',
-                    }}
-                  >
-                    <PlusOutlined /> Aggiungi
-                  </Tag>
-                ))}
-            </Flex>
-          </Section>
 
           {/* ---- Cover Image ---- */}
           {(article.featured_image_url || !readOnly) && (
