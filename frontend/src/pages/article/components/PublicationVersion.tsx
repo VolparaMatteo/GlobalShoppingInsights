@@ -97,16 +97,7 @@ export default function PublicationVersion({ article }: PublicationVersionProps)
   const canPreview = previewTitle.length > 0 && previewExcerpt.length > 0;
 
   return (
-    <div
-      style={{
-        background: token.colorBgContainer,
-        borderRadius: 12,
-        border: `1px solid ${token.colorBorderSecondary}`,
-        boxShadow: 'var(--shadow-sm)',
-        padding: '20px 22px',
-        marginTop: 16,
-      }}
-    >
+    <div>
       <div
         style={{
           display: 'flex',
@@ -118,9 +109,9 @@ export default function PublicationVersion({ article }: PublicationVersionProps)
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Sparkles size={18} color={token.colorPrimary} />
-          <Typography.Text strong style={{ fontSize: 15, color: token.colorText }}>
-            Versione per pubblicazione
+          <Sparkles size={16} color={token.colorPrimary} />
+          <Typography.Text type="secondary" style={{ fontSize: 12.5 }}>
+            Versione no-copyright per WordPress
           </Typography.Text>
           {hasContent && (
             <Tag color="green" style={{ marginLeft: 4 }}>

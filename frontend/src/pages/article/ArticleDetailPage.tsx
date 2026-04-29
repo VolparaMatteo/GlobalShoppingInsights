@@ -3,7 +3,18 @@
 // ---------------------------------------------------------------------------
 import { useCallback, useState } from 'react';
 
-import { Button, Col, Dropdown, Result, Row, Space, Typography, theme as antdTheme } from 'antd';
+import {
+  Button,
+  Card,
+  Col,
+  Dropdown,
+  Result,
+  Row,
+  Space,
+  Tabs,
+  Typography,
+  theme as antdTheme,
+} from 'antd';
 import type { MenuProps } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -334,10 +345,24 @@ export default function ArticleDetailPage() {
               onCancel={() => setIsEditing(false)}
             />
           ) : (
-            <ArticleContent article={article} />
+            <Card style={{ marginBottom: 16 }} styles={{ body: { paddingTop: 0 } }}>
+              <Tabs
+                defaultActiveKey="content"
+                items={[
+                  {
+                    key: 'content',
+                    label: 'Contenuto',
+                    children: <ArticleContent article={article} />,
+                  },
+                  {
+                    key: 'publication',
+                    label: 'Pubblicazione GSI',
+                    children: <PublicationVersion article={article} />,
+                  },
+                ]}
+              />
+            </Card>
           )}
-
-          <PublicationVersion article={article} />
         </Col>
 
         <Col xs={24} lg={8}>

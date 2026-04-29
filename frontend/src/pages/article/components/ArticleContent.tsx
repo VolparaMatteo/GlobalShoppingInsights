@@ -1,7 +1,10 @@
 // ---------------------------------------------------------------------------
 // ArticleContent.tsx  --  Article content display (clean text + images)
+//
+// Renderizza solo il body: il wrapper Card è gestito dal parent
+// (ArticleContentTabs) per condividere il chrome con la tab di pubblicazione.
 // ---------------------------------------------------------------------------
-import { Card, Image, Typography, Flex } from 'antd';
+import { Image, Typography, Flex } from 'antd';
 import type { Article } from '@/types';
 
 interface ArticleContentProps {
@@ -12,7 +15,6 @@ const IMG_FALLBACK =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/+F9PQAI8wNPvd7POQAAAABJRU5ErkJggg==';
 
 export default function ArticleContent({ article }: ArticleContentProps) {
-  // Collect all images: featured first, then additional images
   const allImages: string[] = [];
   if (article.featured_image_url) allImages.push(article.featured_image_url);
   if (article.images?.length) {
@@ -21,12 +23,10 @@ export default function ArticleContent({ article }: ArticleContentProps) {
     }
   }
 
-  // Prefer content_text (clean plain text) over content_html (may contain raw tags)
   const textContent = article.content_text || null;
 
   return (
-    <Card title="Contenuto" style={{ marginBottom: 16 }}>
-      {/* Images */}
+    <div>
       {allImages.length > 0 && (
         <Flex wrap="wrap" gap={12} justify="center" style={{ marginBottom: 20 }}>
           <Image.PreviewGroup>
@@ -48,7 +48,6 @@ export default function ArticleContent({ article }: ArticleContentProps) {
         </Flex>
       )}
 
-      {/* Text content */}
       {textContent ? (
         <Typography.Paragraph
           style={{
@@ -65,6 +64,6 @@ export default function ArticleContent({ article }: ArticleContentProps) {
           Nessun contenuto disponibile per questo articolo.
         </Typography.Text>
       )}
-    </Card>
+    </div>
   );
 }
