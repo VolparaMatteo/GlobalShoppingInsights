@@ -523,3 +523,41 @@ def translate_article(
         "translated_title": translated_title,
         "translated_text": translated_text,
     }
+
+
+@router.post("/{article_id}/generate-for-publication", response_model=ArticleResponse)
+def generate_for_publication(
+    article_id: int,
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(require_min_role("editor")),
+):
+    """Genera titolo + estratto pronti alla pubblicazione (no copyright).
+
+    Sovrascrive sempre `published_title` e `published_excerpt` con il nuovo
+    output del modello: l'editor può poi rifinirli a mano via PATCH classico.
+    """
+    from app.services.llm_service import generate_publication_text
+
+    article = db.query(Article).filter(Article.id == article_id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+
+    if not article.content_text and not article.title:
+        raise HTTPException(
+            status_code=400,
+            detail="L'articolo non ha contenuto sufficiente per generare il testo",
+        )
+
+    try:
+        result = generate_publication_text(
+            article_title=article.title or "",
+            article_text=article.content_text or "",
+        )
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+    article.published_title = result["title"]
+    article.published_excerpt = result["excerpt"]
+    db.commit()
+    db.refresh(article)
+    return _enrich_article(article, db)

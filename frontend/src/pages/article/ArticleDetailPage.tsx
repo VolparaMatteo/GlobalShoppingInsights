@@ -31,6 +31,7 @@ import AIScorePanel from '@/pages/article/components/AIScorePanel';
 import ArticleContent from '@/pages/article/components/ArticleContent';
 import ArticleEditor from '@/pages/article/components/ArticleEditor';
 import ArticleMetadata from '@/pages/article/components/ArticleMetadata';
+import PublicationVersion from '@/pages/article/components/PublicationVersion';
 import { changeStatus, getArticle } from '@/services/api/articles.api';
 
 const { Title, Text } = Typography;
@@ -335,6 +336,8 @@ export default function ArticleDetailPage() {
           ) : (
             <ArticleContent article={article} />
           )}
+
+          <PublicationVersion article={article} />
         </Col>
 
         <Col xs={24} lg={8}>

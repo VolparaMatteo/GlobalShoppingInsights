@@ -61,6 +61,8 @@ class Article(Base):
     ai_relevance_comment = Column(Text, nullable=True)
     duplicate_of_id = Column(Integer, ForeignKey("articles.id"), nullable=True)
     raw_html = Column(Text, nullable=True)
+    published_title = Column(Text, nullable=True)
+    published_excerpt = Column(Text, nullable=True)
     created_at = Column(DateTime, nullable=False, server_default=func.now(), index=True)
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 

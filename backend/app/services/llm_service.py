@@ -201,3 +201,115 @@ def _validate(data: dict) -> dict:
         "comment": data.get("comment") or None,
         "confidence": float(data.get("confidence", 0.0)),
     }
+
+
+# ---------------------------------------------------------------------------
+# Generazione titolo + estratto per pubblicazione (no copyright)
+# ---------------------------------------------------------------------------
+
+
+def _build_publication_prompt(article_title: str, article_text: str) -> str:
+    """Prompt che chiede al modello di riformulare titolo + estratto.
+
+    Output forzato in italiano e in JSON. Il prompt insiste sul fatto che il
+    risultato deve essere una riformulazione genuina (non copia letterale)
+    perché poi pubblichiamo su WordPress senza diritti sul testo originale.
+    """
+    truncated = article_text[:4000]
+    return f"""Sei un editor giornalistico italiano. Riformula completamente titolo e contenuto dell'articolo qui sotto per pubblicarlo su un magazine di settore (retail/e-commerce/customer experience), in italiano.
+
+REQUISITI ASSOLUTI:
+- NON copiare frasi o periodi dal testo originale: parafrasa con parole tue.
+- Tono giornalistico, chiaro, scorrevole, professionale.
+- Il titolo riformulato (max 100 caratteri) deve catturare il messaggio chiave.
+- L'estratto deve essere un riassunto/anteprima di 120-160 parole, autonomo, che invogli alla lettura senza spoilerare conclusioni.
+- NON inserire link, CTA, firme, hashtag, emoji, claim non presenti nel testo.
+
+ARTICOLO ORIGINALE:
+- Titolo: {article_title}
+- Testo: {truncated}
+
+Rispondi SOLO con un oggetto JSON valido (no markdown, no testo extra) nella forma:
+{{"title": "<titolo riformulato in italiano>", "excerpt": "<estratto 120-160 parole in italiano>"}}"""
+
+
+def generate_publication_text(article_title: str, article_text: str) -> dict:
+    """Chiama Ollama per generare titolo + estratto pronti alla pubblicazione.
+
+    Returns:
+        {"title": str, "excerpt": str}
+
+    Solleva RuntimeError se Ollama non è configurato, è in circuit-open,
+    oppure la risposta non è parsabile — in modo che l'endpoint API possa
+    restituire un 503 leggibile lato UI invece di salvare contenuto vuoto.
+    """
+    base_url = _ollama_base_url()
+    if not base_url:
+        raise RuntimeError("LLM non configurato sul server")
+    if _ollama_breaker.is_open():
+        raise RuntimeError("LLM temporaneamente non disponibile (circuit breaker aperto)")
+
+    prompt = _build_publication_prompt(article_title, article_text or "")
+
+    try:
+        response = httpx.post(
+            f"{base_url}/api/generate",
+            json={
+                "model": OLLAMA_MODEL,
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.6,
+                    "num_predict": 700,
+                },
+            },
+            timeout=180,
+        )
+        response.raise_for_status()
+        raw_text = str(response.json().get("response", "")).strip()
+    except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
+        _ollama_breaker.record_failure()
+        logger.warning(f"Ollama generate publication failed: {e}")
+        raise RuntimeError(f"Errore nella chiamata al modello: {e}") from e
+
+    _ollama_breaker.record_success()
+
+    parsed = _try_parse_json(raw_text)
+    if not parsed or not isinstance(parsed, dict):
+        raise RuntimeError("Il modello non ha restituito JSON valido")
+
+    title = (parsed.get("title") or "").strip()
+    excerpt = (parsed.get("excerpt") or "").strip()
+    if not title or not excerpt:
+        raise RuntimeError("Il modello ha restituito titolo o estratto vuoto")
+
+    # Hard cap di sicurezza per evitare titoli abnormi
+    if len(title) > 200:
+        title = title[:200].rstrip() + "…"
+
+    return {"title": title, "excerpt": excerpt}
+
+
+def _try_parse_json(raw_text: str) -> dict | None:
+    """Estrae un oggetto JSON da una risposta LLM, gestendo code-fence."""
+    try:
+        return json.loads(raw_text)
+    except (json.JSONDecodeError, ValueError):
+        pass
+    for marker in ("```json", "```"):
+        if marker in raw_text:
+            start = raw_text.index(marker) + len(marker)
+            tail = raw_text[start:]
+            end = tail.index("```") if "```" in tail else len(tail)
+            try:
+                return json.loads(tail[:end].strip())
+            except (json.JSONDecodeError, ValueError):
+                continue
+    # Fallback: cerca la prima { e l'ultima } e prova a parsare
+    if "{" in raw_text and "}" in raw_text:
+        snippet = raw_text[raw_text.index("{") : raw_text.rindex("}") + 1]
+        try:
+            return json.loads(snippet)
+        except (json.JSONDecodeError, ValueError):
+            return None
+    return None

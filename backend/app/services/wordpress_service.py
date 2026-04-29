@@ -176,15 +176,30 @@ def publish_to_wordpress(article_id: int):
             wp_auth = _wp_auth_credentials(config)
 
             # --- Build clean content ---
-            content = ""
-            if article.content_text:
+            # Se l'editor ha generato/modificato i campi published_*, usa quelli
+            # (pubblicazione "no copyright": riformulazione + CTA all'originale).
+            # Altrimenti fallback al contenuto originale dell'articolo.
+            if article.published_excerpt:
+                excerpt_html = _text_to_html(article.published_excerpt)
+                cta_html = (
+                    '<p style="margin-top:1.5em">'
+                    f'<a href="{article.canonical_url}" target="_blank" rel="noopener">'
+                    "Leggi l'articolo completo sulla fonte originale"
+                    " &rarr;</a></p>"
+                )
+                content = f"{excerpt_html}{cta_html}"
+            elif article.content_text:
                 content = _text_to_html(article.content_text)
+            else:
+                content = ""
 
             post_data: dict = {
-                "title": article.title,
+                "title": article.published_title or article.title,
                 "content": content,
                 "status": "publish",
             }
+            if article.published_excerpt:
+                post_data["excerpt"] = article.published_excerpt
 
             # --- Categories & Tags ---
             wp_cats = _get_wp_category_ids(db, article_id)

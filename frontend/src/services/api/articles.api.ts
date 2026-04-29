@@ -116,3 +116,9 @@ export async function uploadArticleImage(id: number, file: File): Promise<Articl
   });
   return data;
 }
+
+/** POST /articles/:id/generate-for-publication */
+export async function generateForPublication(id: number): Promise<Article> {
+  const { data } = await client.post<Article>(`/articles/${id}/generate-for-publication`);
+  return data;
+}

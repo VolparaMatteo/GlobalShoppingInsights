@@ -12,6 +12,8 @@ class ArticleUpdate(BaseModel):
     language: str | None = None
     country: str | None = None
     featured_image_url: str | None = None
+    published_title: str | None = None
+    published_excerpt: str | None = None
 
 
 class StatusChangeRequest(BaseModel):
@@ -56,6 +58,8 @@ class ArticleResponse(BaseModel):
     ai_suggested_category: str | None = None
     ai_relevance_comment: str | None = None
     duplicate_of_id: int | None = None
+    published_title: str | None = None
+    published_excerpt: str | None = None
     created_at: datetime
     updated_at: datetime
     tags: list[Any] = []

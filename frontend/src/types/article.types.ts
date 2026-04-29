@@ -35,6 +35,10 @@ export interface Article {
   ai_suggested_category: string | null;
   ai_relevance_comment: string | null;
   duplicate_of_id: number | null;
+  /** Titolo riformulato per la pubblicazione (no copyright). */
+  published_title: string | null;
+  /** Estratto/riassunto per la pubblicazione, accompagnato in WP da una CTA al link originale. */
+  published_excerpt: string | null;
   created_at: string; // ISO-8601 datetime
   updated_at: string; // ISO-8601 datetime
   tags: Tag[];
@@ -51,6 +55,8 @@ export interface ArticleUpdate {
   language?: string | null;
   country?: string | null;
   featured_image_url?: string | null;
+  published_title?: string | null;
+  published_excerpt?: string | null;
 }
 
 /** POST /articles/:id/status request body. */
