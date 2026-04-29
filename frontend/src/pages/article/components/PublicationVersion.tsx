@@ -13,9 +13,10 @@
 // ---------------------------------------------------------------------------
 import { useEffect, useMemo, useState } from 'react';
 
-import { Alert, Button, Input, Space, Tag, theme as antdTheme, Typography } from 'antd';
+import { Alert, Button, Input, Modal, Space, Tag, theme as antdTheme, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Save, Sparkles } from 'lucide-react';
+import dayjs from 'dayjs';
+import { Eye, Save, Sparkles } from 'lucide-react';
 
 import { queryKeys } from '@/config/queryKeys';
 import { useToast } from '@/hooks/useToast';
@@ -36,6 +37,7 @@ export default function PublicationVersion({ article }: PublicationVersionProps)
 
   const [title, setTitle] = useState(article.published_title ?? '');
   const [excerpt, setExcerpt] = useState(article.published_excerpt ?? '');
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   // Allinea lo stato locale ai dati appena arrivati dal server (es. dopo
   // generate o dopo un fetch refresh) senza distruggere edit non salvati
@@ -88,6 +90,12 @@ export default function PublicationVersion({ article }: PublicationVersionProps)
 
   const hasContent = !!article.published_title || !!article.published_excerpt;
 
+  // Preview: usa il testo attualmente in editor (così l'utente vede subito
+  // l'effetto delle modifiche locali, anche prima di salvare).
+  const previewTitle = title.trim() || article.title;
+  const previewExcerpt = excerpt.trim();
+  const canPreview = previewTitle.length > 0 && previewExcerpt.length > 0;
+
   return (
     <div
       style={{
@@ -121,6 +129,14 @@ export default function PublicationVersion({ article }: PublicationVersionProps)
           )}
         </div>
         <Space size={8}>
+          <Button
+            icon={<Eye size={14} />}
+            onClick={() => setPreviewOpen(true)}
+            disabled={!canPreview}
+            style={{ borderRadius: 8, height: 36, fontWeight: 500 }}
+          >
+            Vedi preview
+          </Button>
           <Button
             icon={<Sparkles size={14} />}
             type="primary"
@@ -223,6 +239,181 @@ export default function PublicationVersion({ article }: PublicationVersionProps)
           Salva
         </Button>
       </div>
+
+      <PublicationPreviewModal
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        title={previewTitle}
+        excerpt={previewExcerpt}
+        canonicalUrl={article.canonical_url}
+        sourceDomain={article.source_domain}
+        featuredImageUrl={article.featured_image_url}
+        publishedAt={article.published_at}
+      />
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// PublicationPreviewModal
+//
+// Mostra un'anteprima fedele a quanto WordPress riceverà:
+//   - title  →  article.published_title (fallback article.title)
+//   - body   →  excerpt convertito in <p> (mirror di _text_to_html backend)
+//              + CTA finale al canonical_url (stesso markup di
+//                wordpress_service.publish_to_wordpress)
+//   - featured image opzionale per dare contesto visivo
+// ---------------------------------------------------------------------------
+
+interface PublicationPreviewModalProps {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  excerpt: string;
+  canonicalUrl: string;
+  sourceDomain: string;
+  featuredImageUrl: string | null;
+  publishedAt: string | null;
+}
+
+function excerptToHtml(text: string): string {
+  // Mirror di backend _text_to_html: \n\n separa <p>, \n diventa <br>.
+  const paragraphs = text.split('\n\n');
+  return paragraphs
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0)
+    .map((p) => `<p>${escapeHtml(p).replace(/\n/g, '<br>\n')}</p>`)
+    .join('\n\n');
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function PublicationPreviewModal({
+  open,
+  onClose,
+  title,
+  excerpt,
+  canonicalUrl,
+  sourceDomain,
+  featuredImageUrl,
+  publishedAt,
+}: PublicationPreviewModalProps) {
+  const { token } = antdTheme.useToken();
+
+  return (
+    <Modal
+      open={open}
+      onCancel={onClose}
+      footer={null}
+      width={780}
+      title="Anteprima — come apparirà su WordPress"
+      destroyOnClose
+    >
+      <div
+        style={{
+          background: '#ffffff',
+          color: '#1f1f1f',
+          borderRadius: 8,
+          padding: '32px 36px',
+          border: `1px solid ${token.colorBorderSecondary}`,
+          fontFamily: '"Georgia", "Times New Roman", serif',
+          maxHeight: '70vh',
+          overflowY: 'auto',
+        }}
+      >
+        <Typography.Text
+          style={{
+            display: 'block',
+            fontSize: 11,
+            fontFamily: 'var(--font-family-base)',
+            textTransform: 'uppercase',
+            letterSpacing: 1,
+            color: '#8c8c8c',
+            marginBottom: 12,
+          }}
+        >
+          {sourceDomain}
+          {publishedAt ? ` · ${dayjs(publishedAt).format('DD MMM YYYY')}` : ''}
+        </Typography.Text>
+
+        <h1
+          style={{
+            fontSize: 30,
+            lineHeight: 1.25,
+            margin: '0 0 18px',
+            fontWeight: 700,
+            color: '#111',
+          }}
+        >
+          {title}
+        </h1>
+
+        {featuredImageUrl && (
+          <img
+            src={featuredImageUrl}
+            alt=""
+            style={{
+              width: '100%',
+              maxHeight: 360,
+              objectFit: 'cover',
+              borderRadius: 6,
+              marginBottom: 20,
+            }}
+          />
+        )}
+
+        <div
+          style={{
+            fontSize: 17,
+            lineHeight: 1.7,
+            color: '#262626',
+          }}
+          // Mostriamo l'HTML come lo riceverà WP. È sempre HTML che generiamo
+          // noi (escape applicato sopra), non contenuto utente esterno.
+          dangerouslySetInnerHTML={{ __html: excerptToHtml(excerpt) }}
+        />
+
+        <p style={{ marginTop: '1.5em', fontSize: 16, lineHeight: 1.6 }}>
+          <a
+            href={canonicalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: token.colorPrimary,
+              textDecoration: 'none',
+              fontWeight: 600,
+            }}
+          >
+            Leggi l&apos;articolo completo sulla fonte originale &rarr;
+          </a>
+        </p>
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginTop: 14,
+          fontSize: 12,
+          color: token.colorTextTertiary,
+        }}
+      >
+        <span>
+          La CTA finale viene aggiunta automaticamente in pubblicazione. Il rendering esatto può
+          variare in base al tema WordPress.
+        </span>
+        <Button onClick={onClose} style={{ borderRadius: 8 }}>
+          Chiudi
+        </Button>
+      </div>
+    </Modal>
   );
 }
