@@ -212,25 +212,41 @@ def _build_publication_prompt(article_title: str, article_text: str) -> str:
     """Prompt che chiede al modello di riformulare titolo + estratto.
 
     Output forzato in italiano e in JSON. Il prompt insiste sul fatto che il
-    risultato deve essere una riformulazione genuina (non copia letterale)
-    perché poi pubblichiamo su WordPress senza diritti sul testo originale.
+    risultato deve essere una riformulazione genuina (non copia letterale né
+    traduzione letterale) perché pubblichiamo su WordPress senza diritti sul
+    testo originale.
     """
     truncated = article_text[:4000]
-    return f"""Sei un editor giornalistico italiano. Riformula completamente titolo e contenuto dell'articolo qui sotto per pubblicarlo su un magazine di settore (retail/e-commerce/customer experience), in italiano.
+    return f"""Sei un editor giornalistico italiano per un magazine di settore (retail, e-commerce, customer experience). Devi creare DA ZERO una versione editoriale italiana — titolo e riassunto — partendo dall'articolo qui sotto.
 
-REQUISITI ASSOLUTI:
-- NON copiare frasi o periodi dal testo originale: parafrasa con parole tue.
-- Tono giornalistico, chiaro, scorrevole, professionale.
-- Il titolo riformulato (max 100 caratteri) deve catturare il messaggio chiave.
-- L'estratto deve essere un riassunto/anteprima di 120-160 parole, autonomo, che invogli alla lettura senza spoilerare conclusioni.
-- NON inserire link, CTA, firme, hashtag, emoji, claim non presenti nel testo.
+REGOLE CRITICHE PER IL TITOLO (LE PIÙ IMPORTANTI):
+1. NON TRADURRE il titolo originale. Devi REINVENTARLO completamente in italiano.
+2. La struttura, le parole e l'angolo del nuovo titolo devono essere DIVERSI dall'originale.
+3. Punta a un titolo giornalistico italiano: può essere una domanda, un'affermazione provocatoria, un sottotitolo descrittivo, un "come/perché/cosa", un contrasto.
+4. Massimo 90 caratteri. Italiano corretto, niente parole inventate o traduzioni dubbie.
+
+ESEMPIO di traduzione (SBAGLIATO, NON FARE COSÌ):
+- Originale: "Proactive vs Reactive Customer Service: When to Use Each"
+- ❌ Sbagliato (è solo una traduzione): "Proattività vs Reattività: Quando Usare Ognuna"
+
+ESEMPI di riformulazione (GIUSTI, fai così):
+- ✅ "Servizio clienti: meglio anticipare i problemi o rispondere in tempo reale?"
+- ✅ "Customer service tra prevenzione e reazione: come scegliere la strategia giusta"
+- ✅ "Anticipare o reagire? Le due anime del customer service e quando usarle"
+
+REGOLE PER L'ESTRATTO:
+- Riassunto autonomo dell'articolo, in italiano, 180-230 parole.
+- Parafrasa con parole tue, NON copiare frasi dal testo originale.
+- Tono giornalistico, scorrevole, professionale, informativo.
+- Contestualizza il tema, espone i punti principali e invoglia alla lettura.
+- NIENTE link, CTA, firme, hashtag, emoji, claim non presenti nel testo.
 
 ARTICOLO ORIGINALE:
 - Titolo: {article_title}
 - Testo: {truncated}
 
-Rispondi SOLO con un oggetto JSON valido (no markdown, no testo extra) nella forma:
-{{"title": "<titolo riformulato in italiano>", "excerpt": "<estratto 120-160 parole in italiano>"}}"""
+Rispondi SOLO con un oggetto JSON valido (no markdown, no testo extra), entrambi i campi in italiano:
+{{"title": "<titolo italiano riformulato, MAI una semplice traduzione>", "excerpt": "<estratto italiano 180-230 parole>"}}"""
 
 
 def generate_publication_text(article_title: str, article_text: str) -> dict:
@@ -259,8 +275,10 @@ def generate_publication_text(article_title: str, article_text: str) -> dict:
                 "prompt": prompt,
                 "stream": False,
                 "options": {
-                    "temperature": 0.6,
-                    "num_predict": 700,
+                    # Temperature alta per evitare che il modello scivoli
+                    # nella traduzione letterale del titolo originale.
+                    "temperature": 0.85,
+                    "num_predict": 1100,
                 },
             },
             timeout=180,
