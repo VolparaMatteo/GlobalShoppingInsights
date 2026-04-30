@@ -27,9 +27,8 @@ interface PublicationVersionProps {
   article: Article;
 }
 
-// ~180-230 parole italiane → ~1100-1500 caratteri.
-const EXCERPT_MIN = 600;
-const EXCERPT_MAX = 2000;
+const EXCERPT_MIN = 2000;
+const EXCERPT_MAX = 2500;
 
 export default function PublicationVersion({ article }: PublicationVersionProps) {
   const { token } = antdTheme.useToken();
@@ -192,8 +191,8 @@ export default function PublicationVersion({ article }: PublicationVersionProps)
         <Input.TextArea
           value={excerpt}
           onChange={(e) => setExcerpt(e.target.value)}
-          placeholder="Riassunto/estratto (180-230 parole consigliate)"
-          autoSize={{ minRows: 8, maxRows: 18 }}
+          placeholder="Riassunto/estratto (2000-2500 caratteri)"
+          autoSize={{ minRows: 10, maxRows: 22 }}
           maxLength={EXCERPT_MAX}
           showCount
           disabled={generateMutation.isPending}

@@ -235,10 +235,10 @@ ESEMPI di riformulazione (GIUSTI, fai così):
 - ✅ "Anticipare o reagire? Le due anime del customer service e quando usarle"
 
 REGOLE PER L'ESTRATTO:
-- Riassunto autonomo dell'articolo, in italiano, 180-230 parole.
+- Riassunto autonomo dell'articolo, in italiano, lunghezza tra 2000 e 2500 caratteri (incluse spaziature).
 - Parafrasa con parole tue, NON copiare frasi dal testo originale.
 - Tono giornalistico, scorrevole, professionale, informativo.
-- Contestualizza il tema, espone i punti principali e invoglia alla lettura.
+- Contestualizza il tema, espone i punti principali, sviluppa gli argomenti chiave e invoglia alla lettura.
 - NIENTE link, CTA, firme, hashtag, emoji, claim non presenti nel testo.
 
 ARTICOLO ORIGINALE:
@@ -246,7 +246,7 @@ ARTICOLO ORIGINALE:
 - Testo: {truncated}
 
 Rispondi SOLO con un oggetto JSON valido (no markdown, no testo extra), entrambi i campi in italiano:
-{{"title": "<titolo italiano riformulato, MAI una semplice traduzione>", "excerpt": "<estratto italiano 180-230 parole>"}}"""
+{{"title": "<titolo italiano riformulato, MAI una semplice traduzione>", "excerpt": "<estratto italiano 2000-2500 caratteri>"}}"""
 
 
 def generate_publication_text(article_title: str, article_text: str) -> dict:
@@ -278,10 +278,11 @@ def generate_publication_text(article_title: str, article_text: str) -> dict:
                     # Temperature alta per evitare che il modello scivoli
                     # nella traduzione letterale del titolo originale.
                     "temperature": 0.85,
-                    "num_predict": 1100,
+                    # Estratto 2000-2500 char ≈ 700-900 token IT, +titolo +JSON.
+                    "num_predict": 1600,
                 },
             },
-            timeout=180,
+            timeout=240,
         )
         response.raise_for_status()
         raw_text = str(response.json().get("response", "")).strip()
