@@ -8,6 +8,7 @@ human-readable comment in the article's language.
 
 import json
 import logging
+import re
 
 import httpx
 
@@ -278,8 +279,10 @@ def generate_publication_text(article_title: str, article_text: str) -> dict:
                     # Temperature alta per evitare che il modello scivoli
                     # nella traduzione letterale del titolo originale.
                     "temperature": 0.85,
-                    # Estratto 2000-2500 char ≈ 700-900 token IT, +titolo +JSON.
-                    "num_predict": 1600,
+                    # 2500 char IT ≈ 900-1100 token + titolo + JSON. Con un 3B
+                    # serve abbondanza, altrimenti tronca a metà estratto e il
+                    # JSON resta senza chiusura.
+                    "num_predict": 2400,
                 },
             },
             timeout=240,
@@ -295,11 +298,23 @@ def generate_publication_text(article_title: str, article_text: str) -> dict:
 
     parsed = _try_parse_json(raw_text)
     if not parsed or not isinstance(parsed, dict):
+        # Logghiamo i primi 600 char della raw response: in produzione è
+        # l'unico modo per capire perché il modello non ha rispettato il
+        # formato (preamble, troncamento, lingua sbagliata, ecc.).
+        logger.warning(
+            "LLM publication: parse JSON fallito. Raw prefix=%r", raw_text[:600]
+        )
         raise RuntimeError("Il modello non ha restituito JSON valido")
 
     title = (parsed.get("title") or "").strip()
     excerpt = (parsed.get("excerpt") or "").strip()
     if not title or not excerpt:
+        logger.warning(
+            "LLM publication: campi vuoti. title_len=%d excerpt_len=%d raw_prefix=%r",
+            len(title),
+            len(excerpt),
+            raw_text[:600],
+        )
         raise RuntimeError("Il modello ha restituito titolo o estratto vuoto")
 
     # Hard cap di sicurezza per evitare titoli abnormi
@@ -310,7 +325,8 @@ def generate_publication_text(article_title: str, article_text: str) -> dict:
 
 
 def _try_parse_json(raw_text: str) -> dict | None:
-    """Estrae un oggetto JSON da una risposta LLM, gestendo code-fence."""
+    """Estrae un oggetto JSON da una risposta LLM, gestendo code-fence,
+    preamble del modello e — come ultima risorsa — JSON troncato (regex)."""
     try:
         return json.loads(raw_text)
     except (json.JSONDecodeError, ValueError):
@@ -324,11 +340,35 @@ def _try_parse_json(raw_text: str) -> dict | None:
                 return json.loads(tail[:end].strip())
             except (json.JSONDecodeError, ValueError):
                 continue
-    # Fallback: cerca la prima { e l'ultima } e prova a parsare
+    # Cerca la prima { e l'ultima } e prova a parsare
     if "{" in raw_text and "}" in raw_text:
         snippet = raw_text[raw_text.index("{") : raw_text.rindex("}") + 1]
         try:
             return json.loads(snippet)
         except (json.JSONDecodeError, ValueError):
-            return None
-    return None
+            pass
+    # Ultima risorsa: estrazione regex per JSON troncato (no `}` finale o
+    # virgolette non chiuse). Funziona finché title e excerpt sono stringhe
+    # consecutive e separate da virgola, com'è nel nostro prompt.
+    extracted = _regex_extract_title_excerpt(raw_text)
+    return extracted
+
+
+_TITLE_RX = re.compile(r'"title"\s*:\s*"((?:[^"\\]|\\.)*)"', re.DOTALL)
+_EXCERPT_RX = re.compile(
+    r'"excerpt"\s*:\s*"((?:[^"\\]|\\.)*?)(?:"|$)', re.DOTALL
+)
+
+
+def _regex_extract_title_excerpt(raw_text: str) -> dict | None:
+    title_m = _TITLE_RX.search(raw_text)
+    excerpt_m = _EXCERPT_RX.search(raw_text)
+    if not title_m or not excerpt_m:
+        return None
+    try:
+        title = bytes(title_m.group(1), "utf-8").decode("unicode_escape")
+        excerpt = bytes(excerpt_m.group(1), "utf-8").decode("unicode_escape")
+    except UnicodeDecodeError:
+        title = title_m.group(1)
+        excerpt = excerpt_m.group(1)
+    return {"title": title, "excerpt": excerpt}
