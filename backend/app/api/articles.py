@@ -27,6 +27,7 @@ from app.schemas.article import (
 )
 from app.schemas.common import MessageResponse, PaginatedResponse
 from app.utils.pagination import paginate
+from app.utils.reading_time import compute_reading_time, compute_reading_time_optional
 
 router = APIRouter(prefix="/articles", tags=["articles"])
 
@@ -38,6 +39,8 @@ def _enrich_article(a: Article, db: Session) -> ArticleResponse:
     Per le liste usare _enrich_articles_bulk() che batcha le query.
     """
     resp = ArticleResponse.model_validate(a)
+    resp.reading_time_min = compute_reading_time(a.content_text)
+    resp.published_reading_time_min = compute_reading_time_optional(a.published_excerpt)
     tags = db.execute(article_tags.select().where(article_tags.c.article_id == a.id)).fetchall()
     cats = db.execute(
         article_categories.select().where(article_categories.c.article_id == a.id)
@@ -127,6 +130,8 @@ def _enrich_articles_bulk(articles: list[Article], db: Session) -> list[ArticleR
     out: list[ArticleResponse] = []
     for a in articles:
         resp = ArticleResponse.model_validate(a)
+        resp.reading_time_min = compute_reading_time(a.content_text)
+        resp.published_reading_time_min = compute_reading_time_optional(a.published_excerpt)
         resp.tags = tags_by_article.get(a.id, [])
         resp.categories = cats_by_article.get(a.id, [])
         resp.prompts = prompts_by_article.get(a.id, [])

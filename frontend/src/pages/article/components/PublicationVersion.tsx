@@ -16,12 +16,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Input, Modal, Space, Tag, theme as antdTheme, Typography } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import { Eye, Save, Sparkles } from 'lucide-react';
+import { BookOpen, Eye, Save, Sparkles } from 'lucide-react';
 
 import { queryKeys } from '@/config/queryKeys';
 import { useToast } from '@/hooks/useToast';
 import { generateForPublication, updateArticle } from '@/services/api/articles.api';
 import type { Article, ArticleUpdate } from '@/types';
+import { estimateReadingTime, formatReadingTimeShort } from '@/utils/readingTime';
 
 interface PublicationVersionProps {
   article: Article;
@@ -68,7 +69,9 @@ export default function PublicationVersion({ article }: PublicationVersionProps)
   });
 
   const isDirty = useMemo(() => {
-    return title !== (article.published_title ?? '') || excerpt !== (article.published_excerpt ?? '');
+    return (
+      title !== (article.published_title ?? '') || excerpt !== (article.published_excerpt ?? '')
+    );
   }, [title, excerpt, article.published_title, article.published_excerpt]);
 
   const excerptLen = excerpt.trim().length;
@@ -207,6 +210,22 @@ export default function PublicationVersion({ article }: PublicationVersionProps)
               : `L'estratto supera il limite consigliato (${excerptLen}/${EXCERPT_MAX}).`}
           </Typography.Text>
         )}
+
+        {excerptLen > 0 && (
+          <Typography.Text
+            type="secondary"
+            style={{
+              fontSize: 11,
+              marginTop: 4,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <BookOpen size={11} aria-hidden="true" />≈{' '}
+            {formatReadingTimeShort(estimateReadingTime(excerpt))} lettura
+          </Typography.Text>
+        )}
       </div>
 
       {generateMutation.isError && (
@@ -297,6 +316,7 @@ function PublicationPreviewModal({
   publishedAt,
 }: PublicationPreviewModalProps) {
   const { token } = antdTheme.useToken();
+  const readingMin = estimateReadingTime(excerpt);
 
   return (
     <Modal
@@ -332,6 +352,7 @@ function PublicationPreviewModal({
         >
           {sourceDomain}
           {publishedAt ? ` · ${dayjs(publishedAt).format('DD MMM YYYY')}` : ''}
+          {readingMin > 0 ? ` · ${formatReadingTimeShort(readingMin)} lettura` : ''}
         </Typography.Text>
 
         <h1

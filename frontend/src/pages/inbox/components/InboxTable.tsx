@@ -10,6 +10,7 @@ import dayjs from 'dayjs';
 import type { Article } from '@/types';
 import StatusBadge from '@/pages/inbox/components/StatusBadge';
 import ScoreBadge from '@/pages/inbox/components/ScoreBadge';
+import { formatReadingTimeShort } from '@/utils/readingTime';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -89,6 +90,18 @@ const columns: ColumnsType<Article> = [
     width: 110,
     align: 'center',
     render: (score: number | null) => <ScoreBadge score={score} />,
+  },
+  {
+    title: 'Lettura',
+    dataIndex: 'reading_time_min',
+    key: 'reading_time_min',
+    width: 90,
+    align: 'center',
+    render: (min: number | null) => (
+      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        {formatReadingTimeShort(min)}
+      </Typography.Text>
+    ),
   },
   {
     title: 'Pubblicato',

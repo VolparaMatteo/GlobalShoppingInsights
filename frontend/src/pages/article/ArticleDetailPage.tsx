@@ -20,6 +20,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import {
   ArrowLeft,
+  BookOpen,
   CalendarDays,
   ChevronDown,
   Clock,
@@ -44,6 +45,7 @@ import ArticleEditor from '@/pages/article/components/ArticleEditor';
 import ArticleMetadata from '@/pages/article/components/ArticleMetadata';
 import PublicationVersion from '@/pages/article/components/PublicationVersion';
 import { changeStatus, getArticle } from '@/services/api/articles.api';
+import { formatReadingTime } from '@/utils/readingTime';
 
 const { Title, Text } = Typography;
 
@@ -249,6 +251,12 @@ export default function ArticleDetailPage() {
           <MetaPill icon={<Clock size={12} />}>
             Importato {dayjs(article.created_at).format('DD/MM/YY')}
           </MetaPill>
+
+          {article.reading_time_min > 0 && (
+            <MetaPill icon={<BookOpen size={12} />}>
+              {formatReadingTime(article.reading_time_min)}
+            </MetaPill>
+          )}
         </div>
 
         {/* Prompt sources */}

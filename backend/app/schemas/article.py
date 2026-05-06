@@ -60,6 +60,10 @@ class ArticleResponse(BaseModel):
     duplicate_of_id: int | None = None
     published_title: str | None = None
     published_excerpt: str | None = None
+    # Tempo di lettura stimato in minuti. Computed in _enrich_article a partire
+    # da content_text e published_excerpt (200 wpm IT, vedi utils/reading_time).
+    reading_time_min: int = 0
+    published_reading_time_min: int | None = None
     created_at: datetime
     updated_at: datetime
     tags: list[Any] = []

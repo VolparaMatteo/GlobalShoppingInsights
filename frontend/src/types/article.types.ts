@@ -39,6 +39,10 @@ export interface Article {
   published_title: string | null;
   /** Estratto/riassunto per la pubblicazione, accompagnato in WP da una CTA al link originale. */
   published_excerpt: string | null;
+  /** Tempo di lettura stimato (min) del contenuto originale. 0 se vuoto. */
+  reading_time_min: number;
+  /** Tempo di lettura stimato (min) dell'estratto pubblicazione. null se non generato. */
+  published_reading_time_min: number | null;
   created_at: string; // ISO-8601 datetime
   updated_at: string; // ISO-8601 datetime
   tags: Tag[];
