@@ -114,6 +114,17 @@ def _check_ollama(base_url: str) -> dict[str, Any]:
         return {"status": "error", "error": type(exc).__name__, "message": str(exc)[:200]}
 
 
+def _check_gemini() -> dict[str, Any]:
+    """Stato Gemini — niente API call, consumerebbe quota.
+
+    Riportiamo solo se configurato + il nome del modello. Lo stato "vivo o
+    morto" è già implicito nel circuit breaker snapshot.
+    """
+    if not settings.GEMINI_API_KEY:
+        return {"status": "skipped", "reason": "GEMINI_API_KEY not configured"}
+    return {"status": "ok", "model": settings.GEMINI_MODEL}
+
+
 # --------------------------------------------------------------------------
 # Endpoint
 # --------------------------------------------------------------------------
@@ -121,6 +132,7 @@ def _check_ollama(base_url: str) -> dict[str, Any]:
 
 @router.get("/health")
 def health_check():
+    from app.services.gemini_service import get_gemini_breaker
     from app.services.llm_service import get_ollama_breaker
 
     checks: dict[str, Any] = {
@@ -129,6 +141,8 @@ def health_check():
         "uploads": _check_uploads_writable(settings.UPLOAD_DIR),
         "ollama": _check_ollama(settings.OLLAMA_BASE_URL),
         "ollama_circuit": get_ollama_breaker().snapshot(),
+        "gemini": _check_gemini(),
+        "gemini_circuit": get_gemini_breaker().snapshot(),
     }
 
     db_ok = checks["database"]["status"] == "ok"
@@ -136,7 +150,7 @@ def health_check():
     has_warning = any(
         c.get("status") in ("warning", "error")
         for key, c in checks.items()
-        if key not in ("database", "ollama_circuit")
+        if key not in ("database", "ollama_circuit", "gemini_circuit")
     )
 
     if not db_ok:

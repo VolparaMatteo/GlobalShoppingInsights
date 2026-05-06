@@ -251,19 +251,58 @@ Rispondi SOLO con un oggetto JSON valido (no markdown, no testo extra), entrambi
 
 
 def generate_publication_text(article_title: str, article_text: str) -> dict:
-    """Chiama Ollama per generare titolo + estratto pronti alla pubblicazione.
+    """Genera titolo + estratto IT per pubblicazione WordPress (no copyright).
+
+    Orchestratore multi-provider:
+      1. Se `GEMINI_API_KEY` configurato → Gemini 2.5 Flash (qualità + velocità).
+      2. Se Gemini fallisce e Ollama configurato → fallback su Qwen 2.5 3B.
+      3. Altrimenti `RuntimeError` con messaggio utile per l'utente.
 
     Returns:
         {"title": str, "excerpt": str}
 
-    Solleva RuntimeError se Ollama non è configurato, è in circuit-open,
-    oppure la risposta non è parsabile — in modo che l'endpoint API possa
-    restituire un 503 leggibile lato UI invece di salvare contenuto vuoto.
+    Raises:
+        RuntimeError: nessun provider disponibile o entrambi falliti — il
+            chiamante (`/articles/:id/generate-for-publication`) lo converte
+            in HTTP 503 con il messaggio così com'è.
     """
+    from app.services import gemini_service
+
+    gemini_error: Exception | None = None
+    if gemini_service.is_configured():
+        try:
+            return gemini_service.generate_publication_text(article_title, article_text)
+        except gemini_service.GeminiNotConfigured:
+            # Difesa in profondità: is_configured() già verifica la chiave,
+            # ma se l'SDK non è installato cadiamo qui senza esplodere.
+            pass
+        except gemini_service.GeminiError as e:
+            # Quota / rete / parse → annota e prova Ollama come fallback.
+            gemini_error = e
+            logger.warning("Gemini fallito, provo fallback Ollama: %s", e)
+
+    return _generate_publication_text_ollama(article_title, article_text, gemini_error)
+
+
+def _generate_publication_text_ollama(
+    article_title: str,
+    article_text: str,
+    upstream_error: Exception | None = None,
+) -> dict:
+    """Generazione via Ollama (fallback / unico provider se Gemini non c'è)."""
     base_url = _ollama_base_url()
     if not base_url:
+        if upstream_error is not None:
+            # Gemini è stato l'unico tentativo e non possiamo fare fallback:
+            # rilanciamo il messaggio Gemini perché è più informativo.
+            raise RuntimeError(str(upstream_error))
         raise RuntimeError("LLM non configurato sul server")
     if _ollama_breaker.is_open():
+        if upstream_error is not None:
+            raise RuntimeError(
+                f"Pubblicazione non disponibile: {upstream_error} "
+                "(fallback Ollama non disponibile, circuit breaker aperto)"
+            )
         raise RuntimeError("LLM temporaneamente non disponibile (circuit breaker aperto)")
 
     prompt = _build_publication_prompt(article_title, article_text or "")
@@ -301,9 +340,7 @@ def generate_publication_text(article_title: str, article_text: str) -> dict:
         # Logghiamo i primi 600 char della raw response: in produzione è
         # l'unico modo per capire perché il modello non ha rispettato il
         # formato (preamble, troncamento, lingua sbagliata, ecc.).
-        logger.warning(
-            "LLM publication: parse JSON fallito. Raw prefix=%r", raw_text[:600]
-        )
+        logger.warning("LLM publication: parse JSON fallito. Raw prefix=%r", raw_text[:600])
         raise RuntimeError("Il modello non ha restituito JSON valido")
 
     title = (parsed.get("title") or "").strip()
@@ -355,9 +392,7 @@ def _try_parse_json(raw_text: str) -> dict | None:
 
 
 _TITLE_RX = re.compile(r'"title"\s*:\s*"((?:[^"\\]|\\.)*)"', re.DOTALL)
-_EXCERPT_RX = re.compile(
-    r'"excerpt"\s*:\s*"((?:[^"\\]|\\.)*?)(?:"|$)', re.DOTALL
-)
+_EXCERPT_RX = re.compile(r'"excerpt"\s*:\s*"((?:[^"\\]|\\.)*?)(?:"|$)', re.DOTALL)
 
 
 def _regex_extract_title_excerpt(raw_text: str) -> dict | None:

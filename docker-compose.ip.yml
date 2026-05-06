@@ -71,6 +71,8 @@ services:
       UPLOAD_DIR: /app/uploads
       UNSPLASH_ACCESS_KEY: ${UNSPLASH_ACCESS_KEY:-}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
       GUNICORN_WORKERS: ${GUNICORN_WORKERS:-1}
       GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-60}
       HF_HOME: /app/.cache/huggingface

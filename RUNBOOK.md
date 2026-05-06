@@ -282,6 +282,34 @@ nano .env.prod   # nuovo ADMIN_PASSWORD
 docker compose -f docker-compose.prod.yml exec backend python seed.py
 ```
 
+### 7.4bis `GEMINI_API_KEY` (Google AI Studio)
+
+GSI usa Gemini 2.5 Flash per generare il "Versione per pubblicazione" (titolo
++ estratto IT no-copyright dal tab dell'articolo). Free tier: ~250 richieste
+/ giorno, ~10 / minuto. Se Gemini è giù o esaurita la quota, la generazione
+cade automaticamente su Ollama (se `OLLAMA_BASE_URL` è settato e il container
+`--profile llm` è attivo).
+
+Per cambiare la chiave (es. compromessa o ruotata da policy):
+```bash
+# 1. Nuova chiave da https://aistudio.google.com/apikey
+# 2. Aggiorna .env.prod
+nano .env.prod   # GEMINI_API_KEY=...
+
+# 3. Applica senza pull
+./deploy.sh --no-pull
+```
+
+Per disabilitare Gemini (torna al solo Ollama come prima):
+```bash
+nano .env.prod   # GEMINI_API_KEY=
+./deploy.sh --no-pull
+```
+
+Stato di salute visibile in `GET /api/v1/health` → campi `gemini` (configurato
+o skipped) e `gemini_circuit` (snapshot del circuit breaker, OPEN dopo 3
+failure consecutive — autoreset dopo 60s).
+
 ### 7.4 Password PostgreSQL
 Richiede aggiornamento coordinato di `POSTGRES_PASSWORD` + `DATABASE_URL` in
 `.env.prod` + riavvio. Farlo in finestra di manutenzione:
@@ -360,6 +388,27 @@ c'è margine per il resto. Opzioni:
 - Disabilita Ollama (`.\docker compose` senza `--profile llm`): la pipeline usa
   solo sentence-transformers (embeddings), niente second-opinion.
 - Upgrade VPS ad almeno 8 GB.
+
+### 9.7bis Pubblicazione: "Quota Gemini esaurita (429)"
+
+Il free tier di `gemini-2.5-flash` consente ~250 richieste / giorno. Quando
+si esaurisce:
+
+- Se `OLLAMA_BASE_URL` è settato e il container Ollama è attivo → la
+  generazione cade automaticamente sul fallback Ollama (più lenta, ~120-240s)
+  senza che l'utente debba fare nulla. Vede solo un'attesa più lunga.
+- Se Ollama non è disponibile → l'utente vede l'errore "Quota Gemini
+  esaurita" nel tab "Pubblicazione GSI". Ha tre opzioni:
+  - aspettare il reset della quota (mezzanotte UTC)
+  - passare a `GEMINI_MODEL=gemini-2.5-flash-lite` (1000 RPD) e redeploy
+  - upgrade del progetto Google AI a tier paid
+
+Stato del circuit breaker visibile in `/api/v1/health` → `gemini_circuit`.
+
+### 9.7ter Pubblicazione: "Errore client Gemini (401/403)"
+
+API key non valida o revocata. Genera una nuova chiave su
+https://aistudio.google.com/apikey, aggiorna `.env.prod`, redeploy.
 
 ### 9.7 Porta 80/443 già occupata
 Probabilmente c'è un altro web server (nginx, apache) sull'host. Disabilitalo:

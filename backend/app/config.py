@@ -41,7 +41,19 @@ class Settings(BaseSettings):
 
     # Base URL di Ollama per LLM second-opinion. Vuoto = disabilitato.
     # Es: "http://ollama:11434" in compose, o "http://localhost:11434" in dev locale.
+    # Usato per `evaluate_relevance` (discovery, alto volume) e come fallback
+    # opzionale di `generate_publication_text` quando Gemini fallisce.
     OLLAMA_BASE_URL: str = ""
+
+    # API key Google Gemini (AI Studio). Vuota = pubblicazione cade su Ollama.
+    # Generabile su https://aistudio.google.com/apikey
+    GEMINI_API_KEY: str = ""
+
+    # Modello Gemini per la generazione titolo+estratto pubblicazione.
+    # `gemini-2.5-flash` = 250 RPD free tier, qualità IT alta, ~3-8s/call.
+    # Alternative: `gemini-2.5-flash-lite` (1000 RPD, qualità media)
+    #             `gemini-2.5-pro` (~25 RPD, qualità top).
+    GEMINI_MODEL: str = "gemini-2.5-flash"
 
     # Soglia minima di spazio libero (GB) sul disco UPLOAD_DIR per considerare
     # il servizio healthy (sotto: status=degraded).
