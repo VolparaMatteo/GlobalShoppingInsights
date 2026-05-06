@@ -271,37 +271,38 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
           {/* Actions + navigazione — nascoste durante la ricerca remota
               (altrimenti Invio cadrebbe su "Vai alla Dashboard") */}
-          {!searchEnabled && groupedActions.map(([groupName, items]) => (
-            <Command.Group
-              key={groupName}
-              heading={groupName}
-              className="gsi-cmdk-group"
-              style={{ padding: '4px 0' }}
-            >
-              {items.map((a) => {
-                const Icon = a.icon;
-                return (
-                  <Command.Item
-                    key={a.id}
-                    value={`${a.label} ${a.keywords?.join(' ') ?? ''}`}
-                    onSelect={() => handleAction(a.run)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      padding: '8px 12px',
-                      borderRadius: 6,
-                      cursor: 'pointer',
-                      color: token.colorText,
-                    }}
-                  >
-                    <Icon size={16} color={token.colorTextSecondary} aria-hidden="true" />
-                    <span style={{ flex: 1 }}>{a.label}</span>
-                  </Command.Item>
-                );
-              })}
-            </Command.Group>
-          ))}
+          {!searchEnabled &&
+            groupedActions.map(([groupName, items]) => (
+              <Command.Group
+                key={groupName}
+                heading={groupName}
+                className="gsi-cmdk-group"
+                style={{ padding: '4px 0' }}
+              >
+                {items.map((a) => {
+                  const Icon = a.icon;
+                  return (
+                    <Command.Item
+                      key={a.id}
+                      value={`${a.label} ${a.keywords?.join(' ') ?? ''}`}
+                      onSelect={() => handleAction(a.run)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '8px 12px',
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                        color: token.colorText,
+                      }}
+                    >
+                      <Icon size={16} color={token.colorTextSecondary} aria-hidden="true" />
+                      <span style={{ flex: 1 }}>{a.label}</span>
+                    </Command.Item>
+                  );
+                })}
+              </Command.Group>
+            ))}
 
           {/* Articoli */}
           {searchEnabled && articleHits.length > 0 && (

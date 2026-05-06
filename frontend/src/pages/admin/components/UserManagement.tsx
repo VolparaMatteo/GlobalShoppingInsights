@@ -257,7 +257,10 @@ export default function UserManagement() {
               extra="Lascia vuoto per non modificare la password attuale. Minimo 12 caratteri."
               rules={[{ min: 12, message: 'Almeno 12 caratteri' }]}
             >
-              <Input.Password placeholder="Nuova password (opzionale)" autoComplete="new-password" />
+              <Input.Password
+                placeholder="Nuova password (opzionale)"
+                autoComplete="new-password"
+              />
             </Form.Item>
             <Form.Item name="role" label="Ruolo">
               <Select options={roleOptions} placeholder="Seleziona un ruolo" />

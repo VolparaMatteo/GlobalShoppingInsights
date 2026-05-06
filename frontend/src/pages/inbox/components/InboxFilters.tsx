@@ -8,11 +8,7 @@ import { useCallback, useMemo } from 'react';
 import { Button, Col, Input, Row, Select, Slider, Typography, theme as antdTheme } from 'antd';
 import { FilterX, Search, SlidersHorizontal } from 'lucide-react';
 
-import {
-  ARTICLE_CATEGORIES,
-  MANUAL_ARTICLE_STATUSES,
-  STATUS_MAP,
-} from '@/config/constants';
+import { ARTICLE_CATEGORIES, MANUAL_ARTICLE_STATUSES, STATUS_MAP } from '@/config/constants';
 
 const { Text } = Typography;
 
