@@ -23,6 +23,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Wand2,
 } from 'lucide-react';
 
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -32,6 +33,7 @@ import ArticlePreviewDrawer from '@/pages/inbox/components/ArticlePreviewDrawer'
 import { useCalendarStore, type CalendarViewMode } from '@/stores/calendarStore';
 import type { Article, EditorialSlot } from '@/types';
 
+import AutoPlanModal from './components/AutoPlanModal';
 import CalendarSidebar from './components/CalendarSidebar';
 import CollisionModal from './components/CollisionModal';
 import DayView from './components/DayView';
@@ -111,6 +113,7 @@ export default function CalendarPage() {
 
   const [activeSlot, setActiveSlot] = useState<EditorialSlot | null>(null);
   const [draggingArticle, setDraggingArticle] = useState<Article | null>(null);
+  const [autoPlanOpen, setAutoPlanOpen] = useState(false);
   const [collisionOpen, setCollisionOpen] = useState(false);
   const [collisionData, setCollisionData] = useState<{
     existingSlots: EditorialSlot[];
@@ -326,6 +329,23 @@ export default function CalendarPage() {
 
         <div style={{ flex: 1 }} />
 
+        <Button
+          icon={<Wand2 size={14} />}
+          type="primary"
+          onClick={() => setAutoPlanOpen(true)}
+          style={{
+            borderRadius: 8,
+            height: 34,
+            fontWeight: 600,
+            padding: '0 14px',
+            background: 'linear-gradient(135deg, #1677ff 0%, #722ed1 100%)',
+            border: 'none',
+            boxShadow: '0 4px 12px -2px rgba(114,46,209,0.35)',
+          }}
+        >
+          Pianifica con AI
+        </Button>
+
         <Segmented
           options={viewOptions}
           value={viewMode}
@@ -432,6 +452,12 @@ export default function CalendarPage() {
         open={previewArticleId !== null}
         onClose={() => setPreviewArticleId(null)}
         readOnly
+      />
+
+      <AutoPlanModal
+        open={autoPlanOpen}
+        onClose={() => setAutoPlanOpen(false)}
+        initialWeek={dayjs(currentDate)}
       />
     </div>
   );

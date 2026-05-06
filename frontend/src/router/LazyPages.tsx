@@ -7,7 +7,7 @@ export const PromptsListPage = lazy(() => import('@/pages/prompts/PromptsListPag
 export const PromptDetailPage = lazy(() => import('@/pages/prompts/PromptDetailPage'));
 export const InboxPage = lazy(() => import('@/pages/inbox/InboxPage'));
 export const ArticleDetailPage = lazy(() => import('@/pages/article/ArticleDetailPage'));
-export const CalendarPage = lazy(() => import('@/pages/calendar/CalendarPage'));
+export const CalendarPage = lazy(() => import('@/pages/calendar/_CalendarPage.full'));
 export const TaxonomyPage = lazy(() => import('@/pages/taxonomy/TaxonomyPage'));
 export const SettingsPage = lazy(() => import('@/pages/admin/SettingsPage'));
 export const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage'));
