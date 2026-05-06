@@ -9,6 +9,8 @@ from app.models.article import Article
 from app.models.calendar import CalendarRule, EditorialSlot
 from app.models.user import User
 from app.schemas.calendar import (
+    AutoPlanRequest,
+    AutoPlanResponse,
     CalendarRuleResponse,
     CalendarRuleUpdate,
     CollisionCheckRequest,
@@ -18,6 +20,7 @@ from app.schemas.calendar import (
     SlotUpdate,
 )
 from app.schemas.common import MessageResponse
+from app.services.auto_plan_service import generate_auto_plan
 
 router = APIRouter(prefix="/slots", tags=["calendar"])
 
@@ -146,6 +149,82 @@ def get_rules(
     _current_user: User = Depends(get_current_user),
 ):
     return db.query(CalendarRule).all()
+
+
+@router.post("/auto-plan", response_model=AutoPlanResponse)
+def auto_plan_week(
+    body: AutoPlanRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_min_role("editor")),
+):
+    """Genera (o solo preview se `dry_run=True`) un piano editoriale settimanale.
+
+    Vedi `app/services/auto_plan_service.py` per la logica.
+    """
+    try:
+        result = generate_auto_plan(
+            db,
+            category=body.category,
+            week_start=body.week_start,
+            publish_time=body.publish_time,
+            target_min_per_day=body.target_min_per_day,
+            strategy=body.strategy,
+            collision_strategy=body.collision_strategy,
+            timezone=body.timezone,
+            dry_run=body.dry_run,
+            creator_id=current_user.id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    # AutoPlanResult (dataclass) → AutoPlanResponse (Pydantic) — campo per campo
+    # per non legare il service ai modelli di trasporto.
+    return AutoPlanResponse(
+        week_start=result.week_start,
+        week_end=result.week_end,
+        category=result.category,
+        target_min_per_day=result.target_min_per_day,
+        strategy=result.strategy,
+        days=[
+            {
+                "date": dp.date,
+                "scheduled_for": dp.scheduled_for,
+                "articles": [
+                    {
+                        "article_id": c.article_id,
+                        "title": c.title,
+                        "ai_score": c.ai_score,
+                        "reading_time_min": c.reading_time_min,
+                    }
+                    for c in dp.articles
+                ],
+                "total_reading_min": dp.total_reading_min,
+                "existing_slots": [
+                    {
+                        "slot_id": e.slot_id,
+                        "article_id": e.article_id,
+                        "article_title": e.article_title,
+                        "scheduled_for": e.scheduled_for,
+                    }
+                    for e in dp.existing_slots
+                ],
+            }
+            for dp in result.days
+        ],
+        summary={
+            "pool_size": result.summary.pool_size,
+            "articles_planned": result.summary.articles_planned,
+            "articles_unscheduled": result.summary.articles_unscheduled,
+            "total_reading_min": result.summary.total_reading_min,
+            "avg_reading_min_per_day": result.summary.avg_reading_min_per_day,
+            "days_filled": result.summary.days_filled,
+            "collision_detected": result.summary.collision_detected,
+            "existing_slots_in_week": result.summary.existing_slots_in_week,
+            "warning": result.summary.warning,
+            "error": result.summary.error,
+        },
+        created_slot_ids=result.created_slot_ids,
+    )
 
 
 @router.patch("/rules/{rule_id}", response_model=CalendarRuleResponse)

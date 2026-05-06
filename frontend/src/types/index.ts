@@ -54,6 +54,14 @@ export type {
   CalendarRuleUpdate,
   CollisionCheckRequest,
   CollisionCheckResponse,
+  AutoPlanRequest,
+  AutoPlanResponse,
+  AutoPlanCandidate,
+  AutoPlanDay,
+  AutoPlanExistingSlot,
+  AutoPlanSummary,
+  AutoPlanStrategy,
+  AutoPlanCollisionStrategy,
 } from './calendar.types';
 
 // WordPress Integration

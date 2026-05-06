@@ -10,6 +10,8 @@ import type {
   CalendarRuleUpdate,
   CollisionCheckRequest,
   CollisionCheckResponse,
+  AutoPlanRequest,
+  AutoPlanResponse,
 } from '@/types';
 
 export interface GetSlotsParams {
@@ -70,5 +72,11 @@ export async function getRules(): Promise<CalendarRule[]> {
 /** PATCH /slots/rules/:id */
 export async function updateRule(id: number, payload: CalendarRuleUpdate): Promise<CalendarRule> {
   const { data } = await client.patch<CalendarRule>(`/slots/rules/${id}`, payload);
+  return data;
+}
+
+/** POST /slots/auto-plan */
+export async function autoPlanWeek(payload: AutoPlanRequest): Promise<AutoPlanResponse> {
+  const { data } = await client.post<AutoPlanResponse>('/slots/auto-plan', payload);
   return data;
 }
